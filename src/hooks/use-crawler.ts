@@ -18,13 +18,19 @@ export function useCrawler() {
     error: null,
   });
   const abortRef = useRef(false);
+  const crawlIdRef = useRef(0);
 
   const crawl = useCallback(async (sitemapUrl: string) => {
     abortRef.current = false;
+    const currentCrawlId = ++crawlIdRef.current;
     setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null });
+
+    const isStale = () => abortRef.current || crawlIdRef.current !== currentCrawlId;
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
+      if (isStale()) return;
+
       if (urls.length === 0) {
         setState((s) => ({ ...s, phase: "error", error: "No URLs found in sitemap" }));
         return;
@@ -36,13 +42,14 @@ export function useCrawler() {
       const BATCH_SIZE = 10;
 
       for (let i = 0; i < urls.length; i += BATCH_SIZE) {
-        if (abortRef.current) break;
+        if (isStale()) return;
         const batch = urls.slice(i, i + BATCH_SIZE);
         try {
           const batchResults = await fetchMetaBatch(batch);
+          if (isStale()) return;
           allResults.push(...batchResults);
         } catch {
-          // If batch fails, mark all as error
+          if (isStale()) return;
           batch.forEach((url) => {
             allResults.push({ url, title: "", description: "", status: "Error", statusCode: 0, fetchTime: "0s" });
           });
@@ -50,18 +57,23 @@ export function useCrawler() {
         setState((s) => ({ ...s, results: [...allResults], processedUrls: Math.min(i + BATCH_SIZE, urls.length) }));
       }
 
-      setState((s) => ({ ...s, phase: "done" }));
+      if (!isStale()) {
+        setState((s) => ({ ...s, phase: "done" }));
+      }
     } catch (err) {
-      setState((s) => ({
-        ...s,
-        phase: "error",
-        error: err instanceof Error ? err.message : "An error occurred",
-      }));
+      if (!isStale()) {
+        setState((s) => ({
+          ...s,
+          phase: "error",
+          error: err instanceof Error ? err.message : "An error occurred",
+        }));
+      }
     }
   }, []);
 
   const reset = useCallback(() => {
     abortRef.current = true;
+    crawlIdRef.current++;
     setState({ phase: "idle", results: [], totalUrls: 0, processedUrls: 0, error: null });
   }, []);
 

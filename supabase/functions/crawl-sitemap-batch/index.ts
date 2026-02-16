@@ -12,6 +12,57 @@ interface CrawlResult {
   fetchTime: string;
 }
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)));
+}
+
+function extractTitle(html: string): string {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (!match) return '';
+  return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim().slice(0, 100);
+}
+
+function extractDescription(html: string): string {
+  // Try multiple patterns for meta description
+  const patterns = [
+    /<meta\s+name\s*=\s*["']description["']\s+content\s*=\s*["']([\s\S]*?)["']\s*\/?>/i,
+    /<meta\s+content\s*=\s*["']([\s\S]*?)["']\s+name\s*=\s*["']description["']\s*\/?>/i,
+    /<meta\s+name\s*=\s*["']description["']\s[^>]*content\s*=\s*["']([\s\S]*?)["'][^>]*\/?>/i,
+    /<meta\s+content\s*=\s*["']([\s\S]*?)["']\s[^>]*name\s*=\s*["']description["'][^>]*\/?>/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim().slice(0, 160);
+    }
+  }
+
+  // Fallback: find all meta tags and check for description
+  const metaTagRegex = /<meta\s([^>]+)>/gi;
+  let metaMatch;
+  while ((metaMatch = metaTagRegex.exec(html)) !== null) {
+    const attrs = metaMatch[1];
+    const nameMatch = attrs.match(/name\s*=\s*["']description["']/i);
+    if (nameMatch) {
+      const contentMatch = attrs.match(/content\s*=\s*["']([\s\S]*?)["']/i);
+      if (contentMatch) {
+        return decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim().slice(0, 160);
+      }
+    }
+  }
+
+  return '';
+}
+
 async function fetchMeta(url: string): Promise<CrawlResult> {
   const start = Date.now();
   try {
@@ -27,19 +78,8 @@ async function fetchMeta(url: string): Promise<CrawlResult> {
     }
 
     const html = await resp.text();
-
-    let title = '';
-    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    if (titleMatch) {
-      title = titleMatch[1].replace(/\s+/g, ' ').trim().slice(0, 100);
-    }
-
-    let description = '';
-    const descMatch = html.match(/<meta[^>]*name\s*=\s*["']description["'][^>]*content\s*=\s*["']([\s\S]*?)["'][^>]*\/?>/i)
-      || html.match(/<meta[^>]*content\s*=\s*["']([\s\S]*?)["'][^>]*name\s*=\s*["']description["'][^>]*\/?>/i);
-    if (descMatch) {
-      description = descMatch[1].replace(/\s+/g, ' ').trim().slice(0, 160);
-    }
+    const title = extractTitle(html);
+    const description = extractDescription(html);
 
     return { url, title, description, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
   } catch {

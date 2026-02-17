@@ -138,7 +138,7 @@ export function ResultsTable({ results, domain }: ResultsTableProps) {
       {/* Table */}
       <div className="border rounded-lg overflow-hidden bg-card">
         {/* Header */}
-        <div className="grid grid-cols-[1fr_1fr_1.2fr_80px] gap-0 border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
+        <div className="grid grid-cols-[1.2fr_1.2fr_1.6fr_80px] gap-0 border-b bg-muted/50 text-xs font-semibold text-muted-foreground">
           {(["url", "title", "description", "status"] as SortKey[]).map((key) => (
             <button
               key={key}
@@ -153,39 +153,30 @@ export function ResultsTable({ results, domain }: ResultsTableProps) {
 
         {/* Virtual rows */}
         <div ref={parentRef} className="overflow-auto max-h-[600px]">
-          <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const row = filtered[virtualRow.index];
-              return (
-                <div
-                  key={virtualRow.key}
-                  className="grid grid-cols-[1fr_1fr_1.2fr_80px] gap-0 border-b border-border/40 hover:bg-muted/30 transition-colors text-xs"
-                  style={{
-                    position: "absolute",
-                    top: virtualRow.start,
-                    height: virtualRow.size,
-                    width: "100%",
-                  }}
-                >
-                  <div className="px-3 py-2 truncate font-mono text-primary/80" title={row.url}>
-                    {row.url}
-                  </div>
-                  <div className="px-3 py-2 truncate" title={row.title}>
-                    {row.title || <span className="text-muted-foreground italic">(empty)</span>}
-                  </div>
-                  <div className="px-3 py-2 truncate text-muted-foreground" title={row.description}>
-                    {row.description || <span className="italic">(empty)</span>}
-                  </div>
-                  <div className="px-3 py-2 flex items-center">
-                    {row.status === "OK" ? (
-                      <span className="text-success font-medium">✅ OK</span>
-                    ) : (
-                      <span className="text-destructive font-medium">❌ Err</span>
-                    )}
-                  </div>
+          <div className="divide-y divide-border/40">
+            {filtered.map((row, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-[1.2fr_1.2fr_1.6fr_80px] gap-0 hover:bg-muted/30 transition-colors text-xs"
+              >
+                <div className="px-3 py-2.5 break-all font-mono text-primary/80">
+                  {row.url}
                 </div>
-              );
-            })}
+                <div className="px-3 py-2.5 break-words">
+                  {row.title || <span className="text-muted-foreground italic">(empty)</span>}
+                </div>
+                <div className="px-3 py-2.5 break-words text-muted-foreground">
+                  {row.description || <span className="italic">(empty)</span>}
+                </div>
+                <div className="px-3 py-2.5 flex items-start">
+                  {row.status === "OK" ? (
+                    <span className="text-success font-medium">✅ OK</span>
+                  ) : (
+                    <span className="text-destructive font-medium">❌ Err</span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

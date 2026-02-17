@@ -41,7 +41,7 @@ const Index = () => {
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <Globe className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-bold text-sm tracking-tight">Sitemap Crawler Pro</span>
+            <span className="font-bold text-sm tracking-tight">Shubhojit's Sitemap Crawler</span>
           </div>
           <ThemeToggle />
         </div>
@@ -52,8 +52,8 @@ const Index = () => {
         <motion.div
           className="text-center space-y-4 mb-10"
           initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+          animate={{ opacity: 1, y: 0 }}>
+
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
             <span className="gradient-text">Sitemap Crawler</span>
           </h1>
@@ -71,44 +71,44 @@ const Index = () => {
       </section>
 
       {/* Error */}
-      {error && (
-        <section className="container max-w-6xl mx-auto px-4 pb-6">
+      {error &&
+      <section className="container max-w-6xl mx-auto px-4 pb-6">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-destructive/10 text-destructive border border-destructive/20 rounded-lg p-4 text-sm"
-          >
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-destructive/10 text-destructive border border-destructive/20 rounded-lg p-4 text-sm">
+
             <strong>Error:</strong> {error}
           </motion.div>
         </section>
-      )}
+      }
 
       {/* Results */}
-      {results.length > 0 && (
-        <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-6">
+      {results.length > 0 &&
+      <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-6">
           <StatsCards results={results} />
           <ResultsTable results={results} domain={domain} />
         </section>
-      )}
+      }
 
       {/* Back to top */}
-      {showTop && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="fixed bottom-6 right-6 z-50"
-        >
+      {showTop &&
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="fixed bottom-6 right-6 z-50">
+
           <Button
-            size="icon"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="h-10 w-10 rounded-full shadow-lg"
-          >
+          size="icon"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="h-10 w-10 rounded-full shadow-lg">
+
             <ArrowUp className="h-4 w-4" />
           </Button>
         </motion.div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default Index;

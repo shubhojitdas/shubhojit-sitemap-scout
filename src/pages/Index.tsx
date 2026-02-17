@@ -41,7 +41,7 @@ const Index = () => {
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <Globe className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-bold text-sm tracking-tight">Shubhojit's Sitemap Crawler</span>
+            <span className="font-bold text-sm tracking-tight">Shubhojit's Sitemap Scout</span>
           </div>
           <ThemeToggle />
         </div>

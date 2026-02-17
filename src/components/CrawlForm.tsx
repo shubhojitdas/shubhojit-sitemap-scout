@@ -40,7 +40,7 @@ export function CrawlForm({ onCrawl, isLoading, onReset }: CrawlFormProps) {
           />
         </div>
         {isLoading ? (
-          <Button type="button" variant="outline" onClick={onReset} className="h-13 px-6">
+          <Button type="button" variant="outline" onClick={() => { onReset(); setUrl(""); }} className="h-13 px-6">
             Cancel
           </Button>
         ) : (

@@ -54,6 +54,7 @@ export function useCrawler() {
             allResults.push({ url, title: "", description: "", status: "Error", statusCode: 0, fetchTime: "0s" });
           });
         }
+        if (isStale()) return;
         setState((s) => ({ ...s, results: [...allResults], processedUrls: Math.min(i + BATCH_SIZE, urls.length) }));
       }
 

@@ -5,7 +5,7 @@ import { StatsCards } from "@/components/StatsCards";
 import { ResultsTable } from "@/components/ResultsTable";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { motion } from "framer-motion";
-import { Globe, ArrowUp } from "lucide-react";
+import { Globe, ArrowUp, Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
@@ -43,7 +43,14 @@ const Index = () => {
             </div>
             <span className="font-bold text-sm tracking-tight">Shubhojit's Sitemap Scout</span>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <a href="https://www.linkedin.com/in/shubhojitdas/" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                <Linkedin className="h-4 w-4" />
+              </Button>
+            </a>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 

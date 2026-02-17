@@ -9,30 +9,37 @@ interface CrawlState {
   error: string | null;
 }
 
+const INITIAL_STATE: CrawlState = {
+  phase: "idle",
+  results: [],
+  totalUrls: 0,
+  processedUrls: 0,
+  error: null,
+};
+
 export function useCrawler() {
-  const [state, setState] = useState<CrawlState>({
-    phase: "idle",
-    results: [],
-    totalUrls: 0,
-    processedUrls: 0,
-    error: null,
-  });
-  const abortRef = useRef(false);
-  const crawlIdRef = useRef(0);
+  const [state, setState] = useState<CrawlState>(INITIAL_STATE);
+  const controllerRef = useRef<AbortController | null>(null);
 
   const crawl = useCallback(async (sitemapUrl: string) => {
-    abortRef.current = false;
-    const currentCrawlId = ++crawlIdRef.current;
-    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null });
+    // Abort any previous crawl
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    const signal = controller.signal;
 
-    const isStale = () => abortRef.current || crawlIdRef.current !== currentCrawlId;
+    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
-      if (isStale()) return;
+      if (signal.aborted) return;
 
       if (urls.length === 0) {
-        setState((s) => ({ ...s, phase: "error", error: "No URLs found in sitemap" }));
+        if (!signal.aborted) {
+          setState((s) => ({ ...s, phase: "error", error: "No URLs found in sitemap" }));
+        }
         return;
       }
 
@@ -42,27 +49,27 @@ export function useCrawler() {
       const BATCH_SIZE = 10;
 
       for (let i = 0; i < urls.length; i += BATCH_SIZE) {
-        if (isStale()) return;
+        if (signal.aborted) return;
         const batch = urls.slice(i, i + BATCH_SIZE);
         try {
           const batchResults = await fetchMetaBatch(batch);
-          if (isStale()) return;
+          if (signal.aborted) return;
           allResults.push(...batchResults);
         } catch {
-          if (isStale()) return;
+          if (signal.aborted) return;
           batch.forEach((url) => {
             allResults.push({ url, title: "", description: "", status: "Error", statusCode: 0, fetchTime: "0s" });
           });
         }
-        if (isStale()) return;
+        if (signal.aborted) return;
         setState((s) => ({ ...s, results: [...allResults], processedUrls: Math.min(i + BATCH_SIZE, urls.length) }));
       }
 
-      if (!isStale()) {
+      if (!signal.aborted) {
         setState((s) => ({ ...s, phase: "done" }));
       }
     } catch (err) {
-      if (!isStale()) {
+      if (!signal.aborted) {
         setState((s) => ({
           ...s,
           phase: "error",
@@ -73,9 +80,11 @@ export function useCrawler() {
   }, []);
 
   const reset = useCallback(() => {
-    abortRef.current = true;
-    crawlIdRef.current++;
-    setState({ phase: "idle", results: [], totalUrls: 0, processedUrls: 0, error: null });
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
+    }
+    setState(INITIAL_STATE);
   }, []);
 
   return { ...state, crawl, reset };

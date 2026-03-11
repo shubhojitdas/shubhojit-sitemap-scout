@@ -21,15 +21,42 @@ export function useCrawler() {
   const [state, setState] = useState<CrawlState>(INITIAL_STATE);
   const controllerRef = useRef<AbortController | null>(null);
 
-  const crawl = useCallback(async (sitemapUrl: string) => {
-    // Abort any previous crawl
-    if (controllerRef.current) {
-      controllerRef.current.abort();
-    }
+  const startController = () => {
+    if (controllerRef.current) controllerRef.current.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
-    const signal = controller.signal;
+    return controller.signal;
+  };
 
+  const runBatches = async (urls: string[], signal: AbortSignal) => {
+    const allResults: CrawlResult[] = [];
+    const BATCH_SIZE = 10;
+
+    for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+      if (signal.aborted) return;
+      const batch = urls.slice(i, i + BATCH_SIZE);
+      try {
+        const batchResults = await fetchMetaBatch(batch);
+        if (signal.aborted) return;
+        allResults.push(...batchResults);
+      } catch {
+        if (signal.aborted) return;
+        batch.forEach((url) => {
+          allResults.push({ url, title: "", description: "", status: "Error", statusCode: 0, fetchTime: "0s" });
+        });
+      }
+      if (signal.aborted) return;
+      setState((s) => ({ ...s, results: [...allResults], processedUrls: Math.min(i + BATCH_SIZE, urls.length) }));
+    }
+
+    if (!signal.aborted) {
+      setState((s) => ({ ...s, phase: "done" }));
+    }
+  };
+
+  // Crawl from a sitemap URL (parses sitemap first)
+  const crawl = useCallback(async (sitemapUrl: string) => {
+    const signal = startController();
     setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null });
 
     try {
@@ -37,37 +64,12 @@ export function useCrawler() {
       if (signal.aborted) return;
 
       if (urls.length === 0) {
-        if (!signal.aborted) {
-          setState((s) => ({ ...s, phase: "error", error: "No URLs found in sitemap" }));
-        }
+        if (!signal.aborted) setState((s) => ({ ...s, phase: "error", error: "No URLs found in sitemap" }));
         return;
       }
 
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
-
-      const allResults: CrawlResult[] = [];
-      const BATCH_SIZE = 10;
-
-      for (let i = 0; i < urls.length; i += BATCH_SIZE) {
-        if (signal.aborted) return;
-        const batch = urls.slice(i, i + BATCH_SIZE);
-        try {
-          const batchResults = await fetchMetaBatch(batch);
-          if (signal.aborted) return;
-          allResults.push(...batchResults);
-        } catch {
-          if (signal.aborted) return;
-          batch.forEach((url) => {
-            allResults.push({ url, title: "", description: "", status: "Error", statusCode: 0, fetchTime: "0s" });
-          });
-        }
-        if (signal.aborted) return;
-        setState((s) => ({ ...s, results: [...allResults], processedUrls: Math.min(i + BATCH_SIZE, urls.length) }));
-      }
-
-      if (!signal.aborted) {
-        setState((s) => ({ ...s, phase: "done" }));
-      }
+      await runBatches(urls, signal);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -77,6 +79,26 @@ export function useCrawler() {
         }));
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Crawl a pre-supplied list of URLs (skips sitemap parsing)
+  const crawlUrls = useCallback(async (urls: string[]) => {
+    const signal = startController();
+    setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null });
+
+    try {
+      await runBatches(urls, signal);
+    } catch (err) {
+      if (!signal.aborted) {
+        setState((s) => ({
+          ...s,
+          phase: "error",
+          error: err instanceof Error ? err.message : "An error occurred",
+        }));
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const reset = useCallback(() => {
@@ -87,5 +109,5 @@ export function useCrawler() {
     setState(INITIAL_STATE);
   }, []);
 
-  return { ...state, crawl, reset };
+  return { ...state, crawl, crawlUrls, reset };
 }

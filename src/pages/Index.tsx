@@ -13,6 +13,7 @@ const Index = () => {
   const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, reset } = useCrawler();
   const [showTop, setShowTop] = useState(false);
   const [domain, setDomain] = useState("");
+  const [includeH1, setIncludeH1] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setShowTop(window.scrollY > 400);
@@ -20,14 +21,20 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleCrawl = (url: string) => {
+  const handleCrawl = (url: string, withH1: boolean) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
       setDomain(parsed.hostname);
     } catch {
       setDomain("unknown");
     }
-    crawl(url);
+    setIncludeH1(withH1);
+    crawl(url, withH1);
+  };
+
+  const handleCrawlUrls = (urls: string[], withH1: boolean) => {
+    setIncludeH1(withH1);
+    crawlUrls(urls, withH1);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling";
@@ -69,7 +76,7 @@ const Index = () => {
           </p>
         </motion.div>
 
-        <CrawlForm onCrawl={handleCrawl} onCrawlUrls={crawlUrls} isLoading={isLoading} onReset={reset} />
+        <CrawlForm onCrawl={handleCrawl} onCrawlUrls={handleCrawlUrls} isLoading={isLoading} onReset={reset} />
       </section>
 
       {/* Progress */}
@@ -93,8 +100,8 @@ const Index = () => {
       {/* Results */}
       {results.length > 0 &&
       <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-6">
-          <StatsCards results={results} />
-          <ResultsTable results={results} domain={domain} />
+          <StatsCards results={results} includeH1={includeH1} />
+          <ResultsTable results={results} domain={domain} includeH1={includeH1} />
         </section>
       }
 

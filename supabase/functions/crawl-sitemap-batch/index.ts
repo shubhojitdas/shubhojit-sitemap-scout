@@ -7,6 +7,7 @@ interface CrawlResult {
   url: string;
   title: string;
   description: string;
+  h1s: string[];
   status: 'OK' | 'Error';
   statusCode: number;
   fetchTime: string;
@@ -31,7 +32,6 @@ function extractTitle(html: string): string {
 }
 
 function extractDescription(html: string): string {
-  // Try multiple patterns for meta description
   const patterns = [
     /<meta\s+name\s*=\s*["']description["']\s+content\s*=\s*["']([\s\S]*?)["']\s*\/?>/i,
     /<meta\s+content\s*=\s*["']([\s\S]*?)["']\s+name\s*=\s*["']description["']\s*\/?>/i,
@@ -46,7 +46,6 @@ function extractDescription(html: string): string {
     }
   }
 
-  // Fallback: find all meta tags and check for description
   const metaTagRegex = /<meta\s([^>]+)>/gi;
   let metaMatch;
   while ((metaMatch = metaTagRegex.exec(html)) !== null) {
@@ -63,7 +62,21 @@ function extractDescription(html: string): string {
   return '';
 }
 
-async function fetchMeta(url: string): Promise<CrawlResult> {
+function extractH1s(html: string): string[] {
+  const h1s: string[] = [];
+  const h1Regex = /<h1[^>]*>([\s\S]*?)<\/h1>/gi;
+  let match;
+  while ((match = h1Regex.exec(html)) !== null) {
+    // Strip inner HTML tags, decode entities, collapse whitespace
+    const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text) h1s.push(text.slice(0, 200));
+  }
+  return h1s;
+}
+
+async function fetchMeta(url: string, includeH1: boolean): Promise<CrawlResult> {
   const start = Date.now();
   try {
     const resp = await fetch(url, {
@@ -74,17 +87,18 @@ async function fetchMeta(url: string): Promise<CrawlResult> {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
 
     if (!resp.ok) {
-      return { url, title: '', description: '', status: 'Error', statusCode: resp.status, fetchTime: elapsed };
+      return { url, title: '', description: '', h1s: [], status: 'Error', statusCode: resp.status, fetchTime: elapsed };
     }
 
     const html = await resp.text();
     const title = extractTitle(html);
     const description = extractDescription(html);
+    const h1s = includeH1 ? extractH1s(html) : [];
 
-    return { url, title, description, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
+    return { url, title, description, h1s, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
   } catch {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
-    return { url, title: '', description: '', status: 'Error', statusCode: 0, fetchTime: elapsed };
+    return { url, title: '', description: '', h1s: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
   }
 }
 
@@ -94,7 +108,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { urls } = await req.json();
+    const { urls, includeH1 = false } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return new Response(
@@ -103,13 +117,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Process up to 10 URLs concurrently
     const batchSize = 10;
     const results: CrawlResult[] = [];
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
-      const batchResults = await Promise.all(batch.map(fetchMeta));
+      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1)));
       results.push(...batchResults);
     }
 

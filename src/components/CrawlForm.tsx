@@ -81,9 +81,13 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
-        const urls = parseUrlsFromText(text);
+        // Parse CSV row-by-row: split each line by comma, take first URL cell per row
+        const rows = text.split(/\n/).map((line) => line.split(","));
+        let urls = extractUrlsFromRows(rows);
+        // Fallback: plain text (one URL per line, no commas)
+        if (urls.length === 0) urls = parseUrlsFromText(text);
         if (urls.length === 0) {
-          setFileError("No valid URLs found. Make sure the file contains one URL per row starting with http:// or https://");
+          setFileError("No valid URLs found. Make sure the file contains URLs starting with http:// or https://");
         } else {
           setFileUrls(urls);
         }
@@ -96,9 +100,8 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
           const data = new Uint8Array(ev.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: "array" });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rows: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          const allText = rows.flat().join("\n");
-          const urls = parseUrlsFromText(allText);
+          const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          const urls = extractUrlsFromRows(rows);
           if (urls.length === 0) {
             setFileError("No valid URLs found. Make sure cells contain URLs starting with http:// or https://");
           } else {

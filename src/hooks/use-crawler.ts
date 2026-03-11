@@ -28,7 +28,7 @@ export function useCrawler() {
     return controller.signal;
   };
 
-  const runBatches = async (urls: string[], signal: AbortSignal) => {
+  const runBatches = async (urls: string[], signal: AbortSignal, includeH1: boolean) => {
     const allResults: CrawlResult[] = [];
     const BATCH_SIZE = 10;
 
@@ -36,13 +36,13 @@ export function useCrawler() {
       if (signal.aborted) return;
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
-        const batchResults = await fetchMetaBatch(batch);
+        const batchResults = await fetchMetaBatch(batch, includeH1);
         if (signal.aborted) return;
         allResults.push(...batchResults);
       } catch {
         if (signal.aborted) return;
         batch.forEach((url) => {
-          allResults.push({ url, title: "", description: "", status: "Error", statusCode: 0, fetchTime: "0s" });
+          allResults.push({ url, title: "", description: "", h1s: [], status: "Error", statusCode: 0, fetchTime: "0s" });
         });
       }
       if (signal.aborted) return;
@@ -55,7 +55,7 @@ export function useCrawler() {
   };
 
   // Crawl from a sitemap URL (parses sitemap first)
-  const crawl = useCallback(async (sitemapUrl: string) => {
+  const crawl = useCallback(async (sitemapUrl: string, includeH1 = false) => {
     const signal = startController();
     setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null });
 
@@ -69,7 +69,7 @@ export function useCrawler() {
       }
 
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
-      await runBatches(urls, signal);
+      await runBatches(urls, signal, includeH1);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -83,12 +83,12 @@ export function useCrawler() {
   }, []);
 
   // Crawl a pre-supplied list of URLs (skips sitemap parsing)
-  const crawlUrls = useCallback(async (urls: string[]) => {
+  const crawlUrls = useCallback(async (urls: string[], includeH1 = false) => {
     const signal = startController();
     setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null });
 
     try {
-      await runBatches(urls, signal);
+      await runBatches(urls, signal, includeH1);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({

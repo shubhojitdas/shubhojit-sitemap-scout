@@ -69,7 +69,7 @@ const Index = () => {
           </p>
         </motion.div>
 
-        <CrawlForm onCrawl={handleCrawl} isLoading={isLoading} onReset={reset} />
+        <CrawlForm onCrawl={handleCrawl} onCrawlUrls={crawlUrls} isLoading={isLoading} onReset={reset} />
       </section>
 
       {/* Progress */}

@@ -18,11 +18,11 @@ interface CrawlFormProps {
 
 function parseUrlsFromText(text: string): string[] {
   const seen = new Set<string>();
-  return text
-    .split(/\n/)
-    .map((u) => u.trim())
-    .filter((u) => u.length > 0 && (u.startsWith("http://") || u.startsWith("https://")))
-    .filter((u) => { if (seen.has(u)) return false; seen.add(u); return true; });
+  return text.
+  split(/\n/).
+  map((u) => u.trim()).
+  filter((u) => u.length > 0 && (u.startsWith("http://") || u.startsWith("https://"))).
+  filter((u) => {if (seen.has(u)) return false;seen.add(u);return true;});
 }
 
 /** Extract one URL per row (first URL found in the row), then deduplicate. */
@@ -33,7 +33,7 @@ function extractUrlsFromRows(rows: unknown[][]): string[] {
     for (const cell of row) {
       const val = String(cell ?? "").trim();
       if (val.startsWith("http://") || val.startsWith("https://")) {
-        if (!seen.has(val)) { seen.add(val); urls.push(val); }
+        if (!seen.has(val)) {seen.add(val);urls.push(val);}
         break; // only first URL per row
       }
     }
@@ -131,32 +131,32 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
   };
 
   /** Shared H1 toggle shown below every tab */
-  const H1Toggle = (
-    <div className="flex items-center gap-2.5 mt-3 px-1">
+  const H1Toggle =
+  <div className="gap-2.5 mt-3 px-1 items-center justify-center flex flex-row">
       <Checkbox
-        id="include-h1"
-        checked={includeH1}
-        onCheckedChange={(v) => setIncludeH1(!!v)}
-        disabled={isLoading}
-      />
+      id="include-h1"
+      checked={includeH1}
+      onCheckedChange={(v) => setIncludeH1(!!v)}
+      disabled={isLoading} />
+    
       <Label
-        htmlFor="include-h1"
-        className="flex items-center gap-1.5 text-sm cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors"
-      >
+      htmlFor="include-h1"
+      className="flex items-center gap-1.5 text-sm cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors">
+      
         <Heading1 className="h-3.5 w-3.5" />
         Also extract H1 headings from each page
       </Label>
-    </div>
-  );
+    </div>;
+
 
   return (
     <motion.div
       className="w-full max-w-2xl mx-auto"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-    >
-      <Tabs value={activeTab} onValueChange={(v) => { if (!isLoading) setActiveTab(v); }}>
+      transition={{ delay: 0.2 }}>
+      
+      <Tabs value={activeTab} onValueChange={(v) => {if (!isLoading) setActiveTab(v);}}>
         <TabsList className="w-full mb-4 grid grid-cols-3">
           <TabsTrigger value="sitemap" className="gap-1.5 text-xs sm:text-sm">
             <Globe className="h-3.5 w-3.5" />
@@ -184,19 +184,19 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
                   onChange={(e) => setSitemapUrl(e.target.value)}
                   placeholder="https://example.com/sitemap.xml"
                   className="pl-11 h-13 text-base bg-card border-border/60 focus-visible:ring-primary/40 font-mono text-sm"
-                  disabled={isLoading}
-                />
+                  disabled={isLoading} />
+                
               </div>
-              {isLoading ? (
-                <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-13 px-6">
+              {isLoading ?
+              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-13 px-6">
                   Cancel
-                </Button>
-              ) : (
-                <Button type="submit" className="h-13 px-8 glow font-semibold gap-2">
+                </Button> :
+
+              <Button type="submit" className="h-13 px-8 glow font-semibold gap-2">
                   <Search className="h-4 w-4" />
                   Crawl
                 </Button>
-              )}
+              }
             </div>
             <p className="text-xs text-muted-foreground mt-2.5 text-center">
               Enter a sitemap.xml URL to extract all URLs with their meta titles and descriptions
@@ -213,28 +213,28 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
               onChange={(e) => setUrlText(e.target.value)}
               placeholder={"https://example.com/page-1\nhttps://example.com/page-2\nhttps://example.com/page-3"}
               className="font-mono text-sm min-h-[130px] bg-card border-border/60 focus-visible:ring-primary/40 resize-none"
-              disabled={isLoading}
-            />
+              disabled={isLoading} />
+            
             <div className="flex items-center justify-between mt-3">
               <p className="text-xs text-muted-foreground">
-                {urlText.trim()
-                  ? `${parseUrlsFromText(urlText).length} valid URL(s) detected`
-                  : "Paste one URL per line (must start with http:// or https://)"}
+                {urlText.trim() ?
+                `${parseUrlsFromText(urlText).length} valid URL(s) detected` :
+                "Paste one URL per line (must start with http:// or https://)"}
               </p>
-              {isLoading ? (
-                <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-6">
+              {isLoading ?
+              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-6">
                   Cancel
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  className="glow font-semibold gap-2"
-                  disabled={parseUrlsFromText(urlText).length === 0}
-                >
+                </Button> :
+
+              <Button
+                type="submit"
+                className="glow font-semibold gap-2"
+                disabled={parseUrlsFromText(urlText).length === 0}>
+                
                   <Search className="h-4 w-4" />
                   Crawl {parseUrlsFromText(urlText).length > 0 ? `${parseUrlsFromText(urlText).length} URLs` : ""}
                 </Button>
-              )}
+              }
             </div>
             {H1Toggle}
           </form>
@@ -249,67 +249,67 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
               accept=".csv,.xlsx,.xls"
               className="hidden"
               onChange={handleFileChange}
-              disabled={isLoading}
-            />
+              disabled={isLoading} />
+            
 
-            {!fileName ? (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-                className="w-full border-2 border-dashed border-border/60 rounded-lg p-10 flex flex-col items-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+            {!fileName ?
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="w-full border-2 border-dashed border-border/60 rounded-lg p-10 flex flex-col items-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+              
                 <FileSpreadsheet className="h-10 w-10 opacity-50" />
                 <span className="text-sm font-medium">Click to upload CSV or Excel file</span>
                 <span className="text-xs">.csv · .xlsx · .xls — one URL per row</span>
-              </button>
-            ) : (
-              <div className="border border-border/60 rounded-lg p-4 bg-card flex items-center gap-3">
+              </button> :
+
+            <div className="border border-border/60 rounded-lg p-4 bg-card flex items-center gap-3">
                 <FileSpreadsheet className="h-8 w-8 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{fileName}</p>
-                  {fileError ? (
-                    <p className="text-xs text-destructive">{fileError}</p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">{fileUrls.length} valid URL(s) found</p>
-                  )}
+                  {fileError ?
+                <p className="text-xs text-destructive">{fileError}</p> :
+
+                <p className="text-xs text-muted-foreground">{fileUrls.length} valid URL(s) found</p>
+                }
                 </div>
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => { setFileName(null); setFileUrls([]); setFileError(null); }}
-                  disabled={isLoading}
-                >
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => {setFileName(null);setFileUrls([]);setFileError(null);}}
+                disabled={isLoading}>
+                
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-            )}
+            }
 
             <div className="flex items-center justify-between mt-3">
               <p className="text-xs text-muted-foreground">
                 First column with valid URLs will be used
               </p>
-              {isLoading ? (
-                <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-6">
+              {isLoading ?
+              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-6">
                   Cancel
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  className="glow font-semibold gap-2"
-                  disabled={fileUrls.length === 0 || !!fileError}
-                >
+                </Button> :
+
+              <Button
+                type="submit"
+                className="glow font-semibold gap-2"
+                disabled={fileUrls.length === 0 || !!fileError}>
+                
                   <Search className="h-4 w-4" />
                   Crawl {fileUrls.length > 0 ? `${fileUrls.length} URLs` : ""}
                 </Button>
-              )}
+              }
             </div>
             {H1Toggle}
           </form>
         </TabsContent>
       </Tabs>
-    </motion.div>
-  );
+    </motion.div>);
+
 }

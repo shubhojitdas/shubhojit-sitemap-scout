@@ -144,7 +144,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
       className="flex items-center gap-1.5 text-sm cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors">
       
         <Heading1 className="h-3.5 w-3.5" />
-        Also extract H1 headings from each page
+        Also extract &lt;H1&gt; tags from each page.
       </Label>
     </div>;
 

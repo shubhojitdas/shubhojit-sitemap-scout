@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @layer base {
   :root {
@@ -56,6 +56,8 @@
     --shadow-glow: 0 0 40px -10px hsl(239 84% 67% / 0.4);
     --shadow-card: 0 1px 3px hsl(230 25% 10% / 0.04), 0 4px 12px hsl(230 25% 10% / 0.06);
     --shadow-card-hover: 0 4px 16px hsl(230 25% 10% / 0.08), 0 8px 32px hsl(230 25% 10% / 0.08);
+    --hero-bg: linear-gradient(160deg, hsl(239 60% 97%) 0%, hsl(260 40% 96%) 50%, hsl(220 40% 97%) 100%);
+    --dots-color: hsl(239 30% 75%);
   }
 
   .dark {
@@ -107,6 +109,8 @@
     --shadow-glow: 0 0 40px -10px hsl(239 84% 67% / 0.5);
     --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.2), 0 4px 12px hsl(0 0% 0% / 0.15);
     --shadow-card-hover: 0 4px 16px hsl(0 0% 0% / 0.25), 0 8px 32px hsl(0 0% 0% / 0.2);
+    --hero-bg: linear-gradient(160deg, hsl(230 25% 8%) 0%, hsl(240 30% 10%) 50%, hsl(230 25% 8%) 100%);
+    --dots-color: hsl(239 30% 35%);
   }
 }
 
@@ -144,5 +148,14 @@
 
   .glow {
     box-shadow: var(--shadow-glow);
+  }
+
+  .bg-hero-gradient {
+    background: var(--hero-bg);
+  }
+
+  .hero-dots {
+    background-image: radial-gradient(var(--dots-color) 1px, transparent 1px);
+    background-size: 28px 28px;
   }
 }

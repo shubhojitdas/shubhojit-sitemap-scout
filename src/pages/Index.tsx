@@ -62,7 +62,7 @@ const Index = () => {
       </header>
 
       {/* Hero */}
-      <section className="container max-w-6xl mx-auto px-4 pt-16 pb-10">
+      <section className="container max-w-6xl mx-auto px-4 pt-16 pb-10 py-[70px]">
         <motion.div
           className="text-center space-y-4 mb-10"
           initial={{ opacity: 0, y: -10 }}

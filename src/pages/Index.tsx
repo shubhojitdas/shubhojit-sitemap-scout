@@ -72,74 +72,63 @@ const Index = () => {
       </header>
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden flex flex-col justify-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
         {/* Background layers */}
         <div className="absolute inset-0 bg-hero-gradient pointer-events-none" />
-        <div className="absolute inset-0 hero-dots pointer-events-none opacity-40" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/8 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute inset-0 hero-dots pointer-events-none opacity-30" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-primary/8 rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="relative container max-w-6xl mx-auto px-4 pt-16 pb-14">
-          {/* Announcement badge */}
+        <div className="relative container max-w-3xl mx-auto px-4 py-8 flex flex-col gap-5">
+
+          {/* Badge + Headline stacked tightly */}
           <motion.div
-            className="flex justify-center mb-6"
-            initial={{ opacity: 0, y: -8 }}
+            className="text-center space-y-3"
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.45 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/25 bg-primary/8 text-primary text-xs font-semibold tracking-wide">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-              </span>
-              NOW WITH H1 TAG EXTRACTION
+            <div className="flex justify-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/25 bg-primary/8 text-primary text-[11px] font-semibold tracking-wide">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+                </span>
+                NOW WITH H1 TAG EXTRACTION
+              </div>
             </div>
-          </motion.div>
 
-          {/* Headline */}
-          <motion.div
-            className="text-center space-y-5 mb-10"
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.05 }}
-          >
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1]">
               <span className="gradient-text">SEO Metadata</span>
-              <br />
+              {" "}
               <span className="text-foreground">at Your Fingertips</span>
             </h1>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-              Extract every URL with its Meta Title, Description &amp; H1 tags straight from a live sitemap — no installs, no login, no limits.
-              <br />
-              <span className="text-foreground/70 font-medium">Think Screaming Frog, but in your browser.</span>
-            </p>
-          </motion.div>
 
-          {/* Feature pills */}
-          <motion.div
-            className="flex flex-wrap justify-center gap-3 mb-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            {BADGES.map(({ icon: Icon, label }) => (
-              <div
-                key={label}
-                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-card border border-border/60 text-muted-foreground shadow-sm"
-              >
-                <Icon className="h-3.5 w-3.5 text-primary" />
-                {label}
-              </div>
-            ))}
+            <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+              Extract every URL with its Meta Title, Description &amp; H1 — straight from any live sitemap.{" "}
+              <span className="text-foreground/60 font-medium">Like Screaming Frog, but in your browser.</span>
+            </p>
+
+            {/* Feature pills — compact inline */}
+            <div className="flex flex-wrap justify-center gap-2 pt-1">
+              {BADGES.map(({ icon: Icon, label }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full bg-card border border-border/60 text-muted-foreground shadow-sm"
+                >
+                  <Icon className="h-3 w-3 text-primary" />
+                  {label}
+                </div>
+              ))}
+            </div>
           </motion.div>
 
           {/* Form card */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.45 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
           >
-            <div className="relative w-full max-w-2xl mx-auto rounded-2xl border border-border/60 bg-card/95 backdrop-blur-sm shadow-[0_8px_40px_hsl(var(--primary)/0.12),0_2px_8px_hsl(230_25%_10%/0.08)] p-6">
-              {/* Card top accent */}
+            <div className="relative w-full max-w-2xl mx-auto rounded-2xl border border-border/60 bg-card/95 backdrop-blur-sm shadow-[0_8px_40px_hsl(var(--primary)/0.12),0_2px_8px_hsl(230_25%_10%/0.08)] p-5">
               <div className="absolute inset-x-0 top-0 h-px rounded-t-2xl bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
               <CrawlForm onCrawl={handleCrawl} onCrawlUrls={handleCrawlUrls} isLoading={isLoading} onReset={reset} />
             </div>
@@ -147,14 +136,14 @@ const Index = () => {
 
           {/* Trust row */}
           <motion.div
-            className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mt-8 text-xs text-muted-foreground"
+            className="flex flex-wrap justify-center items-center gap-x-5 gap-y-1.5 text-[11px] text-muted-foreground"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.3 }}
           >
-            {["Supports sitemap index files", "Bulk URL paste", "CSV / Excel upload", "Built by Shubhojit Das"].map((item) => (
-              <span key={item} className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+            {["Sitemap index support", "Bulk URL paste", "CSV / Excel upload", "Built by Shubhojit Das"].map((item) => (
+              <span key={item} className="flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
                 {item}
               </span>
             ))}

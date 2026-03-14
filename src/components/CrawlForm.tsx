@@ -132,18 +132,16 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
 
   /** Shared H1 toggle shown below every tab */
   const H1Toggle =
-  <div className="gap-2.5 mt-3 px-1 items-center justify-center flex flex-row">
+  <div className="gap-2 mt-2 px-1 items-center justify-center flex flex-row border-t border-border/40 pt-2.5">
       <Checkbox
       id="include-h1"
       checked={includeH1}
       onCheckedChange={(v) => setIncludeH1(!!v)}
       disabled={isLoading} />
-    
       <Label
       htmlFor="include-h1"
-      className="flex items-center gap-1.5 text-sm cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors">
-      
-        <Heading1 className="h-3.5 w-3.5" />
+      className="flex items-center gap-1.5 text-xs cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors">
+        <Heading1 className="h-3 w-3" />
         Also extract &lt;H1&gt; tags from each page.
       </Label>
     </div>;
@@ -157,7 +155,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
       transition={{ delay: 0.2 }}>
       
       <Tabs value={activeTab} onValueChange={(v) => {if (!isLoading) setActiveTab(v);}}>
-        <TabsList className="w-full mb-4 grid grid-cols-3">
+        <TabsList className="w-full mb-3 grid grid-cols-3">
           <TabsTrigger value="sitemap" className="gap-1.5 text-xs sm:text-sm">
             <Globe className="h-3.5 w-3.5" />
             Sitemap URL
@@ -175,31 +173,29 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
         {/* ── Sitemap tab ── */}
         <TabsContent value="sitemap">
           <form onSubmit={handleSitemapSubmit}>
-            <div className="flex gap-3">
+            <div className="flex gap-2.5">
               <div className="relative flex-1">
-                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
                   value={sitemapUrl}
                   onChange={(e) => setSitemapUrl(e.target.value)}
                   placeholder="https://example.com/sitemap.xml"
-                  className="pl-11 h-13 text-base bg-card border-border/60 focus-visible:ring-primary/40 font-mono text-sm"
+                  className="pl-9 h-10 bg-card border-border/60 focus-visible:ring-primary/40 font-mono text-sm"
                   disabled={isLoading} />
-                
               </div>
               {isLoading ?
-              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-13 px-6">
+              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-10 px-5">
                   Cancel
                 </Button> :
-
-              <Button type="submit" className="h-13 px-8 glow font-semibold gap-2">
+              <Button type="submit" className="h-10 px-6 glow font-semibold gap-2 shrink-0">
                   <Search className="h-4 w-4" />
                   Crawl
                 </Button>
               }
             </div>
-            <p className="text-muted-foreground mt-2.5 text-center text-sm my-[15px]">
-              Enter a sitemap.xml URL to extract all URLs with their meta titles and descriptions
+            <p className="text-muted-foreground mt-1.5 text-center text-xs">
+              Enter a sitemap.xml URL to extract all URLs with meta titles and descriptions
             </p>
             {H1Toggle}
           </form>
@@ -212,25 +208,22 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
               value={urlText}
               onChange={(e) => setUrlText(e.target.value)}
               placeholder={"https://example.com/page-1\nhttps://example.com/page-2\nhttps://example.com/page-3"}
-              className="font-mono text-sm min-h-[130px] bg-card border-border/60 focus-visible:ring-primary/40 resize-none"
+              className="font-mono text-sm min-h-[90px] bg-card border-border/60 focus-visible:ring-primary/40 resize-none"
               disabled={isLoading} />
-            
-            <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center justify-between mt-2">
               <p className="text-xs text-muted-foreground">
                 {urlText.trim() ?
                 `${parseUrlsFromText(urlText).length} valid URL(s) detected` :
-                "Paste one URL per line (must start with http:// or https://)"}
+                "One URL per line — must start with http:// or https://"}
               </p>
               {isLoading ?
-              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-6">
+              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-5 h-9">
                   Cancel
                 </Button> :
-
               <Button
                 type="submit"
-                className="glow font-semibold gap-2"
+                className="glow font-semibold gap-2 h-9"
                 disabled={parseUrlsFromText(urlText).length === 0}>
-                
                   <Search className="h-4 w-4" />
                   Crawl {parseUrlsFromText(urlText).length > 0 ? `${parseUrlsFromText(urlText).length} URLs` : ""}
                 </Button>
@@ -250,16 +243,14 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
               className="hidden"
               onChange={handleFileChange}
               disabled={isLoading} />
-            
 
             {!fileName ?
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              className="w-full border-2 border-dashed border-border/60 rounded-lg p-10 flex flex-col items-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-              
-                <FileSpreadsheet className="h-10 w-10 opacity-50" />
+              className="w-full border-2 border-dashed border-border/60 rounded-lg p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                <FileSpreadsheet className="h-7 w-7 opacity-50" />
                 <span className="text-sm font-medium">Click to upload CSV or Excel file</span>
                 <span className="text-xs">.csv · .xlsx · .xls — one URL per row</span>
               </button> :
@@ -287,20 +278,18 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
               </div>
             }
 
-            <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center justify-between mt-2">
               <p className="text-xs text-muted-foreground">
                 First column with valid URLs will be used
               </p>
               {isLoading ?
-              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-6">
+              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-5 h-9">
                   Cancel
                 </Button> :
-
               <Button
                 type="submit"
-                className="glow font-semibold gap-2"
+                className="glow font-semibold gap-2 h-9"
                 disabled={fileUrls.length === 0 || !!fileError}>
-                
                   <Search className="h-4 w-4" />
                   Crawl {fileUrls.length > 0 ? `${fileUrls.length} URLs` : ""}
                 </Button>

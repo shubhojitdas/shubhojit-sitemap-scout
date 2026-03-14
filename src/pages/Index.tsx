@@ -69,10 +69,10 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
-            <span className="gradient-text">Shubhojit's Sitemap Crawler</span>
+            <span className="gradient-text text-primary">Shubhojit's Sitemap Crawler</span>
           </h1>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto">
-            Extract all URLs with meta titles & descriptions from any sitemap.xml — like Screaming Frog, in your browser.
+          <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto">Extract all URLs with Meta Titles & Descriptions from any given live website's sitemap.xml. It's like Screaming Frog, in your browser.
+
           </p>
         </motion.div>
 
@@ -80,7 +80,7 @@ const Index = () => {
       </section>
 
       {/* Progress */}
-      <section className="container max-w-6xl mx-auto px-4 pb-6">
+      <section className="container max-w-6xl mx-auto pb-6 text-muted-foreground px-[24px]">
         <CrawlProgress phase={phase} processed={processedUrls} total={totalUrls} />
       </section>
 

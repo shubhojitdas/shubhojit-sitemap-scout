@@ -173,31 +173,29 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
         {/* ── Sitemap tab ── */}
         <TabsContent value="sitemap">
           <form onSubmit={handleSitemapSubmit}>
-            <div className="flex gap-3">
+            <div className="flex gap-2.5">
               <div className="relative flex-1">
-                <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
                   value={sitemapUrl}
                   onChange={(e) => setSitemapUrl(e.target.value)}
                   placeholder="https://example.com/sitemap.xml"
-                  className="pl-11 h-13 text-base bg-card border-border/60 focus-visible:ring-primary/40 font-mono text-sm"
+                  className="pl-9 h-10 bg-card border-border/60 focus-visible:ring-primary/40 font-mono text-sm"
                   disabled={isLoading} />
-                
               </div>
               {isLoading ?
-              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-13 px-6">
+              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-10 px-5">
                   Cancel
                 </Button> :
-
-              <Button type="submit" className="h-13 px-8 glow font-semibold gap-2">
+              <Button type="submit" className="h-10 px-6 glow font-semibold gap-2 shrink-0">
                   <Search className="h-4 w-4" />
                   Crawl
                 </Button>
               }
             </div>
-            <p className="text-muted-foreground mt-2.5 text-center text-sm my-[15px]">
-              Enter a sitemap.xml URL to extract all URLs with their meta titles and descriptions
+            <p className="text-muted-foreground mt-1.5 text-center text-xs">
+              Enter a sitemap.xml URL to extract all URLs with meta titles and descriptions
             </p>
             {H1Toggle}
           </form>

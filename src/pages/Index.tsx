@@ -69,7 +69,7 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
-            <span className="gradient-text text-primary">Shubhojit's Sitemap Crawler</span>
+            <span className="gradient-text text-primary">Shubhojit's Sitemap Scout</span>
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto">Extract all URLs with Meta Titles & Descriptions from any given live website's sitemap.xml. It's like Screaming Frog, in your browser.
 

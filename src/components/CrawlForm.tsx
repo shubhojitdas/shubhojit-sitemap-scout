@@ -132,18 +132,16 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
 
   /** Shared H1 toggle shown below every tab */
   const H1Toggle =
-  <div className="gap-2.5 mt-3 px-1 items-center justify-center flex flex-row">
+  <div className="gap-2 mt-2 px-1 items-center justify-center flex flex-row border-t border-border/40 pt-2.5">
       <Checkbox
       id="include-h1"
       checked={includeH1}
       onCheckedChange={(v) => setIncludeH1(!!v)}
       disabled={isLoading} />
-    
       <Label
       htmlFor="include-h1"
-      className="flex items-center gap-1.5 text-sm cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors">
-      
-        <Heading1 className="h-3.5 w-3.5" />
+      className="flex items-center gap-1.5 text-xs cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors">
+        <Heading1 className="h-3 w-3" />
         Also extract &lt;H1&gt; tags from each page.
       </Label>
     </div>;

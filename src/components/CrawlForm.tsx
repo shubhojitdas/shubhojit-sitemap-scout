@@ -198,7 +198,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
                 </Button>
               }
             </div>
-            <p className="text-xs text-muted-foreground mt-2.5 text-center my-[15px]">
+            <p className="text-muted-foreground mt-2.5 text-center text-sm my-[15px]">
               Enter a sitemap.xml URL to extract all URLs with their meta titles and descriptions
             </p>
             {H1Toggle}

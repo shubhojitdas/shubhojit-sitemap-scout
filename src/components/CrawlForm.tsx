@@ -208,25 +208,22 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
               value={urlText}
               onChange={(e) => setUrlText(e.target.value)}
               placeholder={"https://example.com/page-1\nhttps://example.com/page-2\nhttps://example.com/page-3"}
-              className="font-mono text-sm min-h-[130px] bg-card border-border/60 focus-visible:ring-primary/40 resize-none"
+              className="font-mono text-sm min-h-[90px] bg-card border-border/60 focus-visible:ring-primary/40 resize-none"
               disabled={isLoading} />
-            
-            <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center justify-between mt-2">
               <p className="text-xs text-muted-foreground">
                 {urlText.trim() ?
                 `${parseUrlsFromText(urlText).length} valid URL(s) detected` :
-                "Paste one URL per line (must start with http:// or https://)"}
+                "One URL per line — must start with http:// or https://"}
               </p>
               {isLoading ?
-              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-6">
+              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-5 h-9">
                   Cancel
                 </Button> :
-
               <Button
                 type="submit"
-                className="glow font-semibold gap-2"
+                className="glow font-semibold gap-2 h-9"
                 disabled={parseUrlsFromText(urlText).length === 0}>
-                
                   <Search className="h-4 w-4" />
                   Crawl {parseUrlsFromText(urlText).length > 0 ? `${parseUrlsFromText(urlText).length} URLs` : ""}
                 </Button>
@@ -246,16 +243,14 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
               className="hidden"
               onChange={handleFileChange}
               disabled={isLoading} />
-            
 
             {!fileName ?
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              className="w-full border-2 border-dashed border-border/60 rounded-lg p-10 flex flex-col items-center gap-3 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-              
-                <FileSpreadsheet className="h-10 w-10 opacity-50" />
+              className="w-full border-2 border-dashed border-border/60 rounded-lg p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                <FileSpreadsheet className="h-7 w-7 opacity-50" />
                 <span className="text-sm font-medium">Click to upload CSV or Excel file</span>
                 <span className="text-xs">.csv · .xlsx · .xls — one URL per row</span>
               </button> :

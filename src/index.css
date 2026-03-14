@@ -149,4 +149,13 @@
   .glow {
     box-shadow: var(--shadow-glow);
   }
+
+  .bg-hero-gradient {
+    background: var(--hero-bg);
+  }
+
+  .hero-dots {
+    background-image: radial-gradient(var(--dots-color) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
 }

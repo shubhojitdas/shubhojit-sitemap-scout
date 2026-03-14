@@ -155,7 +155,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
       transition={{ delay: 0.2 }}>
       
       <Tabs value={activeTab} onValueChange={(v) => {if (!isLoading) setActiveTab(v);}}>
-        <TabsList className="w-full mb-4 grid grid-cols-3">
+        <TabsList className="w-full mb-3 grid grid-cols-3">
           <TabsTrigger value="sitemap" className="gap-1.5 text-xs sm:text-sm">
             <Globe className="h-3.5 w-3.5" />
             Sitemap URL

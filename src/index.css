@@ -109,6 +109,8 @@
     --shadow-glow: 0 0 40px -10px hsl(239 84% 67% / 0.5);
     --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.2), 0 4px 12px hsl(0 0% 0% / 0.15);
     --shadow-card-hover: 0 4px 16px hsl(0 0% 0% / 0.25), 0 8px 32px hsl(0 0% 0% / 0.2);
+    --hero-bg: linear-gradient(160deg, hsl(230 25% 8%) 0%, hsl(240 30% 10%) 50%, hsl(230 25% 8%) 100%);
+    --dots-color: hsl(239 30% 35%);
   }
 }
 

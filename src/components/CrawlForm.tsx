@@ -278,20 +278,18 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
               </div>
             }
 
-            <div className="flex items-center justify-between mt-3">
+            <div className="flex items-center justify-between mt-2">
               <p className="text-xs text-muted-foreground">
                 First column with valid URLs will be used
               </p>
               {isLoading ?
-              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-6">
+              <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-5 h-9">
                   Cancel
                 </Button> :
-
               <Button
                 type="submit"
-                className="glow font-semibold gap-2"
+                className="glow font-semibold gap-2 h-9"
                 disabled={fileUrls.length === 0 || !!fileError}>
-                
                   <Search className="h-4 w-4" />
                   Crawl {fileUrls.length > 0 ? `${fileUrls.length} URLs` : ""}
                 </Button>

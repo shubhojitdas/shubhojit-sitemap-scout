@@ -28,14 +28,14 @@ export function StatsCards({ results, includeH1 }: StatsCardsProps) {
   const pagesWithH1 = results.filter((r) => (r.h1s ?? []).length >= 1).length;
 
   const baseStats = [
-    { label: "Total URLs", value: total.toLocaleString(), icon: Globe, color: "text-primary" },
+    { label: "Total URLs", value: total.toLocaleString(), icon: Globe, color: "text-foreground" },
     { label: "Successful", value: success.toLocaleString(), icon: CheckCircle, color: "text-success" },
     { label: "Errors", value: `${errors} (${errorRate}%)`, icon: XCircle, color: "text-destructive" },
-    { label: "Avg Title / Desc", value: `${avgTitleLen} / ${avgDescLen} chars`, icon: BarChart3, color: "text-warning" },
+    { label: "Avg Title / Desc", value: `${avgTitleLen} / ${avgDescLen}`, icon: BarChart3, color: "text-warning" },
   ];
 
   const h1Stats = [
-    { label: "Pages with H1", value: pagesWithH1.toLocaleString(), icon: Heading1, color: "text-primary" },
+    { label: "With H1", value: pagesWithH1.toLocaleString(), icon: Heading1, color: "text-foreground" },
     { label: "No H1", value: pagesWithNoH1.toLocaleString(), icon: Heading1, color: "text-destructive" },
     { label: "Multiple H1s", value: pagesWithMultiH1.toLocaleString(), icon: Heading1, color: "text-warning" },
   ];
@@ -44,20 +44,20 @@ export function StatsCards({ results, includeH1 }: StatsCardsProps) {
   const cols = includeH1 ? "grid-cols-2 lg:grid-cols-4 xl:grid-cols-7" : "grid-cols-2 lg:grid-cols-4";
 
   return (
-    <div className={`grid ${cols} gap-3`}>
+    <div className={`grid ${cols} gap-2`}>
       {stats.map((stat, i) => (
         <motion.div
           key={stat.label}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.05 }}
-          className="bg-card rounded-lg p-4 card-elevated border border-border/50"
+          transition={{ delay: i * 0.03 }}
+          className="rounded-lg p-3 border border-border bg-card"
         >
-          <div className="flex items-center gap-2 mb-1">
-            <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            <span className="text-xs text-muted-foreground font-medium">{stat.label}</span>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <stat.icon className={`h-3 w-3 ${stat.color} opacity-60`} />
+            <span className="text-[11px] text-muted-foreground">{stat.label}</span>
           </div>
-          <p className="text-lg font-bold tracking-tight">{stat.value}</p>
+          <p className="text-lg font-semibold tracking-tight">{stat.value}</p>
         </motion.div>
       ))}
     </div>

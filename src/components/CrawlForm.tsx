@@ -129,18 +129,25 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
   };
 
   const H1Toggle = (
-    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-      <Checkbox
-        id="include-h1"
-        checked={includeH1}
-        onCheckedChange={(v) => setIncludeH1(!!v)}
-        disabled={isLoading}
-      />
+    <div className="mt-3 pt-3 border-t border-border flex justify-center">
       <Label
         htmlFor="include-h1"
-        className="flex items-center gap-1.5 text-xs cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors"
+        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer select-none text-xs font-medium transition-all duration-150
+          ${includeH1
+            ? "border-foreground bg-foreground text-background"
+            : "border-border bg-transparent text-muted-foreground hover:border-foreground/50 hover:text-foreground"
+          }
+          ${isLoading ? "opacity-50 pointer-events-none" : ""}
+        `}
       >
-        <Heading1 className="h-3 w-3" />
+        <Checkbox
+          id="include-h1"
+          checked={includeH1}
+          onCheckedChange={(v) => setIncludeH1(!!v)}
+          disabled={isLoading}
+          className="hidden"
+        />
+        <Heading1 className="h-3.5 w-3.5" />
         Also extract &lt;H1&gt; tags
       </Label>
     </div>

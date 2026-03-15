@@ -20,9 +20,9 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={() => setDark(!dark)}
-      className="h-9 w-9 rounded-full"
+      className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
     >
-      {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      {dark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
     </Button>
   );
 }

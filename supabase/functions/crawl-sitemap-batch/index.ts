@@ -28,7 +28,7 @@ function decodeHtmlEntities(str: string): string {
 function extractTitle(html: string): string {
   const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   if (!match) return '';
-  return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim().slice(0, 100);
+  return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim();
 }
 
 function extractDescription(html: string): string {
@@ -42,7 +42,7 @@ function extractDescription(html: string): string {
   for (const pattern of patterns) {
     const match = html.match(pattern);
     if (match && match[1]) {
-      return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim().slice(0, 160);
+      return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim();
     }
   }
 
@@ -54,7 +54,7 @@ function extractDescription(html: string): string {
     if (nameMatch) {
       const contentMatch = attrs.match(/content\s*=\s*["']([\s\S]*?)["']/i);
       if (contentMatch) {
-        return decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim().slice(0, 160);
+        return decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim();
       }
     }
   }

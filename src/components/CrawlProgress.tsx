@@ -15,21 +15,21 @@ export function CrawlProgress({ phase, processed, total }: CrawlProgressProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-2xl mx-auto space-y-3"
+      className="w-full max-w-xl mx-auto space-y-2"
     >
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          {phase === "parsing" ? "Parsing sitemap..." : `Processing ${processed} of ${total} URLs`}
+          <Loader2 className="h-3 w-3 animate-spin" />
+          {phase === "parsing" ? "Parsing sitemap…" : `${processed} of ${total} URLs`}
         </div>
         {phase === "crawling" && (
-          <span className="text-primary font-mono text-xs font-semibold">{percentage}%</span>
+          <span className="font-mono text-[11px] text-muted-foreground">{percentage}%</span>
         )}
       </div>
       {phase === "crawling" && (
-        <Progress value={percentage} className="h-2" />
+        <Progress value={percentage} className="h-1" />
       )}
     </motion.div>
   );

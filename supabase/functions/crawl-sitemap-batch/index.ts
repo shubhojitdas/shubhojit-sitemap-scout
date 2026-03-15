@@ -42,7 +42,7 @@ function extractDescription(html: string): string {
   for (const pattern of patterns) {
     const match = html.match(pattern);
     if (match && match[1]) {
-      return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim().slice(0, 160);
+      return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim();
     }
   }
 

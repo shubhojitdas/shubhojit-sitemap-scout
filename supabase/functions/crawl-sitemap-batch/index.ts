@@ -28,7 +28,7 @@ function decodeHtmlEntities(str: string): string {
 function extractTitle(html: string): string {
   const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   if (!match) return '';
-  return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim().slice(0, 100);
+  return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim();
 }
 
 function extractDescription(html: string): string {

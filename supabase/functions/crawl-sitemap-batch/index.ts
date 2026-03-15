@@ -54,7 +54,7 @@ function extractDescription(html: string): string {
     if (nameMatch) {
       const contentMatch = attrs.match(/content\s*=\s*["']([\s\S]*?)["']/i);
       if (contentMatch) {
-        return decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim().slice(0, 160);
+        return decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim();
       }
     }
   }

@@ -91,6 +91,7 @@ const Index = () => {
             <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-[1.1] gradient-text pb-1">
               SEO Metadata Extractor
             </h1>
+            <p className="text-[11px] text-muted-foreground/50 mt-1 tracking-wide">by Shubhojit Das</p>
             <p className="text-muted-foreground text-sm sm:text-[15px] mt-2.5 max-w-md mx-auto leading-relaxed">
               Crawl any sitemap and extract titles, descriptions &amp; H1 tags.
               Export to CSV in seconds.

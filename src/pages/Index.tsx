@@ -96,7 +96,7 @@ const Index = () => {
             </h1>
             <p className="text-[11px] text-muted-foreground/50 mt-1 tracking-wide">by Shubhojit Das</p>
             <p className="text-muted-foreground text-sm sm:text-[15px] mt-2.5 max-w-md mx-auto leading-relaxed">
-              Crawl any sitemap and extract titles, descriptions &amp; H1 tags.
+              Crawl any sitemap and extract titles, descriptions, H1 tags &amp; image alt texts.
               Export to CSV in seconds.
             </p>
           </motion.div>

@@ -36,7 +36,25 @@ export async function fetchMetaBatch(urls: string[], includeH1 = false, includeI
   return data.results || [];
 }
 
-export function generateCSV(results: CrawlResult[], includeH1 = false): string {
+export function generateCSV(results: CrawlResult[], includeH1 = false, includeImages = false): string {
+  // If images mode: one row per image, expanding each page into N image rows
+  if (includeImages) {
+    const header = "Page URL,Image URL,Alt Text,Image Count";
+    const rows: string[] = [];
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    results.forEach((r) => {
+      const images = r.images ?? [];
+      if (images.length === 0) {
+        rows.push(`${escape(r.url)},${escape("")},${escape("No images found")},0`);
+      } else {
+        images.forEach((img) => {
+          rows.push(`${escape(r.url)},${escape(img.src)},${escape(img.alt ?? "No alt text")},${images.length}`);
+        });
+      }
+    });
+    return [header, ...rows].join("\n");
+  }
+
   const header = includeH1
     ? "URL,Meta Title,Meta Description,H1 Tags,H1 Count,Status,Response Code,Fetch Time"
     : "URL,Meta Title,Meta Description,Status,Response Code,Fetch Time";

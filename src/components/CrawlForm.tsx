@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1 } from "lucide-react";
+import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import * as XLSX from "xlsx";
 
 interface CrawlFormProps {
-  onCrawl: (url: string, includeH1: boolean) => void;
-  onCrawlUrls: (urls: string[], includeH1: boolean) => void;
+  onCrawl: (url: string, includeH1: boolean, includeImages: boolean) => void;
+  onCrawlUrls: (urls: string[], includeH1: boolean, includeImages: boolean) => void;
   isLoading: boolean;
   onReset: () => void;
 }
@@ -47,25 +47,26 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
   const [fileError, setFileError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("sitemap");
   const [includeH1, setIncludeH1] = useState(false);
+  const [includeImages, setIncludeImages] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSitemapSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sitemapUrl.trim()) return;
-    onCrawl(sitemapUrl.trim(), includeH1);
+    onCrawl(sitemapUrl.trim(), includeH1, includeImages);
   };
 
   const handleUrlsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeH1);
+    onCrawlUrls(urls, includeH1, includeImages);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
-    onCrawlUrls(fileUrls, includeH1);
+    onCrawlUrls(fileUrls, includeH1, includeImages);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,8 +129,9 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
     setFileError(null);
   };
 
-  const H1Toggle = (
-    <div className="mt-3 pt-3 border-t border-border flex justify-center">
+  const Toggles = (
+    <div className="mt-3 pt-3 border-t border-border flex justify-center gap-2 flex-wrap">
+      {/* H1 toggle */}
       <Label
         htmlFor="include-h1"
         className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer select-none text-xs font-medium transition-all duration-150
@@ -149,6 +151,28 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
         />
         <Heading1 className="h-3.5 w-3.5" />
         Also extract &lt;H1&gt; tags
+      </Label>
+
+      {/* Image alt text toggle */}
+      <Label
+        htmlFor="include-images"
+        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer select-none text-xs font-medium transition-all duration-150
+          ${includeImages
+            ? "border-foreground bg-foreground text-background"
+            : "border-border bg-transparent text-muted-foreground hover:border-foreground/50 hover:text-foreground"
+          }
+          ${isLoading ? "opacity-50 pointer-events-none" : ""}
+        `}
+      >
+        <Checkbox
+          id="include-images"
+          checked={includeImages}
+          onCheckedChange={(v) => setIncludeImages(!!v)}
+          disabled={isLoading}
+          className="hidden"
+        />
+        <Image className="h-3.5 w-3.5" />
+        Also extract image alt texts
       </Label>
     </div>
   );
@@ -197,7 +221,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
                 </Button>
               )}
             </div>
-            {H1Toggle}
+            {Toggles}
           </form>
         </TabsContent>
 
@@ -232,7 +256,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
                 </Button>
               )}
             </div>
-            {H1Toggle}
+            {Toggles}
           </form>
         </TabsContent>
 
@@ -302,7 +326,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
                 </Button>
               )}
             </div>
-            {H1Toggle}
+            {Toggles}
           </form>
         </TabsContent>
       </Tabs>

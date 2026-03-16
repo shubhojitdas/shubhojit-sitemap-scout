@@ -1,10 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export interface ImageData {
+  src: string;
+  alt: string | null;
+}
+
 export interface CrawlResult {
   url: string;
   title: string;
   description: string;
   h1s: string[];
+  images?: ImageData[];
   status: "OK" | "Error";
   statusCode: number;
   fetchTime: string;

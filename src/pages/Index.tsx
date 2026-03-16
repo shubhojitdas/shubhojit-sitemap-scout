@@ -146,8 +146,8 @@ const Index = () => {
       {/* ── Results ── */}
       {results.length > 0 && (
         <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-4">
-          <StatsCards results={results} includeH1={includeH1} />
-          <ResultsTable results={results} domain={domain} includeH1={includeH1} />
+          <StatsCards results={results} includeH1={includeH1} includeImages={includeImages} />
+          <ResultsTable results={results} domain={domain} includeH1={includeH1} includeImages={includeImages} />
         </section>
       )}
 

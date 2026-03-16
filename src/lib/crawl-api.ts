@@ -1,10 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export interface ImageData {
+  src: string;
+  alt: string | null;
+}
+
 export interface CrawlResult {
   url: string;
   title: string;
   description: string;
   h1s: string[];
+  images?: ImageData[];
   status: "OK" | "Error";
   statusCode: number;
   fetchTime: string;
@@ -20,9 +26,9 @@ export async function parseSitemapUrls(sitemapUrl: string): Promise<string[]> {
   return data.urls || [];
 }
 
-export async function fetchMetaBatch(urls: string[], includeH1 = false): Promise<CrawlResult[]> {
+export async function fetchMetaBatch(urls: string[], includeH1 = false, includeImages = false): Promise<CrawlResult[]> {
   const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeH1 },
+    body: { urls, includeH1, includeImages },
   });
 
   if (error) throw new Error(error.message);
@@ -30,7 +36,25 @@ export async function fetchMetaBatch(urls: string[], includeH1 = false): Promise
   return data.results || [];
 }
 
-export function generateCSV(results: CrawlResult[], includeH1 = false): string {
+export function generateCSV(results: CrawlResult[], includeH1 = false, includeImages = false): string {
+  // If images mode: one row per image, expanding each page into N image rows
+  if (includeImages) {
+    const header = "Page URL,Image URL,Alt Text,Image Count";
+    const rows: string[] = [];
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    results.forEach((r) => {
+      const images = r.images ?? [];
+      if (images.length === 0) {
+        rows.push(`${escape(r.url)},${escape("")},${escape("No images found")},0`);
+      } else {
+        images.forEach((img) => {
+          rows.push(`${escape(r.url)},${escape(img.src)},${escape(img.alt ?? "No alt text")},${images.length}`);
+        });
+      }
+    });
+    return [header, ...rows].join("\n");
+  }
+
   const header = includeH1
     ? "URL,Meta Title,Meta Description,H1 Tags,H1 Count,Status,Response Code,Fetch Time"
     : "URL,Meta Title,Meta Description,Status,Response Code,Fetch Time";

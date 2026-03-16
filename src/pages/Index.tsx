@@ -14,6 +14,7 @@ const Index = () => {
   const [showTop, setShowTop] = useState(false);
   const [domain, setDomain] = useState("");
   const [includeH1, setIncludeH1] = useState(false);
+  const [includeImages, setIncludeImages] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setShowTop(window.scrollY > 400);
@@ -21,7 +22,7 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleCrawl = (url: string, withH1: boolean) => {
+  const handleCrawl = (url: string, withH1: boolean, withImages: boolean) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
       setDomain(parsed.hostname);
@@ -29,12 +30,14 @@ const Index = () => {
       setDomain("unknown");
     }
     setIncludeH1(withH1);
-    crawl(url, withH1);
+    setIncludeImages(withImages);
+    crawl(url, withH1, withImages);
   };
 
-  const handleCrawlUrls = (urls: string[], withH1: boolean) => {
+  const handleCrawlUrls = (urls: string[], withH1: boolean, withImages: boolean) => {
     setIncludeH1(withH1);
-    crawlUrls(urls, withH1);
+    setIncludeImages(withImages);
+    crawlUrls(urls, withH1, withImages);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling";
@@ -93,7 +96,7 @@ const Index = () => {
             </h1>
             <p className="text-[11px] text-muted-foreground/50 mt-1 tracking-wide">by Shubhojit Das</p>
             <p className="text-muted-foreground text-sm sm:text-[15px] mt-2.5 max-w-md mx-auto leading-relaxed">
-              Crawl any sitemap and extract titles, descriptions &amp; H1 tags.
+              Crawl any sitemap and extract titles, descriptions, H1 tags &amp; image alt texts.
               Export to CSV in seconds.
             </p>
           </motion.div>
@@ -143,8 +146,8 @@ const Index = () => {
       {/* ── Results ── */}
       {results.length > 0 && (
         <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-4">
-          <StatsCards results={results} includeH1={includeH1} />
-          <ResultsTable results={results} domain={domain} includeH1={includeH1} />
+          <StatsCards results={results} includeH1={includeH1} includeImages={includeImages} />
+          <ResultsTable results={results} domain={domain} includeH1={includeH1} includeImages={includeImages} />
         </section>
       )}
 

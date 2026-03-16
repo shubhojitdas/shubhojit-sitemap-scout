@@ -1,23 +1,71 @@
 import { useState, useMemo, useRef } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { CrawlResult, generateCSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1 } from "lucide-react";
+import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Image } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 type SortKey = "url" | "title" | "description" | "status";
 type SortDir = "asc" | "desc";
 type Filter = "all" | "errors" | "missing-title" | "missing-desc" | "title-long" | "multi-h1" | "missing-h1";
+type ImageFilter = "all" | "missing-alt" | "no-images" | "has-images";
 
 interface ResultsTableProps {
   results: CrawlResult[];
   domain: string;
   includeH1: boolean;
+  includeImages: boolean;
 }
 
-export function ResultsTable({ results, domain, includeH1 }: ResultsTableProps) {
+// ─── Main component ───────────────────────────────────────────────────────────
+export function ResultsTable({ results, domain, includeH1, includeImages }: ResultsTableProps) {
+  const { toast } = useToast();
+  const [activeView, setActiveView] = useState<"meta" | "images">("meta");
+
+  if (results.length === 0) return null;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+      {includeImages ? (
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images")}>
+          <TabsList className="h-8 bg-muted/50">
+            <TabsTrigger value="meta" className="text-xs gap-1.5 h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Search className="h-3 w-3" />
+              SEO Metadata
+            </TabsTrigger>
+            <TabsTrigger value="images" className="text-xs gap-1.5 h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Image className="h-3 w-3" />
+              Image Alt Texts
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="meta" className="mt-3">
+            <MetaTable results={results} domain={domain} includeH1={includeH1} includeImages={false} />
+          </TabsContent>
+          <TabsContent value="images" className="mt-3">
+            <ImagesTable results={results} domain={domain} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <MetaTable results={results} domain={domain} includeH1={includeH1} includeImages={false} />
+      )}
+    </motion.div>
+  );
+}
+
+// ─── SEO Metadata table ───────────────────────────────────────────────────────
+function MetaTable({
+  results,
+  domain,
+  includeH1,
+}: {
+  results: CrawlResult[];
+  domain: string;
+  includeH1: boolean;
+  includeImages: boolean;
+}) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("url");
@@ -28,14 +76,12 @@ export function ResultsTable({ results, domain, includeH1 }: ResultsTableProps) 
 
   const filtered = useMemo(() => {
     let data = [...results];
-
     if (filter === "errors") data = data.filter((r) => r.status === "Error");
     else if (filter === "missing-title") data = data.filter((r) => !r.title);
     else if (filter === "missing-desc") data = data.filter((r) => !r.description);
     else if (filter === "title-long") data = data.filter((r) => r.title.length > 60);
     else if (filter === "multi-h1") data = data.filter((r) => (r.h1s ?? []).length > 1);
     else if (filter === "missing-h1") data = data.filter((r) => (r.h1s ?? []).length === 0);
-
     if (search) {
       const q = search.toLowerCase();
       data = data.filter(
@@ -46,23 +92,12 @@ export function ResultsTable({ results, domain, includeH1 }: ResultsTableProps) 
           (r.h1s ?? []).some((h) => h.toLowerCase().includes(q))
       );
     }
-
     data.sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      const cmp = String(aVal).localeCompare(String(bVal));
+      const cmp = String(a[sortKey]).localeCompare(String(b[sortKey]));
       return sortDir === "asc" ? cmp : -cmp;
     });
-
     return data;
   }, [results, search, sortKey, sortDir, filter]);
-
-  const virtualizer = useVirtualizer({
-    count: filtered.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => includeH1 ? 72 : 56,
-    overscan: 20,
-  });
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -70,7 +105,7 @@ export function ResultsTable({ results, domain, includeH1 }: ResultsTableProps) 
   };
 
   const handleCopy = () => {
-    const csv = generateCSV(filtered, includeH1);
+    const csv = generateCSV(filtered, includeH1, false);
     navigator.clipboard.writeText(csv);
     setCopied(true);
     toast({ title: "Copied!", description: `${filtered.length} rows copied as CSV` });
@@ -78,12 +113,10 @@ export function ResultsTable({ results, domain, includeH1 }: ResultsTableProps) 
   };
 
   const handleDownload = () => {
-    const csv = generateCSV(filtered, includeH1);
+    const csv = generateCSV(filtered, includeH1, false);
     downloadCSV(csv, domain);
     toast({ title: "Downloaded!", description: `CSV file saved` });
   };
-
-  if (results.length === 0) return null;
 
   const baseFilters: { key: Filter; label: string; icon?: typeof AlertTriangle }[] = [
     { key: "all", label: "All" },
@@ -92,12 +125,10 @@ export function ResultsTable({ results, domain, includeH1 }: ResultsTableProps) 
     { key: "missing-desc", label: "Missing Desc" },
     { key: "title-long", label: "Title >60ch" },
   ];
-
   const h1Filters: { key: Filter; label: string }[] = [
     { key: "missing-h1", label: "No H1" },
     { key: "multi-h1", label: "Multiple H1s" },
   ];
-
   const filters = includeH1 ? [...baseFilters, ...h1Filters] : baseFilters;
 
   const gridCols = includeH1
@@ -105,7 +136,7 @@ export function ResultsTable({ results, domain, includeH1 }: ResultsTableProps) 
     : "grid-cols-[1.2fr_1.2fr_1.6fr_80px]";
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+    <div className="space-y-3">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
         <div className="flex gap-1.5 flex-wrap">
@@ -183,9 +214,7 @@ export function ResultsTable({ results, domain, includeH1 }: ResultsTableProps) 
                   key={index}
                   className={`grid ${gridCols} gap-0 hover:bg-muted/20 transition-colors text-xs`}
                 >
-                  <div className="px-3 py-2 break-all font-mono text-[11px] text-muted-foreground">
-                    {row.url}
-                  </div>
+                  <div className="px-3 py-2 break-all font-mono text-[11px] text-muted-foreground">{row.url}</div>
                   <div className="px-3 py-2 break-words text-[11px]">
                     {row.title || <span className="text-muted-foreground italic">(empty)</span>}
                   </div>
@@ -225,6 +254,202 @@ export function ResultsTable({ results, domain, includeH1 }: ResultsTableProps) 
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
+  );
+}
+
+// ─── Image Alt Texts table ────────────────────────────────────────────────────
+function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: string }) {
+  const { toast } = useToast();
+  const [search, setSearch] = useState("");
+  const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
+  const [copied, setCopied] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  const filteredResults = useMemo(() => {
+    let data = results.filter((r) => r.status === "OK");
+    if (imgFilter === "missing-alt") data = data.filter((r) => (r.images ?? []).some((img) => img.alt === null));
+    else if (imgFilter === "no-images") data = data.filter((r) => (r.images ?? []).length === 0);
+    else if (imgFilter === "has-images") data = data.filter((r) => (r.images ?? []).length > 0);
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter(
+        (r) =>
+          r.url.toLowerCase().includes(q) ||
+          (r.images ?? []).some(
+            (img) => img.src.toLowerCase().includes(q) || (img.alt ?? "").toLowerCase().includes(q)
+          )
+      );
+    }
+    return data;
+  }, [results, imgFilter, search]);
+
+  const toggleRow = (i: number) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
+
+  const handleCopy = () => {
+    const csv = generateCSV(results, false, true);
+    navigator.clipboard.writeText(csv);
+    setCopied(true);
+    toast({ title: "Copied!", description: "Image alt text data copied as CSV" });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const csv = generateCSV(results, false, true);
+    downloadCSV(csv, `${domain}-images`);
+    toast({ title: "Downloaded!", description: "Image alt text CSV saved" });
+  };
+
+  const imgFilters: { key: ImageFilter; label: string }[] = [
+    { key: "all", label: "All Pages" },
+    { key: "has-images", label: "Has Images" },
+    { key: "missing-alt", label: "Missing Alt" },
+    { key: "no-images", label: "No Images" },
+  ];
+
+  return (
+    <div className="space-y-3">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+        <div className="flex gap-1.5 flex-wrap">
+          {imgFilters.map((f) => (
+            <Button
+              key={f.key}
+              size="sm"
+              variant={imgFilter === f.key ? "default" : "outline"}
+              onClick={() => setImgFilter(f.key)}
+              className="text-[11px] h-7 px-2.5"
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex gap-1.5 items-center w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-56">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+            <Input
+              placeholder="Filter URL, src, alt..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-7 h-7 text-[11px]"
+            />
+          </div>
+          <Button size="sm" variant="outline" onClick={handleCopy} className="h-7 gap-1 text-[11px] px-2.5">
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            Copy
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleDownload} className="h-7 gap-1 text-[11px] px-2.5">
+            <Download className="h-3 w-3" />
+            CSV
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">{filteredResults.length} pages</p>
+
+      {/* Table */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        {/* Header */}
+        <div className="grid grid-cols-[2fr_80px_1fr] gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+          <div className="px-3 py-2">Page URL</div>
+          <div className="px-3 py-2 text-center">Images</div>
+          <div className="px-3 py-2">Coverage</div>
+        </div>
+
+        {/* Rows */}
+        <div className="overflow-auto max-h-[600px] divide-y divide-border">
+          {filteredResults.length === 0 ? (
+            <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">No results</div>
+          ) : (
+            filteredResults.map((row, index) => {
+              const images = row.images ?? [];
+              const withAlt = images.filter((img) => img.alt !== null).length;
+              const withoutAlt = images.length - withAlt;
+              const isExpanded = expandedRows.has(index);
+
+              return (
+                <div key={index}>
+                  {/* Summary row — click to expand */}
+                  <button
+                    className="w-full grid grid-cols-[2fr_80px_1fr] gap-0 hover:bg-muted/20 transition-colors text-left"
+                    onClick={() => toggleRow(index)}
+                  >
+                    <div className="px-3 py-2 font-mono text-[11px] text-muted-foreground break-all">{row.url}</div>
+                    <div className="px-3 py-2 text-center text-[11px] font-medium">
+                      {images.length === 0 ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        <span>{images.length}</span>
+                      )}
+                    </div>
+                    <div className="px-3 py-2 text-[11px]">
+                      {images.length === 0 ? (
+                        <span className="text-muted-foreground italic">No images</span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          {withAlt > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-success">
+                              <Check className="h-2.5 w-2.5" />
+                              {withAlt} with alt
+                            </span>
+                          )}
+                          {withoutAlt > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-destructive">
+                              <AlertTriangle className="h-2.5 w-2.5" />
+                              {withoutAlt} missing
+                            </span>
+                          )}
+                          <span className="text-muted-foreground ml-auto text-[10px]">
+                            {isExpanded ? "▲" : "▼"}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded image list */}
+                  {isExpanded && images.length > 0 && (
+                    <div className="bg-muted/10 border-t border-border divide-y divide-border/50">
+                      {/* Sub-header */}
+                      <div className="grid grid-cols-[2fr_1fr] gap-0 px-6 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                        <div>Image URL</div>
+                        <div>Alt Text</div>
+                      </div>
+                      {images.map((img, imgIndex) => (
+                        <div
+                          key={imgIndex}
+                          className="grid grid-cols-[2fr_1fr] gap-0 px-6 py-1.5 hover:bg-muted/20 transition-colors"
+                        >
+                          <div className="font-mono text-[11px] text-muted-foreground break-all pr-3 truncate" title={img.src}>
+                            {img.src}
+                          </div>
+                          <div className="text-[11px] break-words">
+                            {img.alt ? (
+                              <span className="text-foreground">{img.alt}</span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-destructive/70">
+                                <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                                No alt text
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

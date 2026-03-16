@@ -1,13 +1,14 @@
 import { motion } from "framer-motion";
-import { Globe, CheckCircle, XCircle, BarChart3, Heading1 } from "lucide-react";
+import { Globe, CheckCircle, XCircle, BarChart3, Heading1, Image } from "lucide-react";
 import { CrawlResult } from "@/lib/crawl-api";
 
 interface StatsCardsProps {
   results: CrawlResult[];
   includeH1: boolean;
+  includeImages: boolean;
 }
 
-export function StatsCards({ results, includeH1 }: StatsCardsProps) {
+export function StatsCards({ results, includeH1, includeImages }: StatsCardsProps) {
   if (results.length === 0) return null;
 
   const total = results.length;
@@ -27,6 +28,12 @@ export function StatsCards({ results, includeH1 }: StatsCardsProps) {
   const pagesWithNoH1 = results.filter((r) => (r.h1s ?? []).length === 0).length;
   const pagesWithH1 = results.filter((r) => (r.h1s ?? []).length >= 1).length;
 
+  const totalImages = results.reduce((sum, r) => sum + (r.images ?? []).length, 0);
+  const pagesWithMissingAlt = results.filter((r) =>
+    (r.images ?? []).some((img) => img.alt === null)
+  ).length;
+  const pagesWithNoImages = results.filter((r) => (r.images ?? []).length === 0).length;
+
   const baseStats = [
     { label: "Total URLs", value: total.toLocaleString(), icon: Globe, color: "text-foreground" },
     { label: "Successful", value: success.toLocaleString(), icon: CheckCircle, color: "text-success" },
@@ -40,8 +47,23 @@ export function StatsCards({ results, includeH1 }: StatsCardsProps) {
     { label: "Multiple H1s", value: pagesWithMultiH1.toLocaleString(), icon: Heading1, color: "text-warning" },
   ];
 
-  const stats = includeH1 ? [...baseStats, ...h1Stats] : baseStats;
-  const cols = includeH1 ? "grid-cols-2 lg:grid-cols-4 xl:grid-cols-7" : "grid-cols-2 lg:grid-cols-4";
+  const imageStats = [
+    { label: "Total Images", value: totalImages.toLocaleString(), icon: Image, color: "text-foreground" },
+    { label: "Missing Alt", value: pagesWithMissingAlt.toLocaleString(), icon: Image, color: "text-destructive" },
+    { label: "No Images", value: pagesWithNoImages.toLocaleString(), icon: Image, color: "text-muted-foreground" },
+  ];
+
+  const stats = [
+    ...baseStats,
+    ...(includeH1 ? h1Stats : []),
+    ...(includeImages ? imageStats : []),
+  ];
+
+  const colCount = stats.length;
+  const cols =
+    colCount <= 4 ? "grid-cols-2 lg:grid-cols-4" :
+    colCount <= 7 ? "grid-cols-2 lg:grid-cols-4 xl:grid-cols-7" :
+    "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10";
 
   return (
     <div className={`grid ${cols} gap-2`}>

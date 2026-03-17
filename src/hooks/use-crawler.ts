@@ -7,6 +7,8 @@ interface CrawlState {
   totalUrls: number;
   processedUrls: number;
   error: string | null;
+  includeH2: boolean;
+  includeH3: boolean;
 }
 
 const INITIAL_STATE: CrawlState = {

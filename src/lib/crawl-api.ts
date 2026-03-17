@@ -38,7 +38,7 @@ export async function fetchMetaBatch(urls: string[], includeH1 = false, includeH
   return data.results || [];
 }
 
-export function generateCSV(results: CrawlResult[], includeH1 = false, includeImages = false): string {
+export function generateCSV(results: CrawlResult[], includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false): string {
   // If images mode: one row per image, expanding each page into N image rows
   if (includeImages) {
     const header = "Page URL,Image URL,Alt Text,Image Count";

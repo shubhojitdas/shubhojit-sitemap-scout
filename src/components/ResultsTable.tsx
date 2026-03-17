@@ -62,10 +62,14 @@ function MetaTable({
   results,
   domain,
   includeH1,
+  includeH2,
+  includeH3,
 }: {
   results: CrawlResult[];
   domain: string;
   includeH1: boolean;
+  includeH2: boolean;
+  includeH3: boolean;
   includeImages: boolean;
 }) {
   const { toast } = useToast();

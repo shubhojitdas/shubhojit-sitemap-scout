@@ -83,6 +83,32 @@ function extractH1s(html: string): string[] {
   return h1s;
 }
 
+function extractH2s(html: string): string[] {
+  const h2s: string[] = [];
+  const h2Regex = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+  let match;
+  while ((match = h2Regex.exec(html)) !== null) {
+    const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text) h2s.push(text.slice(0, 200));
+  }
+  return h2s;
+}
+
+function extractH3s(html: string): string[] {
+  const h3s: string[] = [];
+  const h3Regex = /<h3[^>]*>([\s\S]*?)<\/h3>/gi;
+  let match;
+  while ((match = h3Regex.exec(html)) !== null) {
+    const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text) h3s.push(text.slice(0, 200));
+  }
+  return h3s;
+}
+
 function extractImages(html: string, baseUrl: string): ImageData[] {
   const images: ImageData[] = [];
   // Match <img> tags and capture src + optional alt

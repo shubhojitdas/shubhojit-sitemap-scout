@@ -10,6 +10,8 @@ export interface CrawlResult {
   title: string;
   description: string;
   h1s: string[];
+  h2s: string[];
+  h3s: string[];
   images?: ImageData[];
   status: "OK" | "Error";
   statusCode: number;

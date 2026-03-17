@@ -151,7 +151,7 @@ function extractImages(html: string, baseUrl: string): ImageData[] {
   return images;
 }
 
-async function fetchMeta(url: string, includeH1: boolean, includeImages: boolean): Promise<CrawlResult> {
+async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean): Promise<CrawlResult> {
   const start = Date.now();
   try {
     const resp = await fetch(url, {
@@ -162,19 +162,21 @@ async function fetchMeta(url: string, includeH1: boolean, includeImages: boolean
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
 
     if (!resp.ok) {
-      return { url, title: '', description: '', h1s: [], images: [], status: 'Error', statusCode: resp.status, fetchTime: elapsed };
+      return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], status: 'Error', statusCode: resp.status, fetchTime: elapsed };
     }
 
     const html = await resp.text();
     const title = extractTitle(html);
     const description = extractDescription(html);
     const h1s = includeH1 ? extractH1s(html) : [];
+    const h2s = includeH2 ? extractH2s(html) : [];
+    const h3s = includeH3 ? extractH3s(html) : [];
     const images = includeImages ? extractImages(html, url) : [];
 
-    return { url, title, description, h1s, images, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
+    return { url, title, description, h1s, h2s, h3s, images, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
   } catch {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
-    return { url, title: '', description: '', h1s: [], images: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
+    return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
   }
 }
 

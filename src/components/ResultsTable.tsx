@@ -17,6 +17,8 @@ interface ResultsTableProps {
   results: CrawlResult[];
   domain: string;
   includeH1: boolean;
+  includeH2: boolean;
+  includeH3: boolean;
   includeImages: boolean;
 }
 

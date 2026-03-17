@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { urls, includeH1 = false, includeImages = false } = await req.json();
+    const { urls, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return new Response(
@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
-      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1, includeImages)));
+      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1, includeH2, includeH3, includeImages)));
       results.push(...batchResults);
     }
 

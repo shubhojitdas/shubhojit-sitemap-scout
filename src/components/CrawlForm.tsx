@@ -47,26 +47,28 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
   const [fileError, setFileError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("sitemap");
   const [includeH1, setIncludeH1] = useState(false);
+  const [includeH2, setIncludeH2] = useState(false);
+  const [includeH3, setIncludeH3] = useState(false);
   const [includeImages, setIncludeImages] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSitemapSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sitemapUrl.trim()) return;
-    onCrawl(sitemapUrl.trim(), includeH1, includeImages);
+    onCrawl(sitemapUrl.trim(), includeH1, includeH2, includeH3, includeImages);
   };
 
   const handleUrlsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeH1, includeImages);
+    onCrawlUrls(urls, includeH1, includeH2, includeH3, includeImages);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
-    onCrawlUrls(fileUrls, includeH1, includeImages);
+    onCrawlUrls(fileUrls, includeH1, includeH2, includeH3, includeImages);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

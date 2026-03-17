@@ -57,18 +57,21 @@ export function generateCSV(results: CrawlResult[], includeH1 = false, includeH2
     return [header, ...rows].join("\n");
   }
 
-  const header = includeH1
-    ? "URL,Meta Title,Meta Description,H1 Tags,H1 Count,Status,Response Code,Fetch Time"
-    : "URL,Meta Title,Meta Description,Status,Response Code,Fetch Time";
+  const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+  const headerParts = ["URL", "Meta Title", "Meta Description"];
+  if (includeH1) headerParts.push("H1 Tags", "H1 Count");
+  if (includeH2) headerParts.push("H2 Tags", "H2 Count");
+  if (includeH3) headerParts.push("H3 Tags", "H3 Count");
+  headerParts.push("Status", "Response Code", "Fetch Time");
+  const header = headerParts.join(",");
 
   const rows = results.map((r) => {
-    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
-    if (includeH1) {
-      const h1Joined = (r.h1s ?? []).join(" | ");
-      const h1Count = (r.h1s ?? []).length;
-      return `${escape(r.url)},${escape(r.title)},${escape(r.description)},${escape(h1Joined)},${h1Count},${r.status},${r.statusCode},${r.fetchTime}`;
-    }
-    return `${escape(r.url)},${escape(r.title)},${escape(r.description)},${r.status},${r.statusCode},${r.fetchTime}`;
+    const parts = [escape(r.url), escape(r.title), escape(r.description)];
+    if (includeH1) { parts.push(escape((r.h1s ?? []).join(" | ")), String((r.h1s ?? []).length)); }
+    if (includeH2) { parts.push(escape((r.h2s ?? []).join(" | ")), String((r.h2s ?? []).length)); }
+    if (includeH3) { parts.push(escape((r.h3s ?? []).join(" | ")), String((r.h3s ?? []).length)); }
+    parts.push(r.status, String(r.statusCode), r.fetchTime);
+    return parts.join(",");
   });
   return [header, ...rows].join("\n");
 }

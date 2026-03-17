@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import * as XLSX from "xlsx";
 
 interface CrawlFormProps {
-  onCrawl: (url: string, includeH1: boolean, includeImages: boolean) => void;
-  onCrawlUrls: (urls: string[], includeH1: boolean, includeImages: boolean) => void;
+  onCrawl: (url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean) => void;
+  onCrawlUrls: (urls: string[], includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean) => void;
   isLoading: boolean;
   onReset: () => void;
 }

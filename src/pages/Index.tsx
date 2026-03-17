@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
 const Index = () => {
-  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, reset } = useCrawler();
+  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, reset, includeH2, includeH3 } = useCrawler();
   const [showTop, setShowTop] = useState(false);
   const [domain, setDomain] = useState("");
   const [includeH1, setIncludeH1] = useState(false);
@@ -22,7 +22,7 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleCrawl = (url: string, withH1: boolean, withImages: boolean) => {
+  const handleCrawl = (url: string, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
       setDomain(parsed.hostname);
@@ -31,13 +31,13 @@ const Index = () => {
     }
     setIncludeH1(withH1);
     setIncludeImages(withImages);
-    crawl(url, withH1, withImages);
+    crawl(url, withH1, withH2, withH3, withImages);
   };
 
-  const handleCrawlUrls = (urls: string[], withH1: boolean, withImages: boolean) => {
+  const handleCrawlUrls = (urls: string[], withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
-    crawlUrls(urls, withH1, withImages);
+    crawlUrls(urls, withH1, withH2, withH3, withImages);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling";
@@ -146,8 +146,8 @@ const Index = () => {
       {/* ── Results ── */}
       {results.length > 0 && (
         <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-4">
-          <StatsCards results={results} includeH1={includeH1} includeImages={includeImages} />
-          <ResultsTable results={results} domain={domain} includeH1={includeH1} includeImages={includeImages} />
+          <StatsCards results={results} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} />
+          <ResultsTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} />
         </section>
       )}
 

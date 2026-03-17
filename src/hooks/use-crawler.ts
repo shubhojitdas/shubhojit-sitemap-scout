@@ -7,6 +7,8 @@ interface CrawlState {
   totalUrls: number;
   processedUrls: number;
   error: string | null;
+  includeH2: boolean;
+  includeH3: boolean;
 }
 
 const INITIAL_STATE: CrawlState = {
@@ -15,7 +17,11 @@ const INITIAL_STATE: CrawlState = {
   totalUrls: 0,
   processedUrls: 0,
   error: null,
+  includeH2: false,
+  includeH3: false,
 };
+
+const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [] };
 
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(INITIAL_STATE);
@@ -28,7 +34,14 @@ export function useCrawler() {
     return controller.signal;
   };
 
-  const runBatches = async (urls: string[], signal: AbortSignal, includeH1: boolean, includeImages: boolean) => {
+  const runBatches = async (
+    urls: string[],
+    signal: AbortSignal,
+    includeH1: boolean,
+    includeH2: boolean,
+    includeH3: boolean,
+    includeImages: boolean
+  ) => {
     const allResults: CrawlResult[] = [];
     const BATCH_SIZE = 10;
 
@@ -36,13 +49,13 @@ export function useCrawler() {
       if (signal.aborted) return;
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
-        const batchResults = await fetchMetaBatch(batch, includeH1, includeImages);
+        const batchResults = await fetchMetaBatch(batch, includeH1, includeH2, includeH3, includeImages);
         if (signal.aborted) return;
         allResults.push(...batchResults);
       } catch {
         if (signal.aborted) return;
         batch.forEach((url) => {
-          allResults.push({ url, title: "", description: "", h1s: [], images: [], status: "Error", statusCode: 0, fetchTime: "0s" });
+          allResults.push({ url, title: "", description: "", h1s: [], ...EMPTY_RESULT_FIELDS, status: "Error", statusCode: 0, fetchTime: "0s" });
         });
       }
       if (signal.aborted) return;
@@ -55,9 +68,9 @@ export function useCrawler() {
   };
 
   // Crawl from a sitemap URL (parses sitemap first)
-  const crawl = useCallback(async (sitemapUrl: string, includeH1 = false, includeImages = false) => {
+  const crawl = useCallback(async (sitemapUrl: string, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false) => {
     const signal = startController();
-    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null });
+    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeH2, includeH3 });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
@@ -69,7 +82,7 @@ export function useCrawler() {
       }
 
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
-      await runBatches(urls, signal, includeH1, includeImages);
+      await runBatches(urls, signal, includeH1, includeH2, includeH3, includeImages);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -83,12 +96,12 @@ export function useCrawler() {
   }, []);
 
   // Crawl a pre-supplied list of URLs (skips sitemap parsing)
-  const crawlUrls = useCallback(async (urls: string[], includeH1 = false, includeImages = false) => {
+  const crawlUrls = useCallback(async (urls: string[], includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false) => {
     const signal = startController();
-    setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null });
+    setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeH2, includeH3 });
 
     try {
-      await runBatches(urls, signal, includeH1, includeImages);
+      await runBatches(urls, signal, includeH1, includeH2, includeH3, includeImages);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({

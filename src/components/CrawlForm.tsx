@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import * as XLSX from "xlsx";
 
 interface CrawlFormProps {
-  onCrawl: (url: string, includeH1: boolean, includeImages: boolean) => void;
-  onCrawlUrls: (urls: string[], includeH1: boolean, includeImages: boolean) => void;
+  onCrawl: (url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean) => void;
+  onCrawlUrls: (urls: string[], includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean) => void;
   isLoading: boolean;
   onReset: () => void;
 }
@@ -47,26 +47,28 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
   const [fileError, setFileError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("sitemap");
   const [includeH1, setIncludeH1] = useState(false);
+  const [includeH2, setIncludeH2] = useState(false);
+  const [includeH3, setIncludeH3] = useState(false);
   const [includeImages, setIncludeImages] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSitemapSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sitemapUrl.trim()) return;
-    onCrawl(sitemapUrl.trim(), includeH1, includeImages);
+    onCrawl(sitemapUrl.trim(), includeH1, includeH2, includeH3, includeImages);
   };
 
   const handleUrlsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeH1, includeImages);
+    onCrawlUrls(urls, includeH1, includeH2, includeH3, includeImages);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
-    onCrawlUrls(fileUrls, includeH1, includeImages);
+    onCrawlUrls(fileUrls, includeH1, includeH2, includeH3, includeImages);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,50 +131,35 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
     setFileError(null);
   };
 
+  const pillClass = (active: boolean) =>
+    `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border cursor-pointer select-none text-xs font-medium transition-all duration-150
+    ${active ? "border-foreground bg-foreground text-background" : "border-border bg-transparent text-muted-foreground hover:border-foreground/50 hover:text-foreground"}
+    ${isLoading ? "opacity-50 pointer-events-none" : ""}`;
+
   const Toggles = (
     <div className="mt-3 pt-3 border-t border-border flex justify-center gap-2 flex-wrap">
-      {/* H1 toggle */}
-      <Label
-        htmlFor="include-h1"
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer select-none text-xs font-medium transition-all duration-150
-          ${includeH1
-            ? "border-foreground bg-foreground text-background"
-            : "border-border bg-transparent text-muted-foreground hover:border-foreground/50 hover:text-foreground"
-          }
-          ${isLoading ? "opacity-50 pointer-events-none" : ""}
-        `}
-      >
-        <Checkbox
-          id="include-h1"
-          checked={includeH1}
-          onCheckedChange={(v) => setIncludeH1(!!v)}
-          disabled={isLoading}
-          className="hidden"
-        />
+      <Label htmlFor="include-h1" className={pillClass(includeH1)}>
+        <Checkbox id="include-h1" checked={includeH1} onCheckedChange={(v) => setIncludeH1(!!v)} disabled={isLoading} className="hidden" />
         <Heading1 className="h-3.5 w-3.5" />
-        Also extract &lt;H1&gt; tags
+        &lt;H1&gt; tags
       </Label>
 
-      {/* Image alt text toggle */}
-      <Label
-        htmlFor="include-images"
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border cursor-pointer select-none text-xs font-medium transition-all duration-150
-          ${includeImages
-            ? "border-foreground bg-foreground text-background"
-            : "border-border bg-transparent text-muted-foreground hover:border-foreground/50 hover:text-foreground"
-          }
-          ${isLoading ? "opacity-50 pointer-events-none" : ""}
-        `}
-      >
-        <Checkbox
-          id="include-images"
-          checked={includeImages}
-          onCheckedChange={(v) => setIncludeImages(!!v)}
-          disabled={isLoading}
-          className="hidden"
-        />
+      <Label htmlFor="include-h2" className={pillClass(includeH2)}>
+        <Checkbox id="include-h2" checked={includeH2} onCheckedChange={(v) => setIncludeH2(!!v)} disabled={isLoading} className="hidden" />
+        <Heading1 className="h-3.5 w-3.5" />
+        &lt;H2&gt; tags
+      </Label>
+
+      <Label htmlFor="include-h3" className={pillClass(includeH3)}>
+        <Checkbox id="include-h3" checked={includeH3} onCheckedChange={(v) => setIncludeH3(!!v)} disabled={isLoading} className="hidden" />
+        <Heading1 className="h-3.5 w-3.5" />
+        &lt;H3&gt; tags
+      </Label>
+
+      <Label htmlFor="include-images" className={pillClass(includeImages)}>
+        <Checkbox id="include-images" checked={includeImages} onCheckedChange={(v) => setIncludeImages(!!v)} disabled={isLoading} className="hidden" />
         <Image className="h-3.5 w-3.5" />
-        Also extract image alt texts
+        Image alt texts
       </Label>
     </div>
   );

@@ -13,6 +13,8 @@ interface CrawlResult {
   title: string;
   description: string;
   h1s: string[];
+  h2s: string[];
+  h3s: string[];
   images?: ImageData[];
   status: 'OK' | 'Error';
   statusCode: number;
@@ -81,6 +83,32 @@ function extractH1s(html: string): string[] {
   return h1s;
 }
 
+function extractH2s(html: string): string[] {
+  const h2s: string[] = [];
+  const h2Regex = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+  let match;
+  while ((match = h2Regex.exec(html)) !== null) {
+    const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text) h2s.push(text.slice(0, 200));
+  }
+  return h2s;
+}
+
+function extractH3s(html: string): string[] {
+  const h3s: string[] = [];
+  const h3Regex = /<h3[^>]*>([\s\S]*?)<\/h3>/gi;
+  let match;
+  while ((match = h3Regex.exec(html)) !== null) {
+    const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (text) h3s.push(text.slice(0, 200));
+  }
+  return h3s;
+}
+
 function extractImages(html: string, baseUrl: string): ImageData[] {
   const images: ImageData[] = [];
   // Match <img> tags and capture src + optional alt
@@ -123,7 +151,7 @@ function extractImages(html: string, baseUrl: string): ImageData[] {
   return images;
 }
 
-async function fetchMeta(url: string, includeH1: boolean, includeImages: boolean): Promise<CrawlResult> {
+async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean): Promise<CrawlResult> {
   const start = Date.now();
   try {
     const resp = await fetch(url, {
@@ -134,19 +162,21 @@ async function fetchMeta(url: string, includeH1: boolean, includeImages: boolean
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
 
     if (!resp.ok) {
-      return { url, title: '', description: '', h1s: [], images: [], status: 'Error', statusCode: resp.status, fetchTime: elapsed };
+      return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], status: 'Error', statusCode: resp.status, fetchTime: elapsed };
     }
 
     const html = await resp.text();
     const title = extractTitle(html);
     const description = extractDescription(html);
     const h1s = includeH1 ? extractH1s(html) : [];
+    const h2s = includeH2 ? extractH2s(html) : [];
+    const h3s = includeH3 ? extractH3s(html) : [];
     const images = includeImages ? extractImages(html, url) : [];
 
-    return { url, title, description, h1s, images, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
+    return { url, title, description, h1s, h2s, h3s, images, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
   } catch {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
-    return { url, title: '', description: '', h1s: [], images: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
+    return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
   }
 }
 
@@ -156,7 +186,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { urls, includeH1 = false, includeImages = false } = await req.json();
+    const { urls, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return new Response(
@@ -170,7 +200,7 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
-      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1, includeImages)));
+      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1, includeH2, includeH3, includeImages)));
       results.push(...batchResults);
     }
 

@@ -17,11 +17,13 @@ interface ResultsTableProps {
   results: CrawlResult[];
   domain: string;
   includeH1: boolean;
+  includeH2: boolean;
+  includeH3: boolean;
   includeImages: boolean;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeH1, includeImages }: ResultsTableProps) {
+export function ResultsTable({ results, domain, includeH1, includeH2, includeH3, includeImages }: ResultsTableProps) {
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<"meta" | "images">("meta");
 
@@ -42,14 +44,14 @@ export function ResultsTable({ results, domain, includeH1, includeImages }: Resu
             </TabsTrigger>
           </TabsList>
           <TabsContent value="meta" className="mt-3">
-            <MetaTable results={results} domain={domain} includeH1={includeH1} includeImages={false} />
+            <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
           </TabsContent>
           <TabsContent value="images" className="mt-3">
             <ImagesTable results={results} domain={domain} />
           </TabsContent>
         </Tabs>
       ) : (
-        <MetaTable results={results} domain={domain} includeH1={includeH1} includeImages={false} />
+        <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
       )}
     </motion.div>
   );
@@ -60,10 +62,14 @@ function MetaTable({
   results,
   domain,
   includeH1,
+  includeH2,
+  includeH3,
 }: {
   results: CrawlResult[];
   domain: string;
   includeH1: boolean;
+  includeH2: boolean;
+  includeH3: boolean;
   includeImages: boolean;
 }) {
   const { toast } = useToast();
@@ -105,7 +111,7 @@ function MetaTable({
   };
 
   const handleCopy = () => {
-    const csv = generateCSV(filtered, includeH1, false);
+    const csv = generateCSV(filtered, includeH1, includeH2, includeH3, false);
     navigator.clipboard.writeText(csv);
     setCopied(true);
     toast({ title: "Copied!", description: `${filtered.length} rows copied as CSV` });
@@ -113,7 +119,7 @@ function MetaTable({
   };
 
   const handleDownload = () => {
-    const csv = generateCSV(filtered, includeH1, false);
+    const csv = generateCSV(filtered, includeH1, includeH2, includeH3, false);
     downloadCSV(csv, domain);
     toast({ title: "Downloaded!", description: `CSV file saved` });
   };
@@ -129,11 +135,20 @@ function MetaTable({
     { key: "missing-h1", label: "No H1" },
     { key: "multi-h1", label: "Multiple H1s" },
   ];
-  const filters = includeH1 ? [...baseFilters, ...h1Filters] : baseFilters;
+  const filters = [
+    ...baseFilters,
+    ...(includeH1 ? h1Filters : []),
+  ];
 
-  const gridCols = includeH1
+  // Build dynamic grid cols based on active heading extractions
+  const headingCols = [includeH1, includeH2, includeH3].filter(Boolean).length;
+  const gridCols = headingCols === 0
+    ? "grid-cols-[1.2fr_1.2fr_1.6fr_80px]"
+    : headingCols === 1
     ? "grid-cols-[1fr_1fr_1.4fr_1.2fr_80px]"
-    : "grid-cols-[1.2fr_1.2fr_1.6fr_80px]";
+    : headingCols === 2
+    ? "grid-cols-[1fr_1fr_1.2fr_1fr_1fr_80px]"
+    : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_80px]";
 
   return (
     <div className="space-y-3">
@@ -195,6 +210,18 @@ function MetaTable({
               H1 Tags
             </div>
           )}
+          {includeH2 && (
+            <div className="flex items-center gap-1 px-3 py-2 text-left">
+              <Heading1 className="h-3 w-3" />
+              H2 Tags
+            </div>
+          )}
+          {includeH3 && (
+            <div className="flex items-center gap-1 px-3 py-2 text-left">
+              <Heading1 className="h-3 w-3" />
+              H3 Tags
+            </div>
+          )}
           <button
             onClick={() => handleSort("status")}
             className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left"
@@ -209,6 +236,8 @@ function MetaTable({
           <div className="divide-y divide-border">
             {filtered.map((row, index) => {
               const h1s = row.h1s ?? [];
+              const h2s = row.h2s ?? [];
+              const h3s = row.h3s ?? [];
               return (
                 <div
                   key={index}
@@ -231,10 +260,36 @@ function MetaTable({
                             {h1s.length > 1 && (
                               <span className={`text-[9px] font-semibold px-1 rounded shrink-0 mt-0.5 ${
                                 i === 0 ? "bg-warning/15 text-warning" : "bg-destructive/15 text-destructive"
-                              }`}>
-                                H1
-                              </span>
+                              }`}>H1</span>
                             )}
+                            <span className="break-words leading-snug">{h}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  {includeH2 && (
+                    <div className="px-3 py-2 space-y-0.5">
+                      {h2s.length === 0 ? (
+                        <span className="text-muted-foreground italic text-[11px]">(none)</span>
+                      ) : (
+                        h2s.map((h, i) => (
+                          <div key={i} className="flex items-start gap-1 text-[11px]">
+                            <span className="text-[9px] font-semibold px-1 rounded shrink-0 mt-0.5 bg-muted text-muted-foreground">H2</span>
+                            <span className="break-words leading-snug">{h}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  {includeH3 && (
+                    <div className="px-3 py-2 space-y-0.5">
+                      {h3s.length === 0 ? (
+                        <span className="text-muted-foreground italic text-[11px]">(none)</span>
+                      ) : (
+                        h3s.map((h, i) => (
+                          <div key={i} className="flex items-start gap-1 text-[11px]">
+                            <span className="text-[9px] font-semibold px-1 rounded shrink-0 mt-0.5 bg-muted text-muted-foreground">H3</span>
                             <span className="break-words leading-snug">{h}</span>
                           </div>
                         ))

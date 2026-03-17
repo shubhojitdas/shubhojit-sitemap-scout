@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
 const Index = () => {
-  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, reset } = useCrawler();
+  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, reset, includeH2, includeH3 } = useCrawler();
   const [showTop, setShowTop] = useState(false);
   const [domain, setDomain] = useState("");
   const [includeH1, setIncludeH1] = useState(false);

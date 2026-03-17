@@ -17,6 +17,8 @@ const INITIAL_STATE: CrawlState = {
   totalUrls: 0,
   processedUrls: 0,
   error: null,
+  includeH2: false,
+  includeH3: false,
 };
 
 export function useCrawler() {

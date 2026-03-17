@@ -30,6 +30,14 @@ export function StatsCards({ results, includeH1, includeH2, includeH3, includeIm
   const pagesWithNoH1 = results.filter((r) => (r.h1s ?? []).length === 0).length;
   const pagesWithH1 = results.filter((r) => (r.h1s ?? []).length >= 1).length;
 
+  const pagesWithH2 = results.filter((r) => (r.h2s ?? []).length >= 1).length;
+  const pagesWithNoH2 = results.filter((r) => (r.h2s ?? []).length === 0).length;
+  const totalH2s = results.reduce((sum, r) => sum + (r.h2s ?? []).length, 0);
+
+  const pagesWithH3 = results.filter((r) => (r.h3s ?? []).length >= 1).length;
+  const pagesWithNoH3 = results.filter((r) => (r.h3s ?? []).length === 0).length;
+  const totalH3s = results.reduce((sum, r) => sum + (r.h3s ?? []).length, 0);
+
   const totalImages = results.reduce((sum, r) => sum + (r.images ?? []).length, 0);
   const pagesWithMissingAlt = results.filter((r) =>
     (r.images ?? []).some((img) => img.alt === null)
@@ -46,7 +54,19 @@ export function StatsCards({ results, includeH1, includeH2, includeH3, includeIm
   const h1Stats = [
     { label: "With H1", value: pagesWithH1.toLocaleString(), icon: Heading1, color: "text-foreground" },
     { label: "No H1", value: pagesWithNoH1.toLocaleString(), icon: Heading1, color: "text-destructive" },
-    { label: "Multiple H1s", value: pagesWithMultiH1.toLocaleString(), icon: Heading1, color: "text-warning" },
+    { label: "Multiple H1s", value: results.filter((r) => (r.h1s ?? []).length > 1).length.toLocaleString(), icon: Heading1, color: "text-warning" },
+  ];
+
+  const h2Stats = [
+    { label: "With H2", value: pagesWithH2.toLocaleString(), icon: Heading1, color: "text-foreground" },
+    { label: "No H2", value: pagesWithNoH2.toLocaleString(), icon: Heading1, color: "text-destructive" },
+    { label: "Total H2s", value: totalH2s.toLocaleString(), icon: Heading1, color: "text-muted-foreground" },
+  ];
+
+  const h3Stats = [
+    { label: "With H3", value: pagesWithH3.toLocaleString(), icon: Heading1, color: "text-foreground" },
+    { label: "No H3", value: pagesWithNoH3.toLocaleString(), icon: Heading1, color: "text-destructive" },
+    { label: "Total H3s", value: totalH3s.toLocaleString(), icon: Heading1, color: "text-muted-foreground" },
   ];
 
   const imageStats = [
@@ -58,6 +78,8 @@ export function StatsCards({ results, includeH1, includeH2, includeH3, includeIm
   const stats = [
     ...baseStats,
     ...(includeH1 ? h1Stats : []),
+    ...(includeH2 ? h2Stats : []),
+    ...(includeH3 ? h3Stats : []),
     ...(includeImages ? imageStats : []),
   ];
 

@@ -23,7 +23,7 @@ interface ResultsTableProps {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeH1, includeImages }: ResultsTableProps) {
+export function ResultsTable({ results, domain, includeH1, includeH2, includeH3, includeImages }: ResultsTableProps) {
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<"meta" | "images">("meta");
 
@@ -44,14 +44,14 @@ export function ResultsTable({ results, domain, includeH1, includeImages }: Resu
             </TabsTrigger>
           </TabsList>
           <TabsContent value="meta" className="mt-3">
-            <MetaTable results={results} domain={domain} includeH1={includeH1} includeImages={false} />
+            <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
           </TabsContent>
           <TabsContent value="images" className="mt-3">
             <ImagesTable results={results} domain={domain} />
           </TabsContent>
         </Tabs>
       ) : (
-        <MetaTable results={results} domain={domain} includeH1={includeH1} includeImages={false} />
+        <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
       )}
     </motion.div>
   );

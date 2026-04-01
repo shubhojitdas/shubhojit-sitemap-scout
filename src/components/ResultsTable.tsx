@@ -24,32 +24,49 @@ interface ResultsTableProps {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeH1, includeH2, includeH3, includeImages }: ResultsTableProps) {
+export function ResultsTable({ results, domain, includeH1, includeH2, includeH3, includeImages, includeSchemas }: ResultsTableProps) {
   const { toast } = useToast();
-  const [activeView, setActiveView] = useState<"meta" | "images">("meta");
+  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas">("meta");
 
   if (results.length === 0) return null;
 
+  const hasTabs = includeImages || includeSchemas;
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-      {includeImages ? (
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images")}>
+      {hasTabs ? (
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas")}>
           <TabsList className="h-8 bg-muted/50">
             <TabsTrigger value="meta" className="text-xs gap-1.5 h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <Search className="h-3 w-3" />
               SEO Metadata
             </TabsTrigger>
-            <TabsTrigger value="images" className="text-xs gap-1.5 h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <Image className="h-3 w-3" />
-              Image Alt Texts
-            </TabsTrigger>
+            {includeImages && (
+              <TabsTrigger value="images" className="text-xs gap-1.5 h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Image className="h-3 w-3" />
+                Image Alt Texts
+              </TabsTrigger>
+            )}
+            {includeSchemas && (
+              <TabsTrigger value="schemas" className="text-xs gap-1.5 h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Code className="h-3 w-3" />
+                Schema Markup
+              </TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="meta" className="mt-3">
             <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
           </TabsContent>
-          <TabsContent value="images" className="mt-3">
-            <ImagesTable results={results} domain={domain} />
-          </TabsContent>
+          {includeImages && (
+            <TabsContent value="images" className="mt-3">
+              <ImagesTable results={results} domain={domain} />
+            </TabsContent>
+          )}
+          {includeSchemas && (
+            <TabsContent value="schemas" className="mt-3">
+              <SchemasTable results={results} domain={domain} />
+            </TabsContent>
+          )}
         </Tabs>
       ) : (
         <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />

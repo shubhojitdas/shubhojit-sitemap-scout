@@ -172,7 +172,7 @@ function extractImages(html: string, baseUrl: string): ImageData[] {
   return images;
 }
 
-async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean): Promise<CrawlResult> {
+async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean): Promise<CrawlResult> {
   const start = Date.now();
   try {
     const resp = await fetch(url, {

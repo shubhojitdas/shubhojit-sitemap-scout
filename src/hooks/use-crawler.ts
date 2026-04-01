@@ -50,7 +50,7 @@ export function useCrawler() {
       if (signal.aborted) return;
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
-        const batchResults = await fetchMetaBatch(batch, includeH1, includeH2, includeH3, includeImages);
+        const batchResults = await fetchMetaBatch(batch, includeH1, includeH2, includeH3, includeImages, includeSchemas);
         if (signal.aborted) return;
         allResults.push(...batchResults);
       } catch {

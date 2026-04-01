@@ -526,3 +526,207 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
     </div>
   );
 }
+
+// ─── Schema Markup table ──────────────────────────────────────────────────────
+function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: string }) {
+  const { toast } = useToast();
+  const [search, setSearch] = useState("");
+  const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const filteredResults = useMemo(() => {
+    let data = results.filter((r) => r.status === "OK");
+    if (schemaFilter === "has-schema") data = data.filter((r) => (r.schemas ?? []).length > 0);
+    else if (schemaFilter === "no-schema") data = data.filter((r) => (r.schemas ?? []).length === 0);
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter(
+        (r) =>
+          r.url.toLowerCase().includes(q) ||
+          (r.schemas ?? []).some((s) => s.toLowerCase().includes(q))
+      );
+    }
+    return data;
+  }, [results, schemaFilter, search]);
+
+  const toggleRow = (i: number) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
+
+  const handleCopySchema = (schema: string, id: string) => {
+    navigator.clipboard.writeText(schema);
+    setCopiedId(id);
+    toast({ title: "Copied!", description: "JSON-LD schema copied to clipboard" });
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleDownload = () => {
+    const rows: string[] = ["Page URL,Schema Count,JSON-LD"];
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    results.forEach((r) => {
+      const schemas = r.schemas ?? [];
+      if (schemas.length === 0) {
+        rows.push(`${escape(r.url)},0,${escape("No schema found")}`);
+      } else {
+        schemas.forEach((s) => {
+          rows.push(`${escape(r.url)},${schemas.length},${escape(s)}`);
+        });
+      }
+    });
+    const csv = rows.join("\n");
+    downloadCSV(csv, `${domain}-schemas`);
+    toast({ title: "Downloaded!", description: "Schema markup CSV saved" });
+  };
+
+  const filters: { key: "all" | "has-schema" | "no-schema"; label: string }[] = [
+    { key: "all", label: "All Pages" },
+    { key: "has-schema", label: "Has Schema" },
+    { key: "no-schema", label: "No Schema" },
+  ];
+
+  return (
+    <div className="space-y-3">
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+        <div className="flex gap-1.5 flex-wrap">
+          {filters.map((f) => (
+            <Button
+              key={f.key}
+              size="sm"
+              variant={schemaFilter === f.key ? "default" : "outline"}
+              onClick={() => setSchemaFilter(f.key)}
+              className="text-[11px] h-7 px-2.5"
+            >
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex gap-1.5 items-center w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-56">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+            <Input
+              placeholder="Filter URL or schema content..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-7 h-7 text-[11px]"
+            />
+          </div>
+          <Button size="sm" variant="outline" onClick={handleDownload} className="h-7 gap-1 text-[11px] px-2.5">
+            <Download className="h-3 w-3" />
+            CSV
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">{filteredResults.length} pages</p>
+
+      {/* Table */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        {/* Header */}
+        <div className="grid grid-cols-[2fr_100px_1fr] gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+          <div className="px-3 py-2">Page URL</div>
+          <div className="px-3 py-2 text-center">Schemas</div>
+          <div className="px-3 py-2">Type</div>
+        </div>
+
+        {/* Rows */}
+        <div className="overflow-auto max-h-[600px] divide-y divide-border">
+          {filteredResults.length === 0 ? (
+            <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">No results</div>
+          ) : (
+            filteredResults.map((row, index) => {
+              const schemas = row.schemas ?? [];
+              const isExpanded = expandedRows.has(index);
+
+              // Try to extract @type from each schema
+              const types = schemas.map((s) => {
+                try {
+                  const parsed = JSON.parse(s);
+                  return parsed["@type"] || "Unknown";
+                } catch {
+                  return "Invalid JSON";
+                }
+              });
+
+              return (
+                <div key={index}>
+                  <button
+                    className="w-full grid grid-cols-[2fr_100px_1fr] gap-0 hover:bg-muted/20 transition-colors text-left"
+                    onClick={() => schemas.length > 0 && toggleRow(index)}
+                  >
+                    <div className="px-3 py-2 font-mono text-[11px] text-muted-foreground break-all">{row.url}</div>
+                    <div className="px-3 py-2 text-center text-[11px] font-medium">
+                      {schemas.length === 0 ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        <span>{schemas.length}</span>
+                      )}
+                    </div>
+                    <div className="px-3 py-2 text-[11px]">
+                      {schemas.length === 0 ? (
+                        <span className="text-muted-foreground italic">No schema markup</span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <span className="flex gap-1 flex-wrap">
+                            {types.map((t, i) => (
+                              <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-medium">
+                                {Array.isArray(t) ? t.join(", ") : t}
+                              </span>
+                            ))}
+                          </span>
+                          <span className="text-muted-foreground ml-auto text-[10px]">
+                            {isExpanded ? "▲" : "▼"}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded schema list */}
+                  {isExpanded && schemas.length > 0 && (
+                    <div className="bg-muted/10 border-t border-border divide-y divide-border/50">
+                      {schemas.map((schema, sIdx) => {
+                        const copyId = `${index}-${sIdx}`;
+                        const isCopied = copiedId === copyId;
+                        return (
+                          <div key={sIdx} className="px-6 py-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                JSON-LD #{sIdx + 1} — {types[sIdx]}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopySchema(schema, copyId);
+                                }}
+                                className="h-6 gap-1 text-[10px] px-2"
+                              >
+                                {isCopied ? <Check className="h-2.5 w-2.5" /> : <ClipboardCopy className="h-2.5 w-2.5" />}
+                                {isCopied ? "Copied" : "Copy JSON"}
+                              </Button>
+                            </div>
+                            <pre className="text-[11px] font-mono bg-muted/30 border border-border rounded-md p-3 overflow-x-auto max-h-64 overflow-y-auto whitespace-pre text-foreground/80 leading-relaxed">
+                              {schema}
+                            </pre>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

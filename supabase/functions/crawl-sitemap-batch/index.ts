@@ -193,11 +193,12 @@ async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, in
     const h2s = includeH2 ? extractH2s(html) : [];
     const h3s = includeH3 ? extractH3s(html) : [];
     const images = includeImages ? extractImages(html, url) : [];
+    const schemas = includeSchemas ? extractSchemaMarkups(html) : [];
 
-    return { url, title, description, h1s, h2s, h3s, images, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
+    return { url, title, description, h1s, h2s, h3s, images, schemas, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
   } catch {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
-    return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
+    return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
   }
 }
 

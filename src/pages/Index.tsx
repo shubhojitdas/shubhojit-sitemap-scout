@@ -15,6 +15,7 @@ const Index = () => {
   const [domain, setDomain] = useState("");
   const [includeH1, setIncludeH1] = useState(false);
   const [includeImages, setIncludeImages] = useState(false);
+  const [includeSchemas, setIncludeSchemas] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setShowTop(window.scrollY > 400);

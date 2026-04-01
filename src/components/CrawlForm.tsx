@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Image } from "lucide-react";
+import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Image, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";

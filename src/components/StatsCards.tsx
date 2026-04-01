@@ -11,7 +11,7 @@ interface StatsCardsProps {
   includeSchemas: boolean;
 }
 
-export function StatsCards({ results, includeH1, includeH2, includeH3, includeImages }: StatsCardsProps) {
+export function StatsCards({ results, includeH1, includeH2, includeH3, includeImages, includeSchemas }: StatsCardsProps) {
   if (results.length === 0) return null;
 
   const total = results.length;

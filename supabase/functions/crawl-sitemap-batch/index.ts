@@ -109,6 +109,26 @@ function extractH3s(html: string): string[] {
   return h3s;
 }
 
+function extractSchemaMarkups(html: string): string[] {
+  const schemas: string[] = [];
+  const regex = /<script\s[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    const content = match[1].trim();
+    if (content) {
+      try {
+        // Validate it's valid JSON, then prettify
+        const parsed = JSON.parse(content);
+        schemas.push(JSON.stringify(parsed, null, 2));
+      } catch {
+        // Still include raw content if JSON is malformed
+        schemas.push(content);
+      }
+    }
+  }
+  return schemas;
+}
+
 function extractImages(html: string, baseUrl: string): ImageData[] {
   const images: ImageData[] = [];
   // Match <img> tags and capture src + optional alt

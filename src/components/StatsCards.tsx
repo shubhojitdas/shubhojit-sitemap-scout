@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Globe, CheckCircle, XCircle, BarChart3, Heading1, Image } from "lucide-react";
+import { Globe, CheckCircle, XCircle, BarChart3, Heading1, Image, Code } from "lucide-react";
 import { CrawlResult } from "@/lib/crawl-api";
 
 interface StatsCardsProps {
@@ -8,9 +8,10 @@ interface StatsCardsProps {
   includeH2: boolean;
   includeH3: boolean;
   includeImages: boolean;
+  includeSchemas: boolean;
 }
 
-export function StatsCards({ results, includeH1, includeH2, includeH3, includeImages }: StatsCardsProps) {
+export function StatsCards({ results, includeH1, includeH2, includeH3, includeImages, includeSchemas }: StatsCardsProps) {
   if (results.length === 0) return null;
 
   const total = results.length;
@@ -75,12 +76,23 @@ export function StatsCards({ results, includeH1, includeH2, includeH3, includeIm
     { label: "No Images", value: pagesWithNoImages.toLocaleString(), icon: Image, color: "text-muted-foreground" },
   ];
 
+  const pagesWithSchema = results.filter((r) => (r.schemas ?? []).length > 0).length;
+  const pagesNoSchema = results.filter((r) => (r.schemas ?? []).length === 0).length;
+  const totalSchemas = results.reduce((sum, r) => sum + (r.schemas ?? []).length, 0);
+
+  const schemaStats = [
+    { label: "With Schema", value: pagesWithSchema.toLocaleString(), icon: Code, color: "text-foreground" },
+    { label: "No Schema", value: pagesNoSchema.toLocaleString(), icon: Code, color: "text-destructive" },
+    { label: "Total Schemas", value: totalSchemas.toLocaleString(), icon: Code, color: "text-muted-foreground" },
+  ];
+
   const stats = [
     ...baseStats,
     ...(includeH1 ? h1Stats : []),
     ...(includeH2 ? h2Stats : []),
     ...(includeH3 ? h3Stats : []),
     ...(includeImages ? imageStats : []),
+    ...(includeSchemas ? schemaStats : []),
   ];
 
   const colCount = stats.length;

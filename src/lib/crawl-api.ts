@@ -13,6 +13,7 @@ export interface CrawlResult {
   h2s: string[];
   h3s: string[];
   images?: ImageData[];
+  schemas?: string[];
   status: "OK" | "Error";
   statusCode: number;
   fetchTime: string;
@@ -28,9 +29,9 @@ export async function parseSitemapUrls(sitemapUrl: string): Promise<string[]> {
   return data.urls || [];
 }
 
-export async function fetchMetaBatch(urls: string[], includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false): Promise<CrawlResult[]> {
+export async function fetchMetaBatch(urls: string[], includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false, includeSchemas = false): Promise<CrawlResult[]> {
   const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeH1, includeH2, includeH3, includeImages },
+    body: { urls, includeH1, includeH2, includeH3, includeImages, includeSchemas },
   });
 
   if (error) throw new Error(error.message);

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Image } from "lucide-react";
+import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Image, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import * as XLSX from "xlsx";
 
 interface CrawlFormProps {
-  onCrawl: (url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean) => void;
-  onCrawlUrls: (urls: string[], includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean) => void;
+  onCrawl: (url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean) => void;
+  onCrawlUrls: (urls: string[], includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean) => void;
   isLoading: boolean;
   onReset: () => void;
 }
@@ -50,25 +50,26 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
   const [includeH2, setIncludeH2] = useState(false);
   const [includeH3, setIncludeH3] = useState(false);
   const [includeImages, setIncludeImages] = useState(false);
+  const [includeSchemas, setIncludeSchemas] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSitemapSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sitemapUrl.trim()) return;
-    onCrawl(sitemapUrl.trim(), includeH1, includeH2, includeH3, includeImages);
+    onCrawl(sitemapUrl.trim(), includeH1, includeH2, includeH3, includeImages, includeSchemas);
   };
 
   const handleUrlsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeH1, includeH2, includeH3, includeImages);
+    onCrawlUrls(urls, includeH1, includeH2, includeH3, includeImages, includeSchemas);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
-    onCrawlUrls(fileUrls, includeH1, includeH2, includeH3, includeImages);
+    onCrawlUrls(fileUrls, includeH1, includeH2, includeH3, includeImages, includeSchemas);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,6 +161,12 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
         <Checkbox id="include-images" checked={includeImages} onCheckedChange={(v) => setIncludeImages(!!v)} disabled={isLoading} className="hidden" />
         <Image className="h-3.5 w-3.5" />
         Image alt texts
+      </Label>
+
+      <Label htmlFor="include-schemas" className={pillClass(includeSchemas)}>
+        <Checkbox id="include-schemas" checked={includeSchemas} onCheckedChange={(v) => setIncludeSchemas(!!v)} disabled={isLoading} className="hidden" />
+        <Code className="h-3.5 w-3.5" />
+        Schema Markup
       </Label>
     </div>
   );

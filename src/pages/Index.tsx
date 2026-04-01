@@ -15,6 +15,7 @@ const Index = () => {
   const [domain, setDomain] = useState("");
   const [includeH1, setIncludeH1] = useState(false);
   const [includeImages, setIncludeImages] = useState(false);
+  const [includeSchemas, setIncludeSchemas] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setShowTop(window.scrollY > 400);
@@ -22,7 +23,7 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleCrawl = (url: string, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean) => {
+  const handleCrawl = (url: string, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
       setDomain(parsed.hostname);
@@ -31,13 +32,15 @@ const Index = () => {
     }
     setIncludeH1(withH1);
     setIncludeImages(withImages);
-    crawl(url, withH1, withH2, withH3, withImages);
+    setIncludeSchemas(withSchemas);
+    crawl(url, withH1, withH2, withH3, withImages, withSchemas);
   };
 
-  const handleCrawlUrls = (urls: string[], withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean) => {
+  const handleCrawlUrls = (urls: string[], withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
-    crawlUrls(urls, withH1, withH2, withH3, withImages);
+    setIncludeSchemas(withSchemas);
+    crawlUrls(urls, withH1, withH2, withH3, withImages, withSchemas);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling";
@@ -146,8 +149,8 @@ const Index = () => {
       {/* ── Results ── */}
       {results.length > 0 && (
         <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-4">
-          <StatsCards results={results} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} />
-          <ResultsTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} />
+          <StatsCards results={results} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} />
+          <ResultsTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} />
         </section>
       )}
 

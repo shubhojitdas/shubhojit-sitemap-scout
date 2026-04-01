@@ -16,6 +16,7 @@ interface CrawlResult {
   h2s: string[];
   h3s: string[];
   images?: ImageData[];
+  schemas?: string[];
   status: 'OK' | 'Error';
   statusCode: number;
   fetchTime: string;
@@ -109,6 +110,26 @@ function extractH3s(html: string): string[] {
   return h3s;
 }
 
+function extractSchemaMarkups(html: string): string[] {
+  const schemas: string[] = [];
+  const regex = /<script\s[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    const content = match[1].trim();
+    if (content) {
+      try {
+        // Validate it's valid JSON, then prettify
+        const parsed = JSON.parse(content);
+        schemas.push(JSON.stringify(parsed, null, 2));
+      } catch {
+        // Still include raw content if JSON is malformed
+        schemas.push(content);
+      }
+    }
+  }
+  return schemas;
+}
+
 function extractImages(html: string, baseUrl: string): ImageData[] {
   const images: ImageData[] = [];
   // Match <img> tags and capture src + optional alt
@@ -151,7 +172,7 @@ function extractImages(html: string, baseUrl: string): ImageData[] {
   return images;
 }
 
-async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean): Promise<CrawlResult> {
+async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean): Promise<CrawlResult> {
   const start = Date.now();
   try {
     const resp = await fetch(url, {
@@ -162,7 +183,7 @@ async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, in
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
 
     if (!resp.ok) {
-      return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], status: 'Error', statusCode: resp.status, fetchTime: elapsed };
+      return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], status: 'Error', statusCode: resp.status, fetchTime: elapsed };
     }
 
     const html = await resp.text();
@@ -172,11 +193,12 @@ async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, in
     const h2s = includeH2 ? extractH2s(html) : [];
     const h3s = includeH3 ? extractH3s(html) : [];
     const images = includeImages ? extractImages(html, url) : [];
+    const schemas = includeSchemas ? extractSchemaMarkups(html) : [];
 
-    return { url, title, description, h1s, h2s, h3s, images, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
+    return { url, title, description, h1s, h2s, h3s, images, schemas, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
   } catch {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
-    return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
+    return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
   }
 }
 
@@ -186,7 +208,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { urls, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false } = await req.json();
+    const { urls, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false, includeSchemas = false } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return new Response(
@@ -200,7 +222,7 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
-      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1, includeH2, includeH3, includeImages)));
+      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1, includeH2, includeH3, includeImages, includeSchemas)));
       results.push(...batchResults);
     }
 

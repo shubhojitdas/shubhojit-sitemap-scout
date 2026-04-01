@@ -40,7 +40,8 @@ export function useCrawler() {
     includeH1: boolean,
     includeH2: boolean,
     includeH3: boolean,
-    includeImages: boolean
+    includeImages: boolean,
+    includeSchemas: boolean
   ) => {
     const allResults: CrawlResult[] = [];
     const BATCH_SIZE = 10;

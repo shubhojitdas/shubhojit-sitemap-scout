@@ -83,7 +83,7 @@ export function useCrawler() {
       }
 
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
-      await runBatches(urls, signal, includeH1, includeH2, includeH3, includeImages);
+      await runBatches(urls, signal, includeH1, includeH2, includeH3, includeImages, includeSchemas);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -97,7 +97,7 @@ export function useCrawler() {
   }, []);
 
   // Crawl a pre-supplied list of URLs (skips sitemap parsing)
-  const crawlUrls = useCallback(async (urls: string[], includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false) => {
+  const crawlUrls = useCallback(async (urls: string[], includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false, includeSchemas = false) => {
     const signal = startController();
     setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeH2, includeH3 });
 

@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { urls, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false } = await req.json();
+    const { urls, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false, includeSchemas = false } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return new Response(

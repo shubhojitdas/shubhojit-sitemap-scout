@@ -162,6 +162,12 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
         <Image className="h-3.5 w-3.5" />
         Image alt texts
       </Label>
+
+      <Label htmlFor="include-schemas" className={pillClass(includeSchemas)}>
+        <Checkbox id="include-schemas" checked={includeSchemas} onCheckedChange={(v) => setIncludeSchemas(!!v)} disabled={isLoading} className="hidden" />
+        <Code className="h-3.5 w-3.5" />
+        Schema Markup
+      </Label>
     </div>
   );
 

@@ -8,6 +8,7 @@ interface StatsCardsProps {
   includeH2: boolean;
   includeH3: boolean;
   includeImages: boolean;
+  includeSchemas: boolean;
 }
 
 export function StatsCards({ results, includeH1, includeH2, includeH3, includeImages }: StatsCardsProps) {

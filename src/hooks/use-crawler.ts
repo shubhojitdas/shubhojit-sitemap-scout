@@ -69,7 +69,7 @@ export function useCrawler() {
   };
 
   // Crawl from a sitemap URL (parses sitemap first)
-  const crawl = useCallback(async (sitemapUrl: string, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false) => {
+  const crawl = useCallback(async (sitemapUrl: string, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false, includeSchemas = false) => {
     const signal = startController();
     setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeH2, includeH3 });
 

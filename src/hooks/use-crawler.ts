@@ -102,7 +102,7 @@ export function useCrawler() {
     setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeH2, includeH3 });
 
     try {
-      await runBatches(urls, signal, includeH1, includeH2, includeH3, includeImages);
+      await runBatches(urls, signal, includeH1, includeH2, includeH3, includeImages, includeSchemas);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({

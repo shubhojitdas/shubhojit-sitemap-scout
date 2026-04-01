@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
-      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1, includeH2, includeH3, includeImages)));
+      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1, includeH2, includeH3, includeImages, includeSchemas)));
       results.push(...batchResults);
     }
 

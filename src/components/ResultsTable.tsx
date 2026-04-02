@@ -282,15 +282,20 @@ function MetaTable({
               return (
                 <div
                   key={index}
-                  className={`grid ${gridCols} gap-0 hover:bg-muted/20 transition-colors text-xs`}
+                  style={gridStyle}
+                  className="grid gap-0 hover:bg-muted/20 transition-colors text-xs"
                 >
                   <div className="px-3 py-2 break-all font-mono text-[11px] text-muted-foreground">{row.url}</div>
-                  <div className="px-3 py-2 break-words text-[11px]">
-                    {row.title || <span className="text-muted-foreground italic">(empty)</span>}
-                  </div>
-                  <div className="px-3 py-2 break-words text-[11px] text-muted-foreground">
-                    {row.description || <span className="italic">(empty)</span>}
-                  </div>
+                  {includeTitle && (
+                    <div className="px-3 py-2 break-words text-[11px]">
+                      {row.title || <span className="text-muted-foreground italic">(empty)</span>}
+                    </div>
+                  )}
+                  {includeDesc && (
+                    <div className="px-3 py-2 break-words text-[11px] text-muted-foreground">
+                      {row.description || <span className="italic">(empty)</span>}
+                    </div>
+                  )}
                   {includeH1 && (
                     <div className="px-3 py-2 space-y-0.5">
                       {h1s.length === 0 ? (

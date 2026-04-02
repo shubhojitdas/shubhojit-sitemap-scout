@@ -51,7 +51,7 @@ export function StatsCards({ results, includeTitle, includeDesc, includeH1, incl
     { label: "Total URLs", value: total.toLocaleString(), icon: Globe, color: "text-foreground" },
     { label: "Successful", value: success.toLocaleString(), icon: CheckCircle, color: "text-success" },
     { label: "Errors", value: `${errors} (${errorRate}%)`, icon: XCircle, color: "text-destructive" },
-    { label: "Avg Title / Desc", value: `${avgTitleLen} / ${avgDescLen}`, icon: BarChart3, color: "text-warning" },
+    ...((includeTitle || includeDesc) ? [{ label: "Avg Title / Desc", value: `${includeTitle ? avgTitleLen : '—'} / ${includeDesc ? avgDescLen : '—'}`, icon: BarChart3, color: "text-warning" }] : []),
   ];
 
   const h1Stats = [

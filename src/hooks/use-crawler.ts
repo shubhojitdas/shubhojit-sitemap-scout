@@ -7,6 +7,8 @@ interface CrawlState {
   totalUrls: number;
   processedUrls: number;
   error: string | null;
+  includeTitle: boolean;
+  includeDesc: boolean;
   includeH2: boolean;
   includeH3: boolean;
 }
@@ -17,6 +19,8 @@ const INITIAL_STATE: CrawlState = {
   totalUrls: 0,
   processedUrls: 0,
   error: null,
+  includeTitle: true,
+  includeDesc: true,
   includeH2: false,
   includeH3: false,
 };
@@ -37,6 +41,8 @@ export function useCrawler() {
   const runBatches = async (
     urls: string[],
     signal: AbortSignal,
+    includeTitle: boolean,
+    includeDesc: boolean,
     includeH1: boolean,
     includeH2: boolean,
     includeH3: boolean,
@@ -50,7 +56,7 @@ export function useCrawler() {
       if (signal.aborted) return;
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
-        const batchResults = await fetchMetaBatch(batch, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+        const batchResults = await fetchMetaBatch(batch, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
         if (signal.aborted) return;
         allResults.push(...batchResults);
       } catch {
@@ -68,10 +74,18 @@ export function useCrawler() {
     }
   };
 
-  // Crawl from a sitemap URL (parses sitemap first)
-  const crawl = useCallback(async (sitemapUrl: string, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false, includeSchemas = false) => {
+  const crawl = useCallback(async (
+    sitemapUrl: string,
+    includeTitle = true,
+    includeDesc = true,
+    includeH1 = false,
+    includeH2 = false,
+    includeH3 = false,
+    includeImages = false,
+    includeSchemas = false,
+  ) => {
     const signal = startController();
-    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeH2, includeH3 });
+    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
@@ -83,7 +97,7 @@ export function useCrawler() {
       }
 
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
-      await runBatches(urls, signal, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -96,13 +110,21 @@ export function useCrawler() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Crawl a pre-supplied list of URLs (skips sitemap parsing)
-  const crawlUrls = useCallback(async (urls: string[], includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false, includeSchemas = false) => {
+  const crawlUrls = useCallback(async (
+    urls: string[],
+    includeTitle = true,
+    includeDesc = true,
+    includeH1 = false,
+    includeH2 = false,
+    includeH3 = false,
+    includeImages = false,
+    includeSchemas = false,
+  ) => {
     const signal = startController();
-    setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeH2, includeH3 });
+    setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
-      await runBatches(urls, signal, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({

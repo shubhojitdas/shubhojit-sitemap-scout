@@ -41,73 +41,40 @@ function extractTitle(html: string): string {
 }
 
 function extractDescription(html: string): string {
-  const patterns = [
-    /<meta\s+name\s*=\s*["']description["']\s+content\s*=\s*["']([\s\S]*?)["']\s*\/?>/i,
-    /<meta\s+content\s*=\s*["']([\s\S]*?)["']\s+name\s*=\s*["']description["']\s*\/?>/i,
-    /<meta\s+name\s*=\s*["']description["']\s[^>]*content\s*=\s*["']([\s\S]*?)["'][^>]*\/?>/i,
-    /<meta\s+content\s*=\s*["']([\s\S]*?)["']\s[^>]*name\s*=\s*["']description["'][^>]*\/?>/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = html.match(pattern);
-    if (match && match[1]) {
-      return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim();
-    }
-  }
-
-  const metaTagRegex = /<meta\s([^>]+)>/gi;
+  // Strategy: find all <meta> tags, check for name="description", extract content robustly
+  const metaTagRegex = /<meta\s([^>]+?)\/?>/gi;
   let metaMatch;
   while ((metaMatch = metaTagRegex.exec(html)) !== null) {
     const attrs = metaMatch[1];
-    const nameMatch = attrs.match(/name\s*=\s*["']description["']/i);
-    if (nameMatch) {
-      const contentMatch = attrs.match(/content\s*=\s*["']([\s\S]*?)["']/i);
-      if (contentMatch) {
-        return decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim();
-      }
+    // Check if this meta tag has name="description"
+    const nameMatch = attrs.match(/\bname\s*=\s*["']description["']/i);
+    if (!nameMatch) continue;
+
+    // Extract content attribute — handle both single and double quotes
+    // Try double quotes first
+    let contentMatch = attrs.match(/\bcontent\s*=\s*"([^"]*)"/i);
+    if (!contentMatch) {
+      // Try single quotes
+      contentMatch = attrs.match(/\bcontent\s*=\s*'([^']*)'/i);
+    }
+    if (contentMatch && contentMatch[1]) {
+      return decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim();
     }
   }
-
   return '';
 }
 
-function extractH1s(html: string): string[] {
-  const h1s: string[] = [];
-  const h1Regex = /<h1[^>]*>([\s\S]*?)<\/h1>/gi;
+function extractHeadings(html: string, tag: string): string[] {
+  const headings: string[] = [];
+  const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'gi');
   let match;
-  while ((match = h1Regex.exec(html)) !== null) {
+  while ((match = regex.exec(html)) !== null) {
     const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ''))
       .replace(/\s+/g, ' ')
       .trim();
-    if (text) h1s.push(text.slice(0, 200));
+    if (text) headings.push(text.slice(0, 200));
   }
-  return h1s;
-}
-
-function extractH2s(html: string): string[] {
-  const h2s: string[] = [];
-  const h2Regex = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
-  let match;
-  while ((match = h2Regex.exec(html)) !== null) {
-    const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ''))
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (text) h2s.push(text.slice(0, 200));
-  }
-  return h2s;
-}
-
-function extractH3s(html: string): string[] {
-  const h3s: string[] = [];
-  const h3Regex = /<h3[^>]*>([\s\S]*?)<\/h3>/gi;
-  let match;
-  while ((match = h3Regex.exec(html)) !== null) {
-    const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ''))
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (text) h3s.push(text.slice(0, 200));
-  }
-  return h3s;
+  return headings;
 }
 
 function extractSchemaMarkups(html: string): string[] {
@@ -118,11 +85,9 @@ function extractSchemaMarkups(html: string): string[] {
     const content = match[1].trim();
     if (content) {
       try {
-        // Validate it's valid JSON, then prettify
         const parsed = JSON.parse(content);
         schemas.push(JSON.stringify(parsed, null, 2));
       } catch {
-        // Still include raw content if JSON is malformed
         schemas.push(content);
       }
     }
@@ -132,73 +97,96 @@ function extractSchemaMarkups(html: string): string[] {
 
 function extractImages(html: string, baseUrl: string): ImageData[] {
   const images: ImageData[] = [];
-  // Match <img> tags and capture src + optional alt
   const imgRegex = /<img\s([^>]+)>/gi;
   let match;
   while ((match = imgRegex.exec(html)) !== null) {
     const attrs = match[1];
-
-    // Extract src
     const srcMatch = attrs.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
     if (!srcMatch) continue;
     let src = srcMatch[1].trim();
 
-    // Resolve relative URLs
     if (src.startsWith('//')) {
-      try {
-        const base = new URL(baseUrl);
-        src = base.protocol + src;
-      } catch { /* keep as-is */ }
+      try { const base = new URL(baseUrl); src = base.protocol + src; } catch { /* keep */ }
     } else if (src.startsWith('/')) {
-      try {
-        const base = new URL(baseUrl);
-        src = base.origin + src;
-      } catch { /* keep as-is */ }
+      try { const base = new URL(baseUrl); src = base.origin + src; } catch { /* keep */ }
     } else if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')) {
-      try {
-        src = new URL(src, baseUrl).href;
-      } catch { /* keep as-is */ }
+      try { src = new URL(src, baseUrl).href; } catch { /* keep */ }
     }
 
-    // Skip data URIs (inline images)
     if (src.startsWith('data:')) continue;
 
-    // Extract alt
     const altMatch = attrs.match(/\balt\s*=\s*["']([^"']*)["']/i);
     const alt = altMatch ? decodeHtmlEntities(altMatch[1]).replace(/\s+/g, ' ').trim() : null;
-
     images.push({ src, alt: alt !== null && alt.length > 0 ? alt : null });
   }
   return images;
 }
 
-async function fetchMeta(url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean): Promise<CrawlResult> {
+// Retry fetch with exponential backoff
+async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
+  const retryableStatuses = new Set([408, 425, 429, 500, 502, 503, 504]);
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+        },
+        signal: AbortSignal.timeout(15000),
+        redirect: 'follow',
+      });
+      if (resp.ok || !retryableStatuses.has(resp.status)) {
+        return resp;
+      }
+      // Retryable status — consume body before retrying
+      await resp.text();
+    } catch (e) {
+      if (attempt === retries - 1) throw e;
+    }
+    // Exponential backoff: 1s, 2s, 4s
+    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+  }
+  throw new Error('Max retries reached');
+}
+
+async function fetchMeta(
+  url: string,
+  includeTitle: boolean,
+  includeDesc: boolean,
+  includeH1: boolean,
+  includeH2: boolean,
+  includeH3: boolean,
+  includeImages: boolean,
+  includeSchemas: boolean,
+): Promise<CrawlResult> {
   const start = Date.now();
+  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
   try {
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': 'SitemapCrawlerPro/1.0' },
-      signal: AbortSignal.timeout(10000),
-      redirect: 'follow',
-    });
+    const resp = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
 
     if (!resp.ok) {
-      return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], status: 'Error', statusCode: resp.status, fetchTime: elapsed };
+      return { ...empty, statusCode: resp.status, fetchTime: elapsed };
     }
 
     const html = await resp.text();
-    const title = extractTitle(html);
-    const description = extractDescription(html);
-    const h1s = includeH1 ? extractH1s(html) : [];
-    const h2s = includeH2 ? extractH2s(html) : [];
-    const h3s = includeH3 ? extractH3s(html) : [];
-    const images = includeImages ? extractImages(html, url) : [];
-    const schemas = includeSchemas ? extractSchemaMarkups(html) : [];
-
-    return { url, title, description, h1s, h2s, h3s, images, schemas, status: 'OK', statusCode: resp.status, fetchTime: elapsed };
+    return {
+      url,
+      title: includeTitle ? extractTitle(html) : '',
+      description: includeDesc ? extractDescription(html) : '',
+      h1s: includeH1 ? extractHeadings(html, 'h1') : [],
+      h2s: includeH2 ? extractHeadings(html, 'h2') : [],
+      h3s: includeH3 ? extractHeadings(html, 'h3') : [],
+      images: includeImages ? extractImages(html, url) : [],
+      schemas: includeSchemas ? extractSchemaMarkups(html) : [],
+      status: 'OK',
+      statusCode: resp.status,
+      fetchTime: elapsed,
+    };
   } catch {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
-    return { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], status: 'Error', statusCode: 0, fetchTime: elapsed };
+    return { ...empty, fetchTime: elapsed };
   }
 }
 
@@ -208,7 +196,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { urls, includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false, includeSchemas = false } = await req.json();
+    const {
+      urls,
+      includeTitle = true,
+      includeDesc = true,
+      includeH1 = false,
+      includeH2 = false,
+      includeH3 = false,
+      includeImages = false,
+      includeSchemas = false,
+    } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return new Response(
@@ -217,12 +214,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    const batchSize = 10;
+    // Concurrency of 5 to reduce server-side pressure
+    const batchSize = 5;
     const results: CrawlResult[] = [];
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
-      const batchResults = await Promise.all(batch.map((url: string) => fetchMeta(url, includeH1, includeH2, includeH3, includeImages, includeSchemas)));
+      const batchResults = await Promise.all(
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas))
+      );
       results.push(...batchResults);
     }
 

@@ -81,12 +81,16 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
 function MetaTable({
   results,
   domain,
+  includeTitle,
+  includeDesc,
   includeH1,
   includeH2,
   includeH3,
 }: {
   results: CrawlResult[];
   domain: string;
+  includeTitle: boolean;
+  includeDesc: boolean;
   includeH1: boolean;
   includeH2: boolean;
   includeH3: boolean;

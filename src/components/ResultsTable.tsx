@@ -164,11 +164,17 @@ function MetaTable({
     ...(includeH1 ? h1Filters : []),
   ];
 
-  // Build dynamic grid cols based on active columns
-  const metaCols = [includeTitle, includeDesc].filter(Boolean).length;
-  const headingCols = [includeH1, includeH2, includeH3].filter(Boolean).length;
-  const totalCols = 1 + metaCols + headingCols + 1; // URL + meta + headings + status
-  const gridCols = `grid-cols-[${['1fr', ...(includeTitle ? ['1fr'] : []), ...(includeDesc ? ['1.4fr'] : []), ...(includeH1 ? ['1fr'] : []), ...(includeH2 ? ['1fr'] : []), ...(includeH3 ? ['1fr'] : []), '80px'].join('_')}]`;
+  // Build dynamic grid template
+  const colTemplate = [
+    '1fr',
+    ...(includeTitle ? ['1fr'] : []),
+    ...(includeDesc ? ['1.4fr'] : []),
+    ...(includeH1 ? ['1fr'] : []),
+    ...(includeH2 ? ['1fr'] : []),
+    ...(includeH3 ? ['1fr'] : []),
+    '80px',
+  ].join(' ');
+  const gridStyle = { gridTemplateColumns: colTemplate };
 
   return (
     <div className="space-y-3">

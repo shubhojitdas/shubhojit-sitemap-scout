@@ -135,7 +135,7 @@ function MetaTable({
   };
 
   const handleCopy = () => {
-    const csv = generateCSV(filtered, includeH1, includeH2, includeH3, false);
+    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false);
     navigator.clipboard.writeText(csv);
     setCopied(true);
     toast({ title: "Copied!", description: `${filtered.length} rows copied as CSV` });
@@ -143,7 +143,7 @@ function MetaTable({
   };
 
   const handleDownload = () => {
-    const csv = generateCSV(filtered, includeH1, includeH2, includeH3, false);
+    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false);
     downloadCSV(csv, domain);
     toast({ title: "Downloaded!", description: `CSV file saved` });
   };

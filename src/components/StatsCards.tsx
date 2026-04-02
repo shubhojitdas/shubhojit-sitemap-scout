@@ -4,6 +4,8 @@ import { CrawlResult } from "@/lib/crawl-api";
 
 interface StatsCardsProps {
   results: CrawlResult[];
+  includeTitle: boolean;
+  includeDesc: boolean;
   includeH1: boolean;
   includeH2: boolean;
   includeH3: boolean;
@@ -11,7 +13,7 @@ interface StatsCardsProps {
   includeSchemas: boolean;
 }
 
-export function StatsCards({ results, includeH1, includeH2, includeH3, includeImages, includeSchemas }: StatsCardsProps) {
+export function StatsCards({ results, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas }: StatsCardsProps) {
   if (results.length === 0) return null;
 
   const total = results.length;

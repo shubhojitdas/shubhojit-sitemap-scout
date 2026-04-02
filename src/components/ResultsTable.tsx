@@ -16,6 +16,8 @@ type ImageFilter = "all" | "missing-alt" | "no-images" | "has-images";
 interface ResultsTableProps {
   results: CrawlResult[];
   domain: string;
+  includeTitle: boolean;
+  includeDesc: boolean;
   includeH1: boolean;
   includeH2: boolean;
   includeH3: boolean;

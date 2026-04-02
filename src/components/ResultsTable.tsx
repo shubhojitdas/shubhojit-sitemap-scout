@@ -219,17 +219,32 @@ function MetaTable({
       {/* Table */}
       <div className="border border-border rounded-lg overflow-hidden bg-card">
         {/* Header */}
-        <div className={`grid ${gridCols} gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground`}>
-          {(["url", "title", "description"] as SortKey[]).map((key) => (
+        <div style={gridStyle} className="grid gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+          <button
+            onClick={() => handleSort("url")}
+            className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left"
+          >
+            URL
+            <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
+          </button>
+          {includeTitle && (
             <button
-              key={key}
-              onClick={() => handleSort(key)}
+              onClick={() => handleSort("title")}
               className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left"
             >
-              {key === "description" ? "Meta Description" : key === "title" ? "Meta Title" : "URL"}
+              Meta Title
               <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
             </button>
-          ))}
+          )}
+          {includeDesc && (
+            <button
+              onClick={() => handleSort("description")}
+              className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left"
+            >
+              Meta Description
+              <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
+            </button>
+          )}
           {includeH1 && (
             <div className="flex items-center gap-1 px-3 py-2 text-left">
               <Heading1 className="h-3 w-3" />

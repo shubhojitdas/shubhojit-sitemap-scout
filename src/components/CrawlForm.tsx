@@ -65,7 +65,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+    onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {

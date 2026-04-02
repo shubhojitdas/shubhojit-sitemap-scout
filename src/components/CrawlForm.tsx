@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import * as XLSX from "xlsx";
 
 interface CrawlFormProps {
-  onCrawl: (url: string, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean) => void;
-  onCrawlUrls: (urls: string[], includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean) => void;
+  onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean) => void;
+  onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean) => void;
   isLoading: boolean;
   onReset: () => void;
 }
@@ -46,6 +46,8 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
   const [fileUrls, setFileUrls] = useState<string[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("sitemap");
+  const [includeTitle, setIncludeTitle] = useState(true);
+  const [includeDesc, setIncludeDesc] = useState(true);
   const [includeH1, setIncludeH1] = useState(false);
   const [includeH2, setIncludeH2] = useState(false);
   const [includeH3, setIncludeH3] = useState(false);
@@ -56,20 +58,20 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
   const handleSitemapSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sitemapUrl.trim()) return;
-    onCrawl(sitemapUrl.trim(), includeH1, includeH2, includeH3, includeImages, includeSchemas);
+    onCrawl(sitemapUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
   };
 
   const handleUrlsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+    onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
-    onCrawlUrls(fileUrls, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+    onCrawlUrls(fileUrls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,6 +141,16 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
 
   const Toggles = (
     <div className="mt-3 pt-3 border-t border-border flex justify-center gap-2 flex-wrap">
+      <Label htmlFor="include-title" className={pillClass(includeTitle)}>
+        <Checkbox id="include-title" checked={includeTitle} onCheckedChange={(v) => setIncludeTitle(!!v)} disabled={isLoading} className="hidden" />
+        Meta Title
+      </Label>
+
+      <Label htmlFor="include-desc" className={pillClass(includeDesc)}>
+        <Checkbox id="include-desc" checked={includeDesc} onCheckedChange={(v) => setIncludeDesc(!!v)} disabled={isLoading} className="hidden" />
+        Meta Description
+      </Label>
+
       <Label htmlFor="include-h1" className={pillClass(includeH1)}>
         <Checkbox id="include-h1" checked={includeH1} onCheckedChange={(v) => setIncludeH1(!!v)} disabled={isLoading} className="hidden" />
         <Heading1 className="h-3.5 w-3.5" />

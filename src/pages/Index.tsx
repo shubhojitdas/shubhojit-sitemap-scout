@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
 const Index = () => {
-  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, reset, includeH2, includeH3 } = useCrawler();
+  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, reset, includeTitle, includeDesc, includeH2, includeH3 } = useCrawler();
   const [showTop, setShowTop] = useState(false);
   const [domain, setDomain] = useState("");
   const [includeH1, setIncludeH1] = useState(false);
   const [includeImages, setIncludeImages] = useState(false);
   const [includeSchemas, setIncludeSchemas] = useState(false);
+  const [localIncludeTitle, setLocalIncludeTitle] = useState(true);
+  const [localIncludeDesc, setLocalIncludeDesc] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => setShowTop(window.scrollY > 400);
@@ -23,7 +25,7 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleCrawl = (url: string, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
+  const handleCrawl = (url: string, withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
       setDomain(parsed.hostname);
@@ -33,14 +35,18 @@ const Index = () => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
-    crawl(url, withH1, withH2, withH3, withImages, withSchemas);
+    setLocalIncludeTitle(withTitle);
+    setLocalIncludeDesc(withDesc);
+    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas);
   };
 
-  const handleCrawlUrls = (urls: string[], withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
+  const handleCrawlUrls = (urls: string[], withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
-    crawlUrls(urls, withH1, withH2, withH3, withImages, withSchemas);
+    setLocalIncludeTitle(withTitle);
+    setLocalIncludeDesc(withDesc);
+    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling";
@@ -70,11 +76,9 @@ const Index = () => {
         className="relative flex flex-col justify-center overflow-hidden"
         style={{ minHeight: 'calc(100vh - 48px)' }}
       >
-        {/* Grid background with fade */}
         <div className="absolute inset-0 grid-bg fade-mask pointer-events-none" />
 
         <div className="relative container max-w-2xl mx-auto px-4 flex flex-col items-center">
-          {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -87,7 +91,6 @@ const Index = () => {
             </div>
           </motion.div>
 
-          {/* Headline */}
           <motion.div
             className="text-center mb-6"
             initial={{ opacity: 0, y: 8 }}
@@ -104,7 +107,6 @@ const Index = () => {
             </p>
           </motion.div>
 
-          {/* Form card */}
           <motion.div
             className="w-full max-w-xl"
             initial={{ opacity: 0, y: 12 }}
@@ -116,7 +118,6 @@ const Index = () => {
             </div>
           </motion.div>
 
-          {/* Subtle footer text */}
           <motion.p
             className="mt-3 text-[11px] text-muted-foreground/60 text-center"
             initial={{ opacity: 0 }}
@@ -149,8 +150,8 @@ const Index = () => {
       {/* ── Results ── */}
       {results.length > 0 && (
         <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-4">
-          <StatsCards results={results} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} />
-          <ResultsTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} />
+          <StatsCards results={results} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} />
+          <ResultsTable results={results} domain={domain} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} />
         </section>
       )}
 

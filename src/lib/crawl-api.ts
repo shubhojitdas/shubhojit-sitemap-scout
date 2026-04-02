@@ -29,9 +29,18 @@ export async function parseSitemapUrls(sitemapUrl: string): Promise<string[]> {
   return data.urls || [];
 }
 
-export async function fetchMetaBatch(urls: string[], includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false, includeSchemas = false): Promise<CrawlResult[]> {
+export async function fetchMetaBatch(
+  urls: string[],
+  includeTitle = true,
+  includeDesc = true,
+  includeH1 = false,
+  includeH2 = false,
+  includeH3 = false,
+  includeImages = false,
+  includeSchemas = false,
+): Promise<CrawlResult[]> {
   const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeH1, includeH2, includeH3, includeImages, includeSchemas },
+    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas },
   });
 
   if (error) throw new Error(error.message);
@@ -39,12 +48,20 @@ export async function fetchMetaBatch(urls: string[], includeH1 = false, includeH
   return data.results || [];
 }
 
-export function generateCSV(results: CrawlResult[], includeH1 = false, includeH2 = false, includeH3 = false, includeImages = false): string {
-  // If images mode: one row per image, expanding each page into N image rows
+export function generateCSV(
+  results: CrawlResult[],
+  includeTitle = true,
+  includeDesc = true,
+  includeH1 = false,
+  includeH2 = false,
+  includeH3 = false,
+  includeImages = false,
+): string {
+  const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+
   if (includeImages) {
     const header = "Page URL,Image URL,Alt Text,Image Count";
     const rows: string[] = [];
-    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
     results.forEach((r) => {
       const images = r.images ?? [];
       if (images.length === 0) {
@@ -58,8 +75,9 @@ export function generateCSV(results: CrawlResult[], includeH1 = false, includeH2
     return [header, ...rows].join("\n");
   }
 
-  const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
-  const headerParts = ["URL", "Meta Title", "Meta Description"];
+  const headerParts = ["URL"];
+  if (includeTitle) headerParts.push("Meta Title");
+  if (includeDesc) headerParts.push("Meta Description");
   if (includeH1) headerParts.push("H1 Tags", "H1 Count");
   if (includeH2) headerParts.push("H2 Tags", "H2 Count");
   if (includeH3) headerParts.push("H3 Tags", "H3 Count");
@@ -67,7 +85,9 @@ export function generateCSV(results: CrawlResult[], includeH1 = false, includeH2
   const header = headerParts.join(",");
 
   const rows = results.map((r) => {
-    const parts = [escape(r.url), escape(r.title), escape(r.description)];
+    const parts = [escape(r.url)];
+    if (includeTitle) parts.push(escape(r.title));
+    if (includeDesc) parts.push(escape(r.description));
     if (includeH1) { parts.push(escape((r.h1s ?? []).join(" | ")), String((r.h1s ?? []).length)); }
     if (includeH2) { parts.push(escape((r.h2s ?? []).join(" | ")), String((r.h2s ?? []).length)); }
     if (includeH3) { parts.push(escape((r.h3s ?? []).join(" | ")), String((r.h3s ?? []).length)); }

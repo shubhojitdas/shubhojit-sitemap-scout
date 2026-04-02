@@ -16,6 +16,8 @@ type ImageFilter = "all" | "missing-alt" | "no-images" | "has-images";
 interface ResultsTableProps {
   results: CrawlResult[];
   domain: string;
+  includeTitle: boolean;
+  includeDesc: boolean;
   includeH1: boolean;
   includeH2: boolean;
   includeH3: boolean;
@@ -24,7 +26,7 @@ interface ResultsTableProps {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeH1, includeH2, includeH3, includeImages, includeSchemas }: ResultsTableProps) {
+export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas }: ResultsTableProps) {
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<"meta" | "images" | "schemas">("meta");
 
@@ -55,7 +57,7 @@ export function ResultsTable({ results, domain, includeH1, includeH2, includeH3,
             )}
           </TabsList>
           <TabsContent value="meta" className="mt-3">
-            <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
+            <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
           </TabsContent>
           {includeImages && (
             <TabsContent value="images" className="mt-3">
@@ -69,7 +71,7 @@ export function ResultsTable({ results, domain, includeH1, includeH2, includeH3,
           )}
         </Tabs>
       ) : (
-        <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
+        <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
       )}
     </motion.div>
   );
@@ -79,12 +81,16 @@ export function ResultsTable({ results, domain, includeH1, includeH2, includeH3,
 function MetaTable({
   results,
   domain,
+  includeTitle,
+  includeDesc,
   includeH1,
   includeH2,
   includeH3,
 }: {
   results: CrawlResult[];
   domain: string;
+  includeTitle: boolean;
+  includeDesc: boolean;
   includeH1: boolean;
   includeH2: boolean;
   includeH3: boolean;
@@ -129,7 +135,7 @@ function MetaTable({
   };
 
   const handleCopy = () => {
-    const csv = generateCSV(filtered, includeH1, includeH2, includeH3, false);
+    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false);
     navigator.clipboard.writeText(csv);
     setCopied(true);
     toast({ title: "Copied!", description: `${filtered.length} rows copied as CSV` });
@@ -137,7 +143,7 @@ function MetaTable({
   };
 
   const handleDownload = () => {
-    const csv = generateCSV(filtered, includeH1, includeH2, includeH3, false);
+    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false);
     downloadCSV(csv, domain);
     toast({ title: "Downloaded!", description: `CSV file saved` });
   };
@@ -145,9 +151,9 @@ function MetaTable({
   const baseFilters: { key: Filter; label: string; icon?: typeof AlertTriangle }[] = [
     { key: "all", label: "All" },
     { key: "errors", label: "Errors", icon: AlertTriangle },
-    { key: "missing-title", label: "Missing Title", icon: FileWarning },
-    { key: "missing-desc", label: "Missing Desc" },
-    { key: "title-long", label: "Title >60ch" },
+    ...(includeTitle ? [{ key: "missing-title" as Filter, label: "Missing Title", icon: FileWarning }] : []),
+    ...(includeDesc ? [{ key: "missing-desc" as Filter, label: "Missing Desc" }] : []),
+    ...(includeTitle ? [{ key: "title-long" as Filter, label: "Title >60ch" }] : []),
   ];
   const h1Filters: { key: Filter; label: string }[] = [
     { key: "missing-h1", label: "No H1" },
@@ -158,15 +164,17 @@ function MetaTable({
     ...(includeH1 ? h1Filters : []),
   ];
 
-  // Build dynamic grid cols based on active heading extractions
-  const headingCols = [includeH1, includeH2, includeH3].filter(Boolean).length;
-  const gridCols = headingCols === 0
-    ? "grid-cols-[1.2fr_1.2fr_1.6fr_80px]"
-    : headingCols === 1
-    ? "grid-cols-[1fr_1fr_1.4fr_1.2fr_80px]"
-    : headingCols === 2
-    ? "grid-cols-[1fr_1fr_1.2fr_1fr_1fr_80px]"
-    : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_80px]";
+  // Build dynamic grid template
+  const colTemplate = [
+    '1fr',
+    ...(includeTitle ? ['1fr'] : []),
+    ...(includeDesc ? ['1.4fr'] : []),
+    ...(includeH1 ? ['1fr'] : []),
+    ...(includeH2 ? ['1fr'] : []),
+    ...(includeH3 ? ['1fr'] : []),
+    '80px',
+  ].join(' ');
+  const gridStyle = { gridTemplateColumns: colTemplate };
 
   return (
     <div className="space-y-3">
@@ -211,17 +219,32 @@ function MetaTable({
       {/* Table */}
       <div className="border border-border rounded-lg overflow-hidden bg-card">
         {/* Header */}
-        <div className={`grid ${gridCols} gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground`}>
-          {(["url", "title", "description"] as SortKey[]).map((key) => (
+        <div style={gridStyle} className="grid gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+          <button
+            onClick={() => handleSort("url")}
+            className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left"
+          >
+            URL
+            <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
+          </button>
+          {includeTitle && (
             <button
-              key={key}
-              onClick={() => handleSort(key)}
+              onClick={() => handleSort("title")}
               className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left"
             >
-              {key === "description" ? "Meta Description" : key === "title" ? "Meta Title" : "URL"}
+              Meta Title
               <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
             </button>
-          ))}
+          )}
+          {includeDesc && (
+            <button
+              onClick={() => handleSort("description")}
+              className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left"
+            >
+              Meta Description
+              <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
+            </button>
+          )}
           {includeH1 && (
             <div className="flex items-center gap-1 px-3 py-2 text-left">
               <Heading1 className="h-3 w-3" />
@@ -259,15 +282,20 @@ function MetaTable({
               return (
                 <div
                   key={index}
-                  className={`grid ${gridCols} gap-0 hover:bg-muted/20 transition-colors text-xs`}
+                  style={gridStyle}
+                  className="grid gap-0 hover:bg-muted/20 transition-colors text-xs"
                 >
                   <div className="px-3 py-2 break-all font-mono text-[11px] text-muted-foreground">{row.url}</div>
-                  <div className="px-3 py-2 break-words text-[11px]">
-                    {row.title || <span className="text-muted-foreground italic">(empty)</span>}
-                  </div>
-                  <div className="px-3 py-2 break-words text-[11px] text-muted-foreground">
-                    {row.description || <span className="italic">(empty)</span>}
-                  </div>
+                  {includeTitle && (
+                    <div className="px-3 py-2 break-words text-[11px]">
+                      {row.title || <span className="text-muted-foreground italic">(empty)</span>}
+                    </div>
+                  )}
+                  {includeDesc && (
+                    <div className="px-3 py-2 break-words text-[11px] text-muted-foreground">
+                      {row.description || <span className="italic">(empty)</span>}
+                    </div>
+                  )}
                   {includeH1 && (
                     <div className="px-3 py-2 space-y-0.5">
                       {h1s.length === 0 ? (
@@ -367,7 +395,7 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
   };
 
   const handleCopy = () => {
-    const csv = generateCSV(results, false, true);
+    const csv = generateCSV(results, false, false, false, false, false, true);
     navigator.clipboard.writeText(csv);
     setCopied(true);
     toast({ title: "Copied!", description: "Image alt text data copied as CSV" });
@@ -375,7 +403,7 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
   };
 
   const handleDownload = () => {
-    const csv = generateCSV(results, false, true);
+    const csv = generateCSV(results, false, false, false, false, false, true);
     downloadCSV(csv, `${domain}-images`);
     toast({ title: "Downloaded!", description: "Image alt text CSV saved" });
   };

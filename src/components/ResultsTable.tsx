@@ -71,7 +71,7 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
           )}
         </Tabs>
       ) : (
-        <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
+        <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
       )}
     </motion.div>
   );

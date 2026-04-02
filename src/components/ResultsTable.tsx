@@ -151,9 +151,9 @@ function MetaTable({
   const baseFilters: { key: Filter; label: string; icon?: typeof AlertTriangle }[] = [
     { key: "all", label: "All" },
     { key: "errors", label: "Errors", icon: AlertTriangle },
-    { key: "missing-title", label: "Missing Title", icon: FileWarning },
-    { key: "missing-desc", label: "Missing Desc" },
-    { key: "title-long", label: "Title >60ch" },
+    ...(includeTitle ? [{ key: "missing-title" as Filter, label: "Missing Title", icon: FileWarning }] : []),
+    ...(includeDesc ? [{ key: "missing-desc" as Filter, label: "Missing Desc" }] : []),
+    ...(includeTitle ? [{ key: "title-long" as Filter, label: "Title >60ch" }] : []),
   ];
   const h1Filters: { key: Filter; label: string }[] = [
     { key: "missing-h1", label: "No H1" },
@@ -164,15 +164,11 @@ function MetaTable({
     ...(includeH1 ? h1Filters : []),
   ];
 
-  // Build dynamic grid cols based on active heading extractions
+  // Build dynamic grid cols based on active columns
+  const metaCols = [includeTitle, includeDesc].filter(Boolean).length;
   const headingCols = [includeH1, includeH2, includeH3].filter(Boolean).length;
-  const gridCols = headingCols === 0
-    ? "grid-cols-[1.2fr_1.2fr_1.6fr_80px]"
-    : headingCols === 1
-    ? "grid-cols-[1fr_1fr_1.4fr_1.2fr_80px]"
-    : headingCols === 2
-    ? "grid-cols-[1fr_1fr_1.2fr_1fr_1fr_80px]"
-    : "grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_80px]";
+  const totalCols = 1 + metaCols + headingCols + 1; // URL + meta + headings + status
+  const gridCols = `grid-cols-[${['1fr', ...(includeTitle ? ['1fr'] : []), ...(includeDesc ? ['1.4fr'] : []), ...(includeH1 ? ['1fr'] : []), ...(includeH2 ? ['1fr'] : []), ...(includeH3 ? ['1fr'] : []), '80px'].join('_')}]`;
 
   return (
     <div className="space-y-3">

@@ -141,6 +141,16 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
 
   const Toggles = (
     <div className="mt-3 pt-3 border-t border-border flex justify-center gap-2 flex-wrap">
+      <Label htmlFor="include-title" className={pillClass(includeTitle)}>
+        <Checkbox id="include-title" checked={includeTitle} onCheckedChange={(v) => setIncludeTitle(!!v)} disabled={isLoading} className="hidden" />
+        Meta Title
+      </Label>
+
+      <Label htmlFor="include-desc" className={pillClass(includeDesc)}>
+        <Checkbox id="include-desc" checked={includeDesc} onCheckedChange={(v) => setIncludeDesc(!!v)} disabled={isLoading} className="hidden" />
+        Meta Description
+      </Label>
+
       <Label htmlFor="include-h1" className={pillClass(includeH1)}>
         <Checkbox id="include-h1" checked={includeH1} onCheckedChange={(v) => setIncludeH1(!!v)} disabled={isLoading} className="hidden" />
         <Heading1 className="h-3.5 w-3.5" />

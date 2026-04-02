@@ -46,6 +46,8 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
   const [fileUrls, setFileUrls] = useState<string[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("sitemap");
+  const [includeTitle, setIncludeTitle] = useState(true);
+  const [includeDesc, setIncludeDesc] = useState(true);
   const [includeH1, setIncludeH1] = useState(false);
   const [includeH2, setIncludeH2] = useState(false);
   const [includeH3, setIncludeH3] = useState(false);

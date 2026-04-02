@@ -57,7 +57,7 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
             )}
           </TabsList>
           <TabsContent value="meta" className="mt-3">
-            <MetaTable results={results} domain={domain} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
+            <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
           </TabsContent>
           {includeImages && (
             <TabsContent value="images" className="mt-3">

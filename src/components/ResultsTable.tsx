@@ -395,7 +395,7 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
   };
 
   const handleCopy = () => {
-    const csv = generateCSV(results, false, true);
+    const csv = generateCSV(results, false, false, false, false, false, true);
     navigator.clipboard.writeText(csv);
     setCopied(true);
     toast({ title: "Copied!", description: "Image alt text data copied as CSV" });
@@ -403,7 +403,7 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
   };
 
   const handleDownload = () => {
-    const csv = generateCSV(results, false, true);
+    const csv = generateCSV(results, false, false, false, false, false, true);
     downloadCSV(csv, `${domain}-images`);
     toast({ title: "Downloaded!", description: "Image alt text CSV saved" });
   };

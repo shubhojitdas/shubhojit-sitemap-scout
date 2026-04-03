@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Globe, CheckCircle, XCircle, BarChart3, Heading1, Image, Code } from "lucide-react";
+import { Globe, CheckCircle, XCircle, BarChart3, Heading1, Image, Code, Bot } from "lucide-react";
 import { CrawlResult } from "@/lib/crawl-api";
 
 interface StatsCardsProps {

@@ -95,6 +95,7 @@ export function generateCSV(
     if (includeH1) { parts.push(escape((r.h1s ?? []).join(" | ")), String((r.h1s ?? []).length)); }
     if (includeH2) { parts.push(escape((r.h2s ?? []).join(" | ")), String((r.h2s ?? []).length)); }
     if (includeH3) { parts.push(escape((r.h3s ?? []).join(" | ")), String((r.h3s ?? []).length)); }
+    if (includeRobots) { parts.push(escape(r.robots ?? '')); }
     parts.push(r.status, String(r.statusCode), r.fetchTime);
     return parts.join(",");
   });

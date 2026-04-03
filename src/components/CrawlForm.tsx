@@ -181,6 +181,12 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFor
         <Code className="h-3.5 w-3.5" />
         Schema Markup
       </Label>
+
+      <Label htmlFor="include-robots" className={pillClass(includeRobots)}>
+        <Checkbox id="include-robots" checked={includeRobots} onCheckedChange={(v) => setIncludeRobots(!!v)} disabled={isLoading} className="hidden" />
+        <Bot className="h-3.5 w-3.5" />
+        Meta Robots
+      </Label>
     </div>
   );
 

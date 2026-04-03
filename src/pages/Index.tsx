@@ -16,6 +16,7 @@ const Index = () => {
   const [includeH1, setIncludeH1] = useState(false);
   const [includeImages, setIncludeImages] = useState(false);
   const [includeSchemas, setIncludeSchemas] = useState(false);
+  const [includeRobots, setIncludeRobots] = useState(false);
   const [localIncludeTitle, setLocalIncludeTitle] = useState(true);
   const [localIncludeDesc, setLocalIncludeDesc] = useState(true);
 

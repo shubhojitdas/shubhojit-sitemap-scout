@@ -47,7 +47,8 @@ export function useCrawler() {
     includeH2: boolean,
     includeH3: boolean,
     includeImages: boolean,
-    includeSchemas: boolean
+    includeSchemas: boolean,
+    includeRobots: boolean
   ) => {
     const allResults: CrawlResult[] = [];
     const BATCH_SIZE = 10;
@@ -56,7 +57,7 @@ export function useCrawler() {
       if (signal.aborted) return;
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
-        const batchResults = await fetchMetaBatch(batch, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+        const batchResults = await fetchMetaBatch(batch, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
         if (signal.aborted) return;
         allResults.push(...batchResults);
       } catch {

@@ -14,7 +14,7 @@ interface StatsCardsProps {
   includeRobots: boolean;
 }
 
-export function StatsCards({ results, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas }: StatsCardsProps) {
+export function StatsCards({ results, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots }: StatsCardsProps) {
   if (results.length === 0) return null;
 
   const total = results.length;

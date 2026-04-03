@@ -99,6 +99,7 @@ function MetaTable({
 }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [searchMode, setSearchMode] = useState<"includes" | "excludes">("includes");
   const [sortKey, setSortKey] = useState<SortKey>("url");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filter, setFilter] = useState<Filter>("all");
@@ -115,20 +116,19 @@ function MetaTable({
     else if (filter === "missing-h1") data = data.filter((r) => (r.h1s ?? []).length === 0);
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.url.toLowerCase().includes(q) ||
-          r.title.toLowerCase().includes(q) ||
-          r.description.toLowerCase().includes(q) ||
-          (r.h1s ?? []).some((h) => h.toLowerCase().includes(q))
-      );
+      const matchFn = (r: CrawlResult) =>
+        r.url.toLowerCase().includes(q) ||
+        r.title.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q) ||
+        (r.h1s ?? []).some((h) => h.toLowerCase().includes(q));
+      data = searchMode === "includes" ? data.filter(matchFn) : data.filter((r) => !matchFn(r));
     }
     data.sort((a, b) => {
       const cmp = String(a[sortKey]).localeCompare(String(b[sortKey]));
       return sortDir === "asc" ? cmp : -cmp;
     });
     return data;
-  }, [results, search, sortKey, sortDir, filter]);
+  }, [results, search, searchMode, sortKey, sortDir, filter]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));

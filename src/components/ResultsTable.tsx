@@ -578,6 +578,7 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
 function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: string }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [searchMode, setSearchMode] = useState<"includes" | "excludes">("includes");
   const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -588,14 +589,13 @@ function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: str
     else if (schemaFilter === "no-schema") data = data.filter((r) => (r.schemas ?? []).length === 0);
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.url.toLowerCase().includes(q) ||
-          (r.schemas ?? []).some((s) => s.toLowerCase().includes(q))
-      );
+      const matchFn = (r: CrawlResult) =>
+        r.url.toLowerCase().includes(q) ||
+        (r.schemas ?? []).some((s) => s.toLowerCase().includes(q));
+      data = searchMode === "includes" ? data.filter(matchFn) : data.filter((r) => !matchFn(r));
     }
     return data;
-  }, [results, schemaFilter, search]);
+  }, [results, schemaFilter, search, searchMode]);
 
   const toggleRow = (i: number) => {
     setExpandedRows((prev) => {

@@ -17,6 +17,7 @@ interface CrawlResult {
   h3s: string[];
   images?: ImageData[];
   schemas?: string[];
+  robots?: string;
   status: 'OK' | 'Error';
   statusCode: number;
   fetchTime: string;

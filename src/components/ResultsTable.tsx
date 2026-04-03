@@ -195,6 +195,15 @@ function MetaTable({
           ))}
         </div>
         <div className="flex gap-1.5 items-center w-full sm:w-auto">
+          <Select value={searchMode} onValueChange={(v) => setSearchMode(v as "includes" | "excludes")}>
+            <SelectTrigger className="h-7 w-[110px] text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="includes" className="text-[11px]">Includes</SelectItem>
+              <SelectItem value="excludes" className="text-[11px]">Does not include</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="relative flex-1 sm:w-56">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input

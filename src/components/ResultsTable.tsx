@@ -373,6 +373,7 @@ function MetaTable({
 function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: string }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [searchMode, setSearchMode] = useState<"includes" | "excludes">("includes");
   const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
   const [copied, setCopied] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -384,16 +385,15 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
     else if (imgFilter === "has-images") data = data.filter((r) => (r.images ?? []).length > 0);
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.url.toLowerCase().includes(q) ||
-          (r.images ?? []).some(
-            (img) => img.src.toLowerCase().includes(q) || (img.alt ?? "").toLowerCase().includes(q)
-          )
-      );
+      const matchFn = (r: CrawlResult) =>
+        r.url.toLowerCase().includes(q) ||
+        (r.images ?? []).some(
+          (img) => img.src.toLowerCase().includes(q) || (img.alt ?? "").toLowerCase().includes(q)
+        );
+      data = searchMode === "includes" ? data.filter(matchFn) : data.filter((r) => !matchFn(r));
     }
     return data;
-  }, [results, imgFilter, search]);
+  }, [results, imgFilter, search, searchMode]);
 
   const toggleRow = (i: number) => {
     setExpandedRows((prev) => {

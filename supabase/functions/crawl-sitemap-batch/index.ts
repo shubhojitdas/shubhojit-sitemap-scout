@@ -204,6 +204,7 @@ async function fetchMeta(
       h3s: includeH3 ? extractHeadings(html, 'h3') : [],
       images: includeImages ? extractImages(html, url) : [],
       schemas: includeSchemas ? extractSchemaMarkups(html) : [],
+      robots: includeRobots ? extractMetaRobots(html) : '',
       status: 'OK',
       statusCode: resp.status,
       fetchTime: elapsed,

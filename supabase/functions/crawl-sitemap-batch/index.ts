@@ -230,6 +230,7 @@ Deno.serve(async (req) => {
       includeH3 = false,
       includeImages = false,
       includeSchemas = false,
+      includeRobots = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {

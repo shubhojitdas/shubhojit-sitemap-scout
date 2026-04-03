@@ -99,7 +99,7 @@ export function useCrawler() {
       }
 
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
-      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({

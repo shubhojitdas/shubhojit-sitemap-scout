@@ -89,6 +89,16 @@ export function StatsCards({ results, includeTitle, includeDesc, includeH1, incl
     { label: "Total Schemas", value: totalSchemas.toLocaleString(), icon: Code, color: "text-muted-foreground" },
   ];
 
+  const pagesWithRobots = results.filter((r) => (r.robots ?? '').length > 0).length;
+  const noindexPages = results.filter((r) => (r.robots ?? '').toLowerCase().includes('noindex')).length;
+  const nofollowPages = results.filter((r) => (r.robots ?? '').toLowerCase().includes('nofollow')).length;
+
+  const robotsStats = [
+    { label: "Has Robots", value: pagesWithRobots.toLocaleString(), icon: Bot, color: "text-foreground" },
+    { label: "Noindex", value: noindexPages.toLocaleString(), icon: Bot, color: "text-destructive" },
+    { label: "Nofollow", value: nofollowPages.toLocaleString(), icon: Bot, color: "text-warning" },
+  ];
+
   const stats = [
     ...baseStats,
     ...(includeH1 ? h1Stats : []),
@@ -96,6 +106,7 @@ export function StatsCards({ results, includeTitle, includeDesc, includeH1, incl
     ...(includeH3 ? h3Stats : []),
     ...(includeImages ? imageStats : []),
     ...(includeSchemas ? schemaStats : []),
+    ...(includeRobots ? robotsStats : []),
   ];
 
   const colCount = stats.length;

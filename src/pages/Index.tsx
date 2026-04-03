@@ -26,7 +26,7 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleCrawl = (url: string, withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
+  const handleCrawl = (url: string, withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean, withRobots: boolean) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
       setDomain(parsed.hostname);
@@ -36,18 +36,20 @@ const Index = () => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
+    setIncludeRobots(withRobots);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas);
+    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots);
   };
 
-  const handleCrawlUrls = (urls: string[], withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
+  const handleCrawlUrls = (urls: string[], withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean, withRobots: boolean) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
+    setIncludeRobots(withRobots);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas);
+    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling";

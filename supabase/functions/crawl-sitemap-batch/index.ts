@@ -79,17 +79,22 @@ function extractHeadings(html: string, tag: string): string[] {
 
 function extractSchemaMarkups(html: string): string[] {
   const schemas: string[] = [];
-  const regex = /<script\s[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    const content = match[1].trim();
-    if (content) {
-      try {
-        const parsed = JSON.parse(content);
-        schemas.push(JSON.stringify(parsed, null, 2));
-      } catch {
-        schemas.push(content);
-      }
+  // Match any <script> tag with type="application/ld+json", regardless of other attributes
+  const openTagRegex = /<script\s[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>/gi;
+  let openMatch;
+  while ((openMatch = openTagRegex.exec(html)) !== null) {
+    const startIdx = openMatch.index + openMatch[0].length;
+    // Find the closing </script> tag — use a case-insensitive search
+    const closeIdx = html.toLowerCase().indexOf('</script>', startIdx);
+    if (closeIdx === -1) continue;
+    const content = html.slice(startIdx, closeIdx).trim();
+    if (!content) continue;
+    try {
+      const parsed = JSON.parse(content);
+      schemas.push(JSON.stringify(parsed, null, 2));
+    } catch {
+      // Still include raw content so the user can see it
+      schemas.push(content);
     }
   }
   return schemas;

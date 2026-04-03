@@ -8,7 +8,39 @@ import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Helper to extract @type from parsed JSON-LD, handling @graph, arrays, and nested structures
+function extractSchemaTypes(obj: unknown): string {
+  if (!obj || typeof obj !== 'object') return 'Schema';
+  const o = obj as Record<string, unknown>;
+  
+  // Direct @type
+  if (o['@type']) {
+    const t = o['@type'];
+    return Array.isArray(t) ? t.join(', ') : String(t);
+  }
+  
+  // @graph array
+  if (Array.isArray(o['@graph'])) {
+    const types = (o['@graph'] as Record<string, unknown>[])
+      .map(item => item?.['@type'])
+      .filter(Boolean)
+      .map(t => Array.isArray(t) ? t.join(', ') : String(t));
+    return types.length > 0 ? types.join(' + ') : 'Schema';
+  }
+  
+  // Top-level array
+  if (Array.isArray(obj)) {
+    const types = (obj as Record<string, unknown>[])
+      .map(item => item?.['@type'])
+      .filter(Boolean)
+      .map(t => Array.isArray(t) ? t.join(', ') : String(t));
+    return types.length > 0 ? types.join(' + ') : 'Schema';
+  }
+  
+  return 'Schema';
+}
+
+
 type SortKey = "url" | "title" | "description" | "status";
 type SortDir = "asc" | "desc";
 type Filter = "all" | "errors" | "missing-title" | "missing-desc" | "title-long" | "multi-h1" | "missing-h1";
@@ -700,13 +732,13 @@ function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: str
               const schemas = row.schemas ?? [];
               const isExpanded = expandedRows.has(index);
 
-              // Try to extract @type from each schema
+              // Extract @type from each schema, handling @graph arrays and nested structures
               const types = schemas.map((s) => {
                 try {
                   const parsed = JSON.parse(s);
-                  return parsed["@type"] || "Unknown";
+                  return extractSchemaTypes(parsed);
                 } catch {
-                  return "Invalid JSON";
+                  return "Raw Schema";
                 }
               });
 

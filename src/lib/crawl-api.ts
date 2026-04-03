@@ -84,6 +84,7 @@ export function generateCSV(
   if (includeH1) headerParts.push("H1 Tags", "H1 Count");
   if (includeH2) headerParts.push("H2 Tags", "H2 Count");
   if (includeH3) headerParts.push("H3 Tags", "H3 Count");
+  if (includeRobots) headerParts.push("Meta Robots");
   headerParts.push("Status", "Response Code", "Fetch Time");
   const header = headerParts.join(",");
 

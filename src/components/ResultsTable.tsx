@@ -179,7 +179,7 @@ function MetaTable({
   };
 
   const handleDownload = () => {
-    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false);
+    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false, includeRobots);
     downloadCSV(csv, domain);
     toast({ title: "Downloaded!", description: `CSV file saved` });
   };

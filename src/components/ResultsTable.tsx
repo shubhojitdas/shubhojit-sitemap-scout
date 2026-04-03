@@ -56,6 +56,7 @@ interface ResultsTableProps {
   includeH3: boolean;
   includeImages: boolean;
   includeSchemas: boolean;
+  includeRobots: boolean;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────

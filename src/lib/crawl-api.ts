@@ -39,9 +39,10 @@ export async function fetchMetaBatch(
   includeH3 = false,
   includeImages = false,
   includeSchemas = false,
+  includeRobots = false,
 ): Promise<CrawlResult[]> {
   const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas },
+    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots },
   });
 
   if (error) throw new Error(error.message);

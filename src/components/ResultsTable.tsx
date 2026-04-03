@@ -120,6 +120,7 @@ function MetaTable({
   includeH1,
   includeH2,
   includeH3,
+  includeRobots,
 }: {
   results: CrawlResult[];
   domain: string;
@@ -129,6 +130,7 @@ function MetaTable({
   includeH2: boolean;
   includeH3: boolean;
   includeImages: boolean;
+  includeRobots: boolean;
 }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");

@@ -208,6 +208,7 @@ function MetaTable({
     ...(includeH1 ? ['1fr'] : []),
     ...(includeH2 ? ['1fr'] : []),
     ...(includeH3 ? ['1fr'] : []),
+    ...(includeRobots ? ['0.8fr'] : []),
     '80px',
   ].join(' ');
   const gridStyle = { gridTemplateColumns: colTemplate };

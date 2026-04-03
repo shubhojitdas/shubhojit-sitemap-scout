@@ -84,6 +84,7 @@ export function useCrawler() {
     includeH3 = false,
     includeImages = false,
     includeSchemas = false,
+    includeRobots = false,
   ) => {
     const signal = startController();
     setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });

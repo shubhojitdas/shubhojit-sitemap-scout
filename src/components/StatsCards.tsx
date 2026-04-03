@@ -11,6 +11,7 @@ interface StatsCardsProps {
   includeH3: boolean;
   includeImages: boolean;
   includeSchemas: boolean;
+  includeRobots: boolean;
 }
 
 export function StatsCards({ results, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas }: StatsCardsProps) {

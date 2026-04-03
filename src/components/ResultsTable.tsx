@@ -700,13 +700,13 @@ function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: str
               const schemas = row.schemas ?? [];
               const isExpanded = expandedRows.has(index);
 
-              // Try to extract @type from each schema
+              // Extract @type from each schema, handling @graph arrays and nested structures
               const types = schemas.map((s) => {
                 try {
                   const parsed = JSON.parse(s);
-                  return parsed["@type"] || "Unknown";
+                  return extractSchemaTypes(parsed);
                 } catch {
-                  return "Invalid JSON";
+                  return "Raw Schema";
                 }
               });
 

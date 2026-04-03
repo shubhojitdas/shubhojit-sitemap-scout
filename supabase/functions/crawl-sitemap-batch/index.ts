@@ -182,9 +182,10 @@ async function fetchMeta(
   includeH3: boolean,
   includeImages: boolean,
   includeSchemas: boolean,
+  includeRobots: boolean,
 ): Promise<CrawlResult> {
   const start = Date.now();
-  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
+  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', status: 'Error', statusCode: 0, fetchTime: '0s' };
   try {
     const resp = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';

@@ -2,7 +2,8 @@ import { useState, useMemo, useRef } from "react";
 import { CrawlResult, generateCSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Image, Code, ClipboardCopy } from "lucide-react";
+import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Image, Code, ClipboardCopy, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -98,6 +99,7 @@ function MetaTable({
 }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [searchMode, setSearchMode] = useState<"includes" | "excludes">("includes");
   const [sortKey, setSortKey] = useState<SortKey>("url");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filter, setFilter] = useState<Filter>("all");
@@ -114,20 +116,19 @@ function MetaTable({
     else if (filter === "missing-h1") data = data.filter((r) => (r.h1s ?? []).length === 0);
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.url.toLowerCase().includes(q) ||
-          r.title.toLowerCase().includes(q) ||
-          r.description.toLowerCase().includes(q) ||
-          (r.h1s ?? []).some((h) => h.toLowerCase().includes(q))
-      );
+      const matchFn = (r: CrawlResult) =>
+        r.url.toLowerCase().includes(q) ||
+        r.title.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q) ||
+        (r.h1s ?? []).some((h) => h.toLowerCase().includes(q));
+      data = searchMode === "includes" ? data.filter(matchFn) : data.filter((r) => !matchFn(r));
     }
     data.sort((a, b) => {
       const cmp = String(a[sortKey]).localeCompare(String(b[sortKey]));
       return sortDir === "asc" ? cmp : -cmp;
     });
     return data;
-  }, [results, search, sortKey, sortDir, filter]);
+  }, [results, search, searchMode, sortKey, sortDir, filter]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -194,6 +195,15 @@ function MetaTable({
           ))}
         </div>
         <div className="flex gap-1.5 items-center w-full sm:w-auto">
+          <Select value={searchMode} onValueChange={(v) => setSearchMode(v as "includes" | "excludes")}>
+            <SelectTrigger className="h-7 w-[110px] text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="includes" className="text-[11px]">Includes</SelectItem>
+              <SelectItem value="excludes" className="text-[11px]">Does not include</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="relative flex-1 sm:w-56">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
@@ -363,6 +373,7 @@ function MetaTable({
 function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: string }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [searchMode, setSearchMode] = useState<"includes" | "excludes">("includes");
   const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
   const [copied, setCopied] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -374,16 +385,15 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
     else if (imgFilter === "has-images") data = data.filter((r) => (r.images ?? []).length > 0);
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.url.toLowerCase().includes(q) ||
-          (r.images ?? []).some(
-            (img) => img.src.toLowerCase().includes(q) || (img.alt ?? "").toLowerCase().includes(q)
-          )
-      );
+      const matchFn = (r: CrawlResult) =>
+        r.url.toLowerCase().includes(q) ||
+        (r.images ?? []).some(
+          (img) => img.src.toLowerCase().includes(q) || (img.alt ?? "").toLowerCase().includes(q)
+        );
+      data = searchMode === "includes" ? data.filter(matchFn) : data.filter((r) => !matchFn(r));
     }
     return data;
-  }, [results, imgFilter, search]);
+  }, [results, imgFilter, search, searchMode]);
 
   const toggleRow = (i: number) => {
     setExpandedRows((prev) => {
@@ -433,6 +443,15 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
           ))}
         </div>
         <div className="flex gap-1.5 items-center w-full sm:w-auto">
+          <Select value={searchMode} onValueChange={(v) => setSearchMode(v as "includes" | "excludes")}>
+            <SelectTrigger className="h-7 w-[110px] text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="includes" className="text-[11px]">Includes</SelectItem>
+              <SelectItem value="excludes" className="text-[11px]">Does not include</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="relative flex-1 sm:w-56">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
@@ -559,6 +578,7 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
 function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: string }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [searchMode, setSearchMode] = useState<"includes" | "excludes">("includes");
   const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -569,14 +589,13 @@ function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: str
     else if (schemaFilter === "no-schema") data = data.filter((r) => (r.schemas ?? []).length === 0);
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.url.toLowerCase().includes(q) ||
-          (r.schemas ?? []).some((s) => s.toLowerCase().includes(q))
-      );
+      const matchFn = (r: CrawlResult) =>
+        r.url.toLowerCase().includes(q) ||
+        (r.schemas ?? []).some((s) => s.toLowerCase().includes(q));
+      data = searchMode === "includes" ? data.filter(matchFn) : data.filter((r) => !matchFn(r));
     }
     return data;
-  }, [results, schemaFilter, search]);
+  }, [results, schemaFilter, search, searchMode]);
 
   const toggleRow = (i: number) => {
     setExpandedRows((prev) => {
@@ -636,6 +655,15 @@ function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: str
           ))}
         </div>
         <div className="flex gap-1.5 items-center w-full sm:w-auto">
+          <Select value={searchMode} onValueChange={(v) => setSearchMode(v as "includes" | "excludes")}>
+            <SelectTrigger className="h-7 w-[110px] text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="includes" className="text-[11px]">Includes</SelectItem>
+              <SelectItem value="excludes" className="text-[11px]">Does not include</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="relative flex-1 sm:w-56">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input

@@ -394,6 +394,21 @@ function MetaTable({
                       )}
                     </div>
                   )}
+                  {includeRobots && (
+                    <div className="px-3 py-2 text-[11px]">
+                      {row.robots ? (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          row.robots.toLowerCase().includes('noindex') ? 'bg-destructive/15 text-destructive' :
+                          row.robots.toLowerCase().includes('nofollow') ? 'bg-warning/15 text-warning' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {row.robots}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground italic">(none)</span>
+                      )}
+                    </div>
+                  )}
                   <div className="px-3 py-2 flex items-start text-[11px]">
                     {row.status === "OK" ? (
                       <span className="text-success font-medium">OK</span>

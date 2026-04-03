@@ -14,6 +14,7 @@ export interface CrawlResult {
   h3s: string[];
   images?: ImageData[];
   schemas?: string[];
+  robots?: string;
   status: "OK" | "Error";
   statusCode: number;
   fetchTime: string;
@@ -38,9 +39,10 @@ export async function fetchMetaBatch(
   includeH3 = false,
   includeImages = false,
   includeSchemas = false,
+  includeRobots = false,
 ): Promise<CrawlResult[]> {
   const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas },
+    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots },
   });
 
   if (error) throw new Error(error.message);
@@ -56,6 +58,7 @@ export function generateCSV(
   includeH2 = false,
   includeH3 = false,
   includeImages = false,
+  includeRobots = false,
 ): string {
   const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
 
@@ -81,6 +84,7 @@ export function generateCSV(
   if (includeH1) headerParts.push("H1 Tags", "H1 Count");
   if (includeH2) headerParts.push("H2 Tags", "H2 Count");
   if (includeH3) headerParts.push("H3 Tags", "H3 Count");
+  if (includeRobots) headerParts.push("Meta Robots");
   headerParts.push("Status", "Response Code", "Fetch Time");
   const header = headerParts.join(",");
 
@@ -91,6 +95,7 @@ export function generateCSV(
     if (includeH1) { parts.push(escape((r.h1s ?? []).join(" | ")), String((r.h1s ?? []).length)); }
     if (includeH2) { parts.push(escape((r.h2s ?? []).join(" | ")), String((r.h2s ?? []).length)); }
     if (includeH3) { parts.push(escape((r.h3s ?? []).join(" | ")), String((r.h3s ?? []).length)); }
+    if (includeRobots) { parts.push(escape(r.robots ?? '')); }
     parts.push(r.status, String(r.statusCode), r.fetchTime);
     return parts.join(",");
   });

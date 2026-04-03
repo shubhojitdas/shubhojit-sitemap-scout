@@ -16,6 +16,7 @@ const Index = () => {
   const [includeH1, setIncludeH1] = useState(false);
   const [includeImages, setIncludeImages] = useState(false);
   const [includeSchemas, setIncludeSchemas] = useState(false);
+  const [includeRobots, setIncludeRobots] = useState(false);
   const [localIncludeTitle, setLocalIncludeTitle] = useState(true);
   const [localIncludeDesc, setLocalIncludeDesc] = useState(true);
 
@@ -25,7 +26,7 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleCrawl = (url: string, withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
+  const handleCrawl = (url: string, withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean, withRobots: boolean) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
       setDomain(parsed.hostname);
@@ -35,18 +36,20 @@ const Index = () => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
+    setIncludeRobots(withRobots);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas);
+    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots);
   };
 
-  const handleCrawlUrls = (urls: string[], withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean) => {
+  const handleCrawlUrls = (urls: string[], withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean, withRobots: boolean) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
+    setIncludeRobots(withRobots);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas);
+    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling";
@@ -150,8 +153,8 @@ const Index = () => {
       {/* ── Results ── */}
       {results.length > 0 && (
         <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-4">
-          <StatsCards results={results} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} />
-          <ResultsTable results={results} domain={domain} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} />
+          <StatsCards results={results} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} includeRobots={includeRobots} />
+          <ResultsTable results={results} domain={domain} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} includeRobots={includeRobots} />
         </section>
       )}
 

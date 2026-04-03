@@ -25,7 +25,7 @@ const INITIAL_STATE: CrawlState = {
   includeH3: false,
 };
 
-const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[] };
+const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '' };
 
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(INITIAL_STATE);
@@ -47,7 +47,8 @@ export function useCrawler() {
     includeH2: boolean,
     includeH3: boolean,
     includeImages: boolean,
-    includeSchemas: boolean
+    includeSchemas: boolean,
+    includeRobots: boolean
   ) => {
     const allResults: CrawlResult[] = [];
     const BATCH_SIZE = 10;
@@ -56,7 +57,7 @@ export function useCrawler() {
       if (signal.aborted) return;
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
-        const batchResults = await fetchMetaBatch(batch, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+        const batchResults = await fetchMetaBatch(batch, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
         if (signal.aborted) return;
         allResults.push(...batchResults);
       } catch {
@@ -83,6 +84,7 @@ export function useCrawler() {
     includeH3 = false,
     includeImages = false,
     includeSchemas = false,
+    includeRobots = false,
   ) => {
     const signal = startController();
     setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
@@ -97,7 +99,7 @@ export function useCrawler() {
       }
 
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
-      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -119,12 +121,13 @@ export function useCrawler() {
     includeH3 = false,
     includeImages = false,
     includeSchemas = false,
+    includeRobots = false,
   ) => {
     const signal = startController();
     setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
-      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas);
+      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({

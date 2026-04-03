@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { CrawlResult, generateCSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Image, Code, ClipboardCopy, Filter } from "lucide-react";
+import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Image, Code, ClipboardCopy, Filter, Bot } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -56,10 +56,11 @@ interface ResultsTableProps {
   includeH3: boolean;
   includeImages: boolean;
   includeSchemas: boolean;
+  includeRobots: boolean;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas }: ResultsTableProps) {
+export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots }: ResultsTableProps) {
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<"meta" | "images" | "schemas">("meta");
 
@@ -90,7 +91,7 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
             )}
           </TabsList>
           <TabsContent value="meta" className="mt-3">
-            <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
+            <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots} />
           </TabsContent>
           {includeImages && (
             <TabsContent value="images" className="mt-3">
@@ -104,7 +105,7 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
           )}
         </Tabs>
       ) : (
-        <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} />
+        <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots} />
       )}
     </motion.div>
   );
@@ -119,6 +120,7 @@ function MetaTable({
   includeH1,
   includeH2,
   includeH3,
+  includeRobots,
 }: {
   results: CrawlResult[];
   domain: string;
@@ -128,6 +130,7 @@ function MetaTable({
   includeH2: boolean;
   includeH3: boolean;
   includeImages: boolean;
+  includeRobots: boolean;
 }) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -168,7 +171,7 @@ function MetaTable({
   };
 
   const handleCopy = () => {
-    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false);
+    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false, includeRobots);
     navigator.clipboard.writeText(csv);
     setCopied(true);
     toast({ title: "Copied!", description: `${filtered.length} rows copied as CSV` });
@@ -176,7 +179,7 @@ function MetaTable({
   };
 
   const handleDownload = () => {
-    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false);
+    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false, includeRobots);
     downloadCSV(csv, domain);
     toast({ title: "Downloaded!", description: `CSV file saved` });
   };
@@ -205,6 +208,7 @@ function MetaTable({
     ...(includeH1 ? ['1fr'] : []),
     ...(includeH2 ? ['1fr'] : []),
     ...(includeH3 ? ['1fr'] : []),
+    ...(includeRobots ? ['0.8fr'] : []),
     '80px',
   ].join(' ');
   const gridStyle = { gridTemplateColumns: colTemplate };
@@ -305,6 +309,12 @@ function MetaTable({
               H3 Tags
             </div>
           )}
+          {includeRobots && (
+            <div className="flex items-center gap-1 px-3 py-2 text-left">
+              <Bot className="h-3 w-3" />
+              Meta Robots
+            </div>
+          )}
           <button
             onClick={() => handleSort("status")}
             className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left"
@@ -381,6 +391,21 @@ function MetaTable({
                             <span className="break-words leading-snug">{h}</span>
                           </div>
                         ))
+                      )}
+                    </div>
+                  )}
+                  {includeRobots && (
+                    <div className="px-3 py-2 text-[11px]">
+                      {row.robots ? (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          row.robots.toLowerCase().includes('noindex') ? 'bg-destructive/15 text-destructive' :
+                          row.robots.toLowerCase().includes('nofollow') ? 'bg-warning/15 text-warning' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {row.robots}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground italic">(none)</span>
                       )}
                     </div>
                   )}

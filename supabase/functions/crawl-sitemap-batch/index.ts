@@ -17,6 +17,7 @@ interface CrawlResult {
   h3s: string[];
   images?: ImageData[];
   schemas?: string[];
+  robots?: string;
   status: 'OK' | 'Error';
   statusCode: number;
   fetchTime: string;
@@ -75,6 +76,24 @@ function extractHeadings(html: string, tag: string): string[] {
     if (text) headings.push(text.slice(0, 200));
   }
   return headings;
+}
+
+function extractMetaRobots(html: string): string {
+  const metaTagRegex = /<meta\s([^>]+?)\/?>/gi;
+  let metaMatch;
+  while ((metaMatch = metaTagRegex.exec(html)) !== null) {
+    const attrs = metaMatch[1];
+    const nameMatch = attrs.match(/\bname\s*=\s*["']robots["']/i);
+    if (!nameMatch) continue;
+    let contentMatch = attrs.match(/\bcontent\s*=\s*"([^"]*)"/i);
+    if (!contentMatch) {
+      contentMatch = attrs.match(/\bcontent\s*=\s*'([^']*)'/i);
+    }
+    if (contentMatch && contentMatch[1]) {
+      return decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim();
+    }
+  }
+  return '';
 }
 
 function extractSchemaMarkups(html: string): string[] {
@@ -164,9 +183,10 @@ async function fetchMeta(
   includeH3: boolean,
   includeImages: boolean,
   includeSchemas: boolean,
+  includeRobots: boolean,
 ): Promise<CrawlResult> {
   const start = Date.now();
-  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
+  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', status: 'Error', statusCode: 0, fetchTime: '0s' };
   try {
     const resp = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
@@ -185,6 +205,7 @@ async function fetchMeta(
       h3s: includeH3 ? extractHeadings(html, 'h3') : [],
       images: includeImages ? extractImages(html, url) : [],
       schemas: includeSchemas ? extractSchemaMarkups(html) : [],
+      robots: includeRobots ? extractMetaRobots(html) : '',
       status: 'OK',
       statusCode: resp.status,
       fetchTime: elapsed,
@@ -210,6 +231,7 @@ Deno.serve(async (req) => {
       includeH3 = false,
       includeImages = false,
       includeSchemas = false,
+      includeRobots = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -226,7 +248,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas))
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots))
       );
       results.push(...batchResults);
     }

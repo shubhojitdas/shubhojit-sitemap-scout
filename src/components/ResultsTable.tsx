@@ -60,7 +60,7 @@ interface ResultsTableProps {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas }: ResultsTableProps) {
+export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots }: ResultsTableProps) {
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<"meta" | "images" | "schemas">("meta");
 

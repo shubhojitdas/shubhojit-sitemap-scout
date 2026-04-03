@@ -58,6 +58,7 @@ export function generateCSV(
   includeH2 = false,
   includeH3 = false,
   includeImages = false,
+  includeRobots = false,
 ): string {
   const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
 

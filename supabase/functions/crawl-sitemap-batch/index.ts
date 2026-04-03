@@ -77,6 +77,24 @@ function extractHeadings(html: string, tag: string): string[] {
   return headings;
 }
 
+function extractMetaRobots(html: string): string {
+  const metaTagRegex = /<meta\s([^>]+?)\/?>/gi;
+  let metaMatch;
+  while ((metaMatch = metaTagRegex.exec(html)) !== null) {
+    const attrs = metaMatch[1];
+    const nameMatch = attrs.match(/\bname\s*=\s*["']robots["']/i);
+    if (!nameMatch) continue;
+    let contentMatch = attrs.match(/\bcontent\s*=\s*"([^"]*)"/i);
+    if (!contentMatch) {
+      contentMatch = attrs.match(/\bcontent\s*=\s*'([^']*)'/i);
+    }
+    if (contentMatch && contentMatch[1]) {
+      return decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim();
+    }
+  }
+  return '';
+}
+
 function extractSchemaMarkups(html: string): string[] {
   const schemas: string[] = [];
   // Match any <script> tag with type="application/ld+json", regardless of other attributes

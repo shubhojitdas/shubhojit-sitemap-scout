@@ -309,6 +309,12 @@ function MetaTable({
               H3 Tags
             </div>
           )}
+          {includeRobots && (
+            <div className="flex items-center gap-1 px-3 py-2 text-left">
+              <Bot className="h-3 w-3" />
+              Meta Robots
+            </div>
+          )}
           <button
             onClick={() => handleSort("status")}
             className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left"

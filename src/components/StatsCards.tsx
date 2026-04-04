@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { Globe, CheckCircle, XCircle, BarChart3, Heading1, Image, Code, Bot } from "lucide-react";
+import { Globe, CheckCircle, XCircle, BarChart3, Heading1, Image, Code, Bot, ChevronDown } from "lucide-react";
 import { CrawlResult } from "@/lib/crawl-api";
+import { useState } from "react";
 
 interface StatsCardsProps {
   results: CrawlResult[];
@@ -14,6 +15,53 @@ interface StatsCardsProps {
   includeRobots: boolean;
 }
 
+interface StatItem {
+  label: string;
+  value: string;
+  color?: string;
+}
+
+interface StatGroup {
+  title: string;
+  icon: React.ElementType;
+  stats: StatItem[];
+}
+
+function StatGroupCard({ group, index }: { group: StatGroup; index: number }) {
+  const [open, setOpen] = useState(true);
+  const Icon = group.icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="rounded-lg border border-border bg-card overflow-hidden"
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/30 transition-colors"
+      >
+        <div className="flex items-center gap-1.5">
+          <Icon className="h-3 w-3 text-muted-foreground" />
+          <span className="text-[11px] font-medium text-foreground">{group.title}</span>
+        </div>
+        <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="px-3 pb-2.5 pt-0.5 grid grid-cols-3 gap-x-4 gap-y-1">
+          {group.stats.map((s) => (
+            <div key={s.label} className="flex items-baseline justify-between gap-2">
+              <span className="text-[10px] text-muted-foreground truncate">{s.label}</span>
+              <span className={`text-xs font-semibold tabular-nums ${s.color ?? "text-foreground"}`}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export function StatsCards({ results, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots }: StatsCardsProps) {
   if (results.length === 0) return null;
 
@@ -21,116 +69,106 @@ export function StatsCards({ results, includeTitle, includeDesc, includeH1, incl
   const success = results.filter((r) => r.status === "OK").length;
   const errors = total - success;
   const errorRate = total > 0 ? ((errors / total) * 100).toFixed(1) : "0";
-  const avgTitleLen = Math.round(
-    results.filter((r) => r.title).reduce((sum, r) => sum + r.title.length, 0) /
-      (results.filter((r) => r.title).length || 1)
-  );
-  const avgDescLen = Math.round(
-    results.filter((r) => r.description).reduce((sum, r) => sum + r.description.length, 0) /
-      (results.filter((r) => r.description).length || 1)
-  );
 
-  const pagesWithMultiH1 = results.filter((r) => (r.h1s ?? []).length > 1).length;
-  const pagesWithNoH1 = results.filter((r) => (r.h1s ?? []).length === 0).length;
-  const pagesWithH1 = results.filter((r) => (r.h1s ?? []).length >= 1).length;
+  const groups: StatGroup[] = [];
 
-  const pagesWithH2 = results.filter((r) => (r.h2s ?? []).length >= 1).length;
-  const pagesWithNoH2 = results.filter((r) => (r.h2s ?? []).length === 0).length;
-  const totalH2s = results.reduce((sum, r) => sum + (r.h2s ?? []).length, 0);
-
-  const pagesWithH3 = results.filter((r) => (r.h3s ?? []).length >= 1).length;
-  const pagesWithNoH3 = results.filter((r) => (r.h3s ?? []).length === 0).length;
-  const totalH3s = results.reduce((sum, r) => sum + (r.h3s ?? []).length, 0);
-
-  const totalImages = results.reduce((sum, r) => sum + (r.images ?? []).length, 0);
-  const pagesWithMissingAlt = results.filter((r) =>
-    (r.images ?? []).some((img) => img.alt === null)
-  ).length;
-  const pagesWithNoImages = results.filter((r) => (r.images ?? []).length === 0).length;
-
-  const baseStats = [
-    { label: "Total URLs", value: total.toLocaleString(), icon: Globe, color: "text-foreground" },
-    { label: "Successful", value: success.toLocaleString(), icon: CheckCircle, color: "text-success" },
-    { label: "Errors", value: `${errors} (${errorRate}%)`, icon: XCircle, color: "text-destructive" },
-    ...((includeTitle || includeDesc) ? [{ label: "Avg Title / Desc", value: `${includeTitle ? avgTitleLen : '—'} / ${includeDesc ? avgDescLen : '—'}`, icon: BarChart3, color: "text-warning" }] : []),
+  // Overview — always shown
+  const overviewStats: StatItem[] = [
+    { label: "Total URLs", value: total.toLocaleString() },
+    { label: "Successful", value: success.toLocaleString(), color: "text-success" },
+    { label: "Errors", value: `${errors} (${errorRate}%)`, color: errors > 0 ? "text-destructive" : undefined },
   ];
+  if (includeTitle) {
+    const avg = Math.round(results.filter((r) => r.title).reduce((s, r) => s + r.title.length, 0) / (results.filter((r) => r.title).length || 1));
+    overviewStats.push({ label: "Avg Title Len", value: String(avg) });
+  }
+  if (includeDesc) {
+    const avg = Math.round(results.filter((r) => r.description).reduce((s, r) => s + r.description.length, 0) / (results.filter((r) => r.description).length || 1));
+    overviewStats.push({ label: "Avg Desc Len", value: String(avg) });
+  }
+  groups.push({ title: "Overview", icon: Globe, stats: overviewStats });
 
-  const h1Stats = [
-    { label: "With H1", value: pagesWithH1.toLocaleString(), icon: Heading1, color: "text-foreground" },
-    { label: "No H1", value: pagesWithNoH1.toLocaleString(), icon: Heading1, color: "text-destructive" },
-    { label: "Multiple H1s", value: results.filter((r) => (r.h1s ?? []).length > 1).length.toLocaleString(), icon: Heading1, color: "text-warning" },
-  ];
+  if (includeH1) {
+    groups.push({
+      title: "H1 Tags",
+      icon: Heading1,
+      stats: [
+        { label: "With H1", value: results.filter((r) => (r.h1s ?? []).length >= 1).length.toLocaleString() },
+        { label: "No H1", value: results.filter((r) => (r.h1s ?? []).length === 0).length.toLocaleString(), color: "text-destructive" },
+        { label: "Multiple H1s", value: results.filter((r) => (r.h1s ?? []).length > 1).length.toLocaleString(), color: "text-warning" },
+      ],
+    });
+  }
 
-  const h2Stats = [
-    { label: "With H2", value: pagesWithH2.toLocaleString(), icon: Heading1, color: "text-foreground" },
-    { label: "No H2", value: pagesWithNoH2.toLocaleString(), icon: Heading1, color: "text-destructive" },
-    { label: "Total H2s", value: totalH2s.toLocaleString(), icon: Heading1, color: "text-muted-foreground" },
-  ];
+  if (includeH2) {
+    groups.push({
+      title: "H2 Tags",
+      icon: Heading1,
+      stats: [
+        { label: "With H2", value: results.filter((r) => (r.h2s ?? []).length >= 1).length.toLocaleString() },
+        { label: "No H2", value: results.filter((r) => (r.h2s ?? []).length === 0).length.toLocaleString(), color: "text-destructive" },
+        { label: "Total H2s", value: results.reduce((s, r) => s + (r.h2s ?? []).length, 0).toLocaleString() },
+      ],
+    });
+  }
 
-  const h3Stats = [
-    { label: "With H3", value: pagesWithH3.toLocaleString(), icon: Heading1, color: "text-foreground" },
-    { label: "No H3", value: pagesWithNoH3.toLocaleString(), icon: Heading1, color: "text-destructive" },
-    { label: "Total H3s", value: totalH3s.toLocaleString(), icon: Heading1, color: "text-muted-foreground" },
-  ];
+  if (includeH3) {
+    groups.push({
+      title: "H3 Tags",
+      icon: Heading1,
+      stats: [
+        { label: "With H3", value: results.filter((r) => (r.h3s ?? []).length >= 1).length.toLocaleString() },
+        { label: "No H3", value: results.filter((r) => (r.h3s ?? []).length === 0).length.toLocaleString(), color: "text-destructive" },
+        { label: "Total H3s", value: results.reduce((s, r) => s + (r.h3s ?? []).length, 0).toLocaleString() },
+      ],
+    });
+  }
 
-  const imageStats = [
-    { label: "Total Images", value: totalImages.toLocaleString(), icon: Image, color: "text-foreground" },
-    { label: "Missing Alt", value: pagesWithMissingAlt.toLocaleString(), icon: Image, color: "text-destructive" },
-    { label: "No Images", value: pagesWithNoImages.toLocaleString(), icon: Image, color: "text-muted-foreground" },
-  ];
+  if (includeImages) {
+    const totalImgs = results.reduce((s, r) => s + (r.images ?? []).length, 0);
+    groups.push({
+      title: "Images",
+      icon: Image,
+      stats: [
+        { label: "Total Images", value: totalImgs.toLocaleString() },
+        { label: "Missing Alt", value: results.filter((r) => (r.images ?? []).some((img) => img.alt === null)).length.toLocaleString(), color: "text-destructive" },
+        { label: "No Images", value: results.filter((r) => (r.images ?? []).length === 0).length.toLocaleString() },
+      ],
+    });
+  }
 
-  const pagesWithSchema = results.filter((r) => (r.schemas ?? []).length > 0).length;
-  const pagesNoSchema = results.filter((r) => (r.schemas ?? []).length === 0).length;
-  const totalSchemas = results.reduce((sum, r) => sum + (r.schemas ?? []).length, 0);
+  if (includeSchemas) {
+    groups.push({
+      title: "Schema Markup",
+      icon: Code,
+      stats: [
+        { label: "With Schema", value: results.filter((r) => (r.schemas ?? []).length > 0).length.toLocaleString() },
+        { label: "No Schema", value: results.filter((r) => (r.schemas ?? []).length === 0).length.toLocaleString(), color: "text-destructive" },
+        { label: "Total Schemas", value: results.reduce((s, r) => s + (r.schemas ?? []).length, 0).toLocaleString() },
+      ],
+    });
+  }
 
-  const schemaStats = [
-    { label: "With Schema", value: pagesWithSchema.toLocaleString(), icon: Code, color: "text-foreground" },
-    { label: "No Schema", value: pagesNoSchema.toLocaleString(), icon: Code, color: "text-destructive" },
-    { label: "Total Schemas", value: totalSchemas.toLocaleString(), icon: Code, color: "text-muted-foreground" },
-  ];
+  if (includeRobots) {
+    groups.push({
+      title: "Meta Robots",
+      icon: Bot,
+      stats: [
+        { label: "Has Robots", value: results.filter((r) => (r.robots ?? "").length > 0).length.toLocaleString() },
+        { label: "Noindex", value: results.filter((r) => (r.robots ?? "").toLowerCase().includes("noindex")).length.toLocaleString(), color: "text-destructive" },
+        { label: "Nofollow", value: results.filter((r) => (r.robots ?? "").toLowerCase().includes("nofollow")).length.toLocaleString(), color: "text-warning" },
+      ],
+    });
+  }
 
-  const pagesWithRobots = results.filter((r) => (r.robots ?? '').length > 0).length;
-  const noindexPages = results.filter((r) => (r.robots ?? '').toLowerCase().includes('noindex')).length;
-  const nofollowPages = results.filter((r) => (r.robots ?? '').toLowerCase().includes('nofollow')).length;
-
-  const robotsStats = [
-    { label: "Has Robots", value: pagesWithRobots.toLocaleString(), icon: Bot, color: "text-foreground" },
-    { label: "Noindex", value: noindexPages.toLocaleString(), icon: Bot, color: "text-destructive" },
-    { label: "Nofollow", value: nofollowPages.toLocaleString(), icon: Bot, color: "text-warning" },
-  ];
-
-  const stats = [
-    ...baseStats,
-    ...(includeH1 ? h1Stats : []),
-    ...(includeH2 ? h2Stats : []),
-    ...(includeH3 ? h3Stats : []),
-    ...(includeImages ? imageStats : []),
-    ...(includeSchemas ? schemaStats : []),
-    ...(includeRobots ? robotsStats : []),
-  ];
-
-  const colCount = stats.length;
-  const cols =
-    colCount <= 4 ? "grid-cols-2 lg:grid-cols-4" :
-    colCount <= 7 ? "grid-cols-2 lg:grid-cols-4 xl:grid-cols-7" :
-    "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10";
+  const colClass = groups.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
+    groups.length <= 3 ? "grid-cols-1 sm:grid-cols-3" :
+    "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
 
   return (
-    <div className={`grid ${cols} gap-2`}>
-      {stats.map((stat, i) => (
-        <motion.div
-          key={stat.label}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.03 }}
-          className="rounded-lg p-3 border border-border bg-card"
-        >
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <stat.icon className={`h-3 w-3 ${stat.color} opacity-60`} />
-            <span className="text-[11px] text-muted-foreground">{stat.label}</span>
-          </div>
-          <p className="text-lg font-semibold tracking-tight">{stat.value}</p>
-        </motion.div>
+    <div className={`grid ${colClass} gap-2`}>
+      {groups.map((g, i) => (
+        <StatGroupCard key={g.title} group={g} index={i} />
       ))}
     </div>
   );

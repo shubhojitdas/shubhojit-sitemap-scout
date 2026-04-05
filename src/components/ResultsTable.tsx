@@ -255,7 +255,7 @@ function MetaTable({
   }, [results, search, advancedFilter, sortKey, sortDir, filter]);
 
   const handleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    if (sortKey === key) setSortDir(sortDir === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("asc"); }
   };
 

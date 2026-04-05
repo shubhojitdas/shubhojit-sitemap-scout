@@ -2,4 +2,4 @@ User-agent: *
 Disallow: /api/
 Disallow: /supabase/
 Disallow: /functions/
-Disallow: /private/
+

@@ -468,11 +468,19 @@ function MetaTable({
                       )}
                     </div>
                   )}
-                  <div className="px-3 py-2 flex items-start text-[11px]">
-                    {row.status === "OK" ? (
-                      <span className="text-success font-medium">OK</span>
-                    ) : (
-                      <span className="text-destructive font-medium">Err</span>
+                  <div className="px-3 py-2 flex flex-col gap-0.5 text-[11px]">
+                    <span className={`font-medium ${
+                      row.statusCode >= 200 && row.statusCode < 300 ? 'text-success' :
+                      row.statusCode >= 300 && row.statusCode < 400 ? 'text-warning' :
+                      row.statusCode >= 400 ? 'text-destructive' :
+                      row.status === 'Error' ? 'text-destructive' : 'text-muted-foreground'
+                    }`}>
+                      {row.statusCode > 0 ? row.statusCode : 'Err'}
+                    </span>
+                    {row.redirectedUrl && (
+                      <span className="text-[9px] text-warning break-all leading-tight" title={`Redirected to: ${row.redirectedUrl}`}>
+                        → {row.redirectedUrl.length > 40 ? row.redirectedUrl.slice(0, 40) + '…' : row.redirectedUrl}
+                      </span>
                     )}
                   </div>
                 </div>

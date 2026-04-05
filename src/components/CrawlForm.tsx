@@ -42,7 +42,7 @@ function extractUrlsFromRows(rows: unknown[][]): string[] {
   return urls;
 }
 
-export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, onReset }: CrawlFormProps) {
+export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, onPause, onResume }: CrawlFormProps) {
   const [sitemapUrl, setSitemapUrl] = useState("");
   const [urlText, setUrlText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);

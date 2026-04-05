@@ -108,6 +108,10 @@ export function useCrawler() {
     includeRobots = false,
   ) => {
     const signal = startController();
+    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots };
+    pendingUrlsRef.current = [];
+    pendingIndexRef.current = 0;
+    accumulatedResultsRef.current = [];
     setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
@@ -119,6 +123,7 @@ export function useCrawler() {
         return;
       }
 
+      pendingUrlsRef.current = urls;
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
       await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
     } catch (err) {
@@ -145,6 +150,10 @@ export function useCrawler() {
     includeRobots = false,
   ) => {
     const signal = startController();
+    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots };
+    pendingUrlsRef.current = urls;
+    pendingIndexRef.current = 0;
+    accumulatedResultsRef.current = [];
     setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
@@ -161,13 +170,38 @@ export function useCrawler() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const pause = useCallback(() => {
+    pausedRef.current = true;
+  }, []);
+
+  const resume = useCallback(async () => {
+    pausedRef.current = false;
+    const signal = controllerRef.current?.signal;
+    if (!signal || signal.aborted) return;
+    setState((s) => ({ ...s, phase: "crawling" }));
+    const opts = crawlOptionsRef.current;
+    await runBatches(
+      pendingUrlsRef.current,
+      signal,
+      opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3,
+      opts.includeImages, opts.includeSchemas, opts.includeRobots,
+      pendingIndexRef.current,
+      accumulatedResultsRef.current,
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const reset = useCallback(() => {
     if (controllerRef.current) {
       controllerRef.current.abort();
       controllerRef.current = null;
     }
+    pausedRef.current = false;
+    pendingUrlsRef.current = [];
+    pendingIndexRef.current = 0;
+    accumulatedResultsRef.current = [];
     setState(INITIAL_STATE);
   }, []);
 
-  return { ...state, crawl, crawlUrls, reset };
+  return { ...state, crawl, crawlUrls, pause, resume, reset };
 }

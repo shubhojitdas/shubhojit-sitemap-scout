@@ -316,7 +316,7 @@ function MetaTable({
     ...(includeH2 ? ['1fr'] : []),
     ...(includeH3 ? ['1fr'] : []),
     ...(includeRobots ? ['0.8fr'] : []),
-    '80px',
+    '100px',
   ].join(' ');
   const gridStyle = { gridTemplateColumns: colTemplate };
 

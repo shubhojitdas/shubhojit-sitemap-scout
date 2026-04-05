@@ -227,9 +227,20 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
                 />
               </div>
               {isLoading ? (
-                <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-9 px-4 text-xs">
-                  Cancel
-                </Button>
+                <div className="flex gap-1.5">
+                  {isPaused ? (
+                    <Button type="button" onClick={onResume} className="h-9 px-3 text-xs gap-1.5 shrink-0">
+                      <Play className="h-3 w-3" /> Resume
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="secondary" onClick={onPause} className="h-9 px-3 text-xs gap-1.5 shrink-0">
+                      <Pause className="h-3 w-3" /> Pause
+                    </Button>
+                  )}
+                  <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-9 px-3 text-xs shrink-0">
+                    Cancel
+                  </Button>
+                </div>
               ) : (
                 <Button type="submit" className="h-9 px-4 text-xs font-medium gap-1.5 shrink-0">
                   <Search className="h-3 w-3" />

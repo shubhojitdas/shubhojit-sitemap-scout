@@ -269,9 +269,20 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
                   : "One URL per line"}
               </p>
               {isLoading ? (
-                <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-4 h-8 text-xs">
-                  Cancel
-                </Button>
+                <div className="flex gap-1.5">
+                  {isPaused ? (
+                    <Button type="button" onClick={onResume} className="h-8 px-3 text-xs gap-1.5">
+                      <Play className="h-3 w-3" /> Resume
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="secondary" onClick={onPause} className="h-8 px-3 text-xs gap-1.5">
+                      <Pause className="h-3 w-3" /> Pause
+                    </Button>
+                  )}
+                  <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-3 h-8 text-xs">
+                    Cancel
+                  </Button>
+                </div>
               ) : (
                 <Button
                   type="submit"

@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { CrawlResult, parseSitemapUrls, fetchMetaBatch } from "@/lib/crawl-api";
 
 interface CrawlState {
-  phase: "idle" | "parsing" | "crawling" | "done" | "error";
+  phase: "idle" | "parsing" | "crawling" | "paused" | "done" | "error";
   results: CrawlResult[];
   totalUrls: number;
   processedUrls: number;

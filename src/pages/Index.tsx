@@ -156,6 +156,32 @@ const Index = () => {
       {results.length > 0 && (
         <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-6">
           <StatsCards results={results} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} includeRobots={includeRobots} />
+
+          {/* Link Graph Toggle */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant={showLinkGraph ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowLinkGraph(!showLinkGraph)}
+              className="gap-1.5"
+            >
+              <Network className="h-3.5 w-3.5" />
+              {showLinkGraph ? "Hide Link Graph" : "Visual Link Graph"}
+            </Button>
+            {showLinkGraph && (
+              <span className="text-[11px] text-muted-foreground">
+                Visualising {parsedUrls.length > 0 ? parsedUrls.length : results.length} URLs
+              </span>
+            )}
+          </div>
+
+          {/* Link Graph */}
+          {showLinkGraph && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              <LinkGraph urls={parsedUrls.length > 0 ? parsedUrls : results.map(r => r.url)} />
+            </motion.div>
+          )}
+
           <ResultsTable results={results} domain={domain} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} includeRobots={includeRobots} />
         </section>
       )}

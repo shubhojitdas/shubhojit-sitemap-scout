@@ -296,7 +296,7 @@ export default function LinkGraphView() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed top-14 right-3 z-20 bg-popover border border-border rounded-lg p-3 w-64 shadow-xl"
+            className="fixed top-28 right-3 z-20 bg-popover border border-border rounded-lg p-3 w-64 shadow-xl"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold text-foreground">Node Details</span>

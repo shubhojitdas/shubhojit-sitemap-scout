@@ -103,16 +103,16 @@ function SearchBarWithGear({
 export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots }: ResultsTableProps) {
   const [activeView, setActiveView] = useState<"meta" | "images" | "schemas">("meta");
 
-  // Lift filter state so it persists across tab switches
+  // Universal filter state shared across all tabs
   const [metaFilter, setMetaFilter] = useState<Filter>("all");
-  const [metaSearch, setMetaSearch] = useState("");
-  const [metaAdvancedFilter, setMetaAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
   const [metaSortKey, setMetaSortKey] = useState<SortKey>("url");
   const [metaSortDir, setMetaSortDir] = useState<SortDir>("asc");
-
   const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
-  const [imgSearch, setImgSearch] = useState("");
-  const [imgAdvancedFilter, setImgAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
+  const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
+
+  // Shared search & advanced filter across all tabs
+  const [universalSearch, setUniversalSearch] = useState("");
+  const [universalAdvancedFilter, setUniversalAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
 
   if (results.length === 0) return null;
 
@@ -143,8 +143,8 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
           <TabsContent value="meta" className="mt-4">
             <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots}
               filter={metaFilter} setFilter={setMetaFilter}
-              search={metaSearch} setSearch={setMetaSearch}
-              advancedFilter={metaAdvancedFilter} setAdvancedFilter={setMetaAdvancedFilter}
+              search={universalSearch} setSearch={setUniversalSearch}
+              advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
               sortKey={metaSortKey} setSortKey={setMetaSortKey}
               sortDir={metaSortDir} setSortDir={setMetaSortDir}
             />
@@ -153,22 +153,26 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
             <TabsContent value="images" className="mt-4">
               <ImagesTable results={results} domain={domain}
                 imgFilter={imgFilter} setImgFilter={setImgFilter}
-                search={imgSearch} setSearch={setImgSearch}
-                advancedFilter={imgAdvancedFilter} setAdvancedFilter={setImgAdvancedFilter}
+                search={universalSearch} setSearch={setUniversalSearch}
+                advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
               />
             </TabsContent>
           )}
           {includeSchemas && (
             <TabsContent value="schemas" className="mt-4">
-              <SchemasTable results={results} domain={domain} />
+              <SchemasTable results={results} domain={domain}
+                schemaFilter={schemaFilter} setSchemaFilter={setSchemaFilter}
+                search={universalSearch} setSearch={setUniversalSearch}
+                advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
+              />
             </TabsContent>
           )}
         </Tabs>
       ) : (
         <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots}
           filter={metaFilter} setFilter={setMetaFilter}
-          search={metaSearch} setSearch={setMetaSearch}
-          advancedFilter={metaAdvancedFilter} setAdvancedFilter={setMetaAdvancedFilter}
+          search={universalSearch} setSearch={setUniversalSearch}
+          advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
           sortKey={metaSortKey} setSortKey={setMetaSortKey}
           sortDir={metaSortDir} setSortDir={setMetaSortDir}
         />
@@ -648,10 +652,13 @@ function ImagesTable({ results, domain, imgFilter, setImgFilter, search, setSear
 }
 
 // ─── Schema Markup table ──────────────────────────────────────────────────────
-function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: string }) {
+function SchemasTable({ results, domain, schemaFilter, setSchemaFilter, search, setSearch, advancedFilter, setAdvancedFilter }: {
+  results: CrawlResult[]; domain: string;
+  schemaFilter: "all" | "has-schema" | "no-schema"; setSchemaFilter: (f: "all" | "has-schema" | "no-schema") => void;
+  search: string; setSearch: (s: string) => void;
+  advancedFilter: AdvancedFilter; setAdvancedFilter: (f: AdvancedFilter) => void;
+}) {
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
-  const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -660,7 +667,6 @@ function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: str
     { key: "schema_content", label: "Schema Content" },
     { key: "schema_type", label: "Schema Type" },
   ];
-  const [advancedFilter, setAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
 
   const getSchemaFieldValue = (r: CrawlResult, field: string): string => {
     switch (field) {

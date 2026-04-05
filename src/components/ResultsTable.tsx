@@ -143,8 +143,8 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
           <TabsContent value="meta" className="mt-4">
             <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots}
               filter={metaFilter} setFilter={setMetaFilter}
-              search={metaSearch} setSearch={setMetaSearch}
-              advancedFilter={metaAdvancedFilter} setAdvancedFilter={setMetaAdvancedFilter}
+              search={universalSearch} setSearch={setUniversalSearch}
+              advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
               sortKey={metaSortKey} setSortKey={setMetaSortKey}
               sortDir={metaSortDir} setSortDir={setMetaSortDir}
             />
@@ -153,22 +153,26 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
             <TabsContent value="images" className="mt-4">
               <ImagesTable results={results} domain={domain}
                 imgFilter={imgFilter} setImgFilter={setImgFilter}
-                search={imgSearch} setSearch={setImgSearch}
-                advancedFilter={imgAdvancedFilter} setAdvancedFilter={setImgAdvancedFilter}
+                search={universalSearch} setSearch={setUniversalSearch}
+                advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
               />
             </TabsContent>
           )}
           {includeSchemas && (
             <TabsContent value="schemas" className="mt-4">
-              <SchemasTable results={results} domain={domain} />
+              <SchemasTable results={results} domain={domain}
+                schemaFilter={schemaFilter} setSchemaFilter={setSchemaFilter}
+                search={universalSearch} setSearch={setUniversalSearch}
+                advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
+              />
             </TabsContent>
           )}
         </Tabs>
       ) : (
         <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots}
           filter={metaFilter} setFilter={setMetaFilter}
-          search={metaSearch} setSearch={setMetaSearch}
-          advancedFilter={metaAdvancedFilter} setAdvancedFilter={setMetaAdvancedFilter}
+          search={universalSearch} setSearch={setUniversalSearch}
+          advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
           sortKey={metaSortKey} setSortKey={setMetaSortKey}
           sortDir={metaSortDir} setSortDir={setMetaSortDir}
         />

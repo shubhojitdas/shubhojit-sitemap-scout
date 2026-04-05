@@ -103,16 +103,16 @@ function SearchBarWithGear({
 export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots }: ResultsTableProps) {
   const [activeView, setActiveView] = useState<"meta" | "images" | "schemas">("meta");
 
-  // Lift filter state so it persists across tab switches
+  // Universal filter state shared across all tabs
   const [metaFilter, setMetaFilter] = useState<Filter>("all");
-  const [metaSearch, setMetaSearch] = useState("");
-  const [metaAdvancedFilter, setMetaAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
   const [metaSortKey, setMetaSortKey] = useState<SortKey>("url");
   const [metaSortDir, setMetaSortDir] = useState<SortDir>("asc");
-
   const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
-  const [imgSearch, setImgSearch] = useState("");
-  const [imgAdvancedFilter, setImgAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
+  const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
+
+  // Shared search & advanced filter across all tabs
+  const [universalSearch, setUniversalSearch] = useState("");
+  const [universalAdvancedFilter, setUniversalAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
 
   if (results.length === 0) return null;
 

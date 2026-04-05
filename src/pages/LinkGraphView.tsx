@@ -9,7 +9,8 @@ import {
 } from "@/lib/graph-utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Maximize2, X, ExternalLink, Download, ArrowLeft } from "lucide-react";
+import { Maximize2, X, ExternalLink, Download, ArrowLeft, Linkedin } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,

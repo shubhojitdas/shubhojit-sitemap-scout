@@ -134,7 +134,7 @@ const Index = () => {
 
       {/* ── Progress ── */}
       <section className="container max-w-5xl mx-auto pb-4 px-4">
-        <CrawlProgress phase={phase} processed={processedUrls} total={totalUrls} onPause={pause} onResume={resume} onCancel={reset} />
+        <CrawlProgress phase={phase} processed={processedUrls} total={totalUrls} />
       </section>
 
       {/* ── Error ── */}

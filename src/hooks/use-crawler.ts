@@ -24,6 +24,7 @@ const INITIAL_STATE: CrawlState = {
   includeDesc: true,
   includeH2: false,
   includeH3: false,
+  parsedUrls: [],
 };
 
 const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '' };

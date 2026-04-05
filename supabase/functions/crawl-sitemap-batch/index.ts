@@ -147,11 +147,12 @@ function extractImages(html: string, baseUrl: string): ImageData[] {
   return images;
 }
 
-// Retry fetch with exponential backoff
-async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
+// Fetch with retry, manual redirect tracking
+async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Response; redirectedUrl?: string }> {
   const retryableStatuses = new Set([408, 425, 429, 500, 502, 503, 504]);
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
+      // First try with redirect: 'manual' to detect redirects
       const resp = await fetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)',
@@ -159,17 +160,56 @@ async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
           'Accept-Language': 'en-US,en;q=0.5',
         },
         signal: AbortSignal.timeout(15000),
-        redirect: 'follow',
+        redirect: 'manual',
       });
-      if (resp.ok || !retryableStatuses.has(resp.status)) {
-        return resp;
+
+      // Handle redirects manually to track final URL
+      if (resp.status >= 300 && resp.status < 400) {
+        const location = resp.headers.get('location');
+        if (location) {
+          let finalUrl: string;
+          try {
+            finalUrl = new URL(location, url).href;
+          } catch {
+            finalUrl = location;
+          }
+          // Follow the redirect chain (up to 5 hops)
+          let currentUrl = finalUrl;
+          let finalResp: Response | null = null;
+          for (let hop = 0; hop < 5; hop++) {
+            const hopResp = await fetch(currentUrl, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              },
+              signal: AbortSignal.timeout(15000),
+              redirect: 'manual',
+            });
+            if (hopResp.status >= 300 && hopResp.status < 400) {
+              const nextLoc = hopResp.headers.get('location');
+              if (nextLoc) {
+                try { currentUrl = new URL(nextLoc, currentUrl).href; } catch { currentUrl = nextLoc; }
+                continue;
+              }
+            }
+            finalResp = hopResp;
+            break;
+          }
+          if (!finalResp) {
+            // Couldn't resolve, return original redirect status
+            return { resp, redirectedUrl: currentUrl };
+          }
+          return { resp: finalResp, redirectedUrl: currentUrl };
+        }
       }
-      // Retryable status — consume body before retrying
+
+      if (resp.ok || !retryableStatuses.has(resp.status)) {
+        return { resp };
+      }
       await resp.text();
     } catch (e) {
       if (attempt === retries - 1) throw e;
     }
-    // Exponential backoff: 1s, 2s, 4s
     await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
   }
   throw new Error('Max retries reached');

@@ -262,7 +262,7 @@ export default function LinkGraphView() {
       </div>
 
       {/* Legend */}
-      <div className="fixed top-3 right-3 z-10 bg-card/95 backdrop-blur-md border border-border rounded-lg p-2.5 max-w-[160px] max-h-[300px] overflow-y-auto shadow-lg">
+      <div className="fixed top-16 right-3 z-10 bg-card/95 backdrop-blur-md border border-border rounded-lg p-2.5 max-w-[160px] max-h-[300px] overflow-y-auto shadow-lg">
         <span className="text-[10px] font-semibold text-foreground block mb-1.5">Legend</span>
         {Object.entries(legend).map(([group, color]) => (
           <div key={group} className="flex items-center gap-1.5 text-[10px] text-muted-foreground py-0.5">

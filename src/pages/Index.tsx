@@ -11,7 +11,23 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, lazy, Suspense } from "react";
 
 const Index = () => {
-  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, pause, resume, reset, includeTitle, includeDesc, includeH2, includeH3, parsedUrls } = useCrawler();
+  const {
+    phase,
+    results,
+    totalUrls,
+    processedUrls,
+    error,
+    crawl,
+    crawlUrls,
+    pause,
+    resume,
+    reset,
+    includeTitle,
+    includeDesc,
+    includeH2,
+    includeH3,
+    parsedUrls,
+  } = useCrawler();
   const [showTop, setShowTop] = useState(false);
   const [domain, setDomain] = useState("");
   const [includeH1, setIncludeH1] = useState(false);
@@ -28,7 +44,17 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleCrawl = (url: string, withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean, withRobots: boolean) => {
+  const handleCrawl = (
+    url: string,
+    withTitle: boolean,
+    withDesc: boolean,
+    withH1: boolean,
+    withH2: boolean,
+    withH3: boolean,
+    withImages: boolean,
+    withSchemas: boolean,
+    withRobots: boolean,
+  ) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
       setDomain(parsed.hostname);
@@ -44,7 +70,17 @@ const Index = () => {
     crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots);
   };
 
-  const handleCrawlUrls = (urls: string[], withTitle: boolean, withDesc: boolean, withH1: boolean, withH2: boolean, withH3: boolean, withImages: boolean, withSchemas: boolean, withRobots: boolean) => {
+  const handleCrawlUrls = (
+    urls: string[],
+    withTitle: boolean,
+    withDesc: boolean,
+    withH1: boolean,
+    withH2: boolean,
+    withH3: boolean,
+    withImages: boolean,
+    withSchemas: boolean,
+    withRobots: boolean,
+  ) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
@@ -58,7 +94,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-
       {/* ── Header ── */}
       <header className="border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="container max-w-5xl mx-auto flex items-center justify-between h-12 px-4">
@@ -68,7 +103,11 @@ const Index = () => {
           <div className="flex items-center gap-0.5">
             <ThemeToggle />
             <a href="https://www.linkedin.com/in/shubhojitdas/" target="_blank" rel="noopener noreferrer">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+              >
                 <Linkedin className="h-3.5 w-3.5" />
               </Button>
             </a>
@@ -79,7 +118,7 @@ const Index = () => {
       {/* ── Hero ── */}
       <section
         className="relative flex flex-col justify-center overflow-hidden"
-        style={{ minHeight: 'calc(100vh - 48px)' }}
+        style={{ minHeight: "calc(100vh - 48px)" }}
       >
         <div className="absolute inset-0 grid-bg fade-mask pointer-events-none" />
 
@@ -107,8 +146,8 @@ const Index = () => {
             </h1>
             <p className="text-[11px] text-muted-foreground/50 mt-1 tracking-wide">by Shubhojit Das</p>
             <p className="text-muted-foreground text-sm sm:text-[15px] mt-2.5 max-w-md mx-auto leading-relaxed">
-              Crawl any sitemap and extract titles, descriptions, H1 tags &amp; image alt texts.
-              Export to CSV in seconds.
+              Crawl any sitemap and extract Meta Titles, Descriptions, Headings, Image Alt Texts, Schema Markup, and
+              Meta Robots. Visualize your site's link structure. Export in seconds.
             </p>
           </motion.div>
 
@@ -119,7 +158,15 @@ const Index = () => {
             transition={{ delay: 0.1, duration: 0.4 }}
           >
             <div className="rounded-xl border border-border bg-card p-4 card-elevated">
-              <CrawlForm onCrawl={handleCrawl} onCrawlUrls={handleCrawlUrls} isLoading={isLoading} isPaused={phase === "paused"} onReset={reset} onPause={pause} onResume={resume} />
+              <CrawlForm
+                onCrawl={handleCrawl}
+                onCrawlUrls={handleCrawlUrls}
+                isLoading={isLoading}
+                isPaused={phase === "paused"}
+                onReset={reset}
+                onPause={pause}
+                onResume={resume}
+              />
             </div>
           </motion.div>
 
@@ -155,7 +202,17 @@ const Index = () => {
       {/* ── Results ── */}
       {results.length > 0 && (
         <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-6">
-          <StatsCards results={results} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} includeRobots={includeRobots} />
+          <StatsCards
+            results={results}
+            includeTitle={localIncludeTitle}
+            includeDesc={localIncludeDesc}
+            includeH1={includeH1}
+            includeH2={includeH2}
+            includeH3={includeH3}
+            includeImages={includeImages}
+            includeSchemas={includeSchemas}
+            includeRobots={includeRobots}
+          />
 
           {/* Link Graph Toggle */}
           <div className="flex items-center gap-2">
@@ -178,11 +235,22 @@ const Index = () => {
           {/* Link Graph */}
           {showLinkGraph && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-              <LinkGraph urls={parsedUrls.length > 0 ? parsedUrls : results.map(r => r.url)} />
+              <LinkGraph urls={parsedUrls.length > 0 ? parsedUrls : results.map((r) => r.url)} />
             </motion.div>
           )}
 
-          <ResultsTable results={results} domain={domain} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} includeRobots={includeRobots} />
+          <ResultsTable
+            results={results}
+            domain={domain}
+            includeTitle={localIncludeTitle}
+            includeDesc={localIncludeDesc}
+            includeH1={includeH1}
+            includeH2={includeH2}
+            includeH3={includeH3}
+            includeImages={includeImages}
+            includeSchemas={includeSchemas}
+            includeRobots={includeRobots}
+          />
         </section>
       )}
 

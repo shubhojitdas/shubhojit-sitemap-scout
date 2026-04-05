@@ -341,7 +341,7 @@ export default function LinkGraphView() {
         ref={fgRef as any}
         graphData={graphData}
         width={dimensions.width}
-        height={dimensions.height}
+        height={dimensions.height - 48}
         nodeCanvasObject={nodeCanvasObject}
         nodePointerAreaPaint={(node: any, color, ctx) => {
           const r = node.group === "root" ? 8 : 5;

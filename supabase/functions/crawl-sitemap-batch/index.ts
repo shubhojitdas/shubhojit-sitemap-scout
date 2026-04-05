@@ -20,6 +20,7 @@ interface CrawlResult {
   robots?: string;
   status: 'OK' | 'Error';
   statusCode: number;
+  redirectedUrl?: string;
   fetchTime: string;
 }
 

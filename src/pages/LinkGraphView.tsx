@@ -9,7 +9,8 @@ import {
 } from "@/lib/graph-utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Maximize2, X, ExternalLink, Download, ArrowLeft } from "lucide-react";
+import { Maximize2, X, ExternalLink, Download, ArrowLeft, Linkedin } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
@@ -182,6 +183,22 @@ export default function LinkGraphView() {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden" ref={containerRef}>
+      {/* Header */}
+      <header className="border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-30">
+        <div className="container max-w-5xl mx-auto flex items-center justify-between h-12 px-4">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm tracking-tight text-foreground">Sitemap Scout</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <ThemeToggle />
+            <a href="https://www.linkedin.com/in/shubhojitdas/" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground">
+                <Linkedin className="h-3.5 w-3.5" />
+              </Button>
+            </a>
+          </div>
+        </div>
+      </header>
       {/* Loading */}
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-20">
@@ -193,7 +210,7 @@ export default function LinkGraphView() {
       )}
 
       {/* Controls */}
-      <div className="fixed top-3 left-3 z-10 flex flex-col gap-2.5 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 max-w-[210px] shadow-lg">
+      <div className="fixed top-16 left-3 z-10 flex flex-col gap-2.5 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 max-w-[210px] shadow-lg">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-foreground">Controls</span>
           <div className="flex gap-1">
@@ -245,7 +262,7 @@ export default function LinkGraphView() {
       </div>
 
       {/* Legend */}
-      <div className="fixed top-3 right-3 z-10 bg-card/95 backdrop-blur-md border border-border rounded-lg p-2.5 max-w-[160px] max-h-[300px] overflow-y-auto shadow-lg">
+      <div className="fixed top-16 right-3 z-10 bg-card/95 backdrop-blur-md border border-border rounded-lg p-2.5 max-w-[160px] max-h-[300px] overflow-y-auto shadow-lg">
         <span className="text-[10px] font-semibold text-foreground block mb-1.5">Legend</span>
         {Object.entries(legend).map(([group, color]) => (
           <div key={group} className="flex items-center gap-1.5 text-[10px] text-muted-foreground py-0.5">
@@ -279,7 +296,7 @@ export default function LinkGraphView() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed top-14 right-3 z-20 bg-popover border border-border rounded-lg p-3 w-64 shadow-xl"
+            className="fixed top-28 right-3 z-20 bg-popover border border-border rounded-lg p-3 w-64 shadow-xl"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold text-foreground">Node Details</span>
@@ -324,7 +341,7 @@ export default function LinkGraphView() {
         ref={fgRef as any}
         graphData={graphData}
         width={dimensions.width}
-        height={dimensions.height}
+        height={dimensions.height - 48}
         nodeCanvasObject={nodeCanvasObject}
         nodePointerAreaPaint={(node: any, color, ctx) => {
           const r = node.group === "root" ? 8 : 5;

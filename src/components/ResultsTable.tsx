@@ -652,10 +652,13 @@ function ImagesTable({ results, domain, imgFilter, setImgFilter, search, setSear
 }
 
 // ─── Schema Markup table ──────────────────────────────────────────────────────
-function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: string }) {
+function SchemasTable({ results, domain, schemaFilter, setSchemaFilter, search, setSearch, advancedFilter, setAdvancedFilter }: {
+  results: CrawlResult[]; domain: string;
+  schemaFilter: "all" | "has-schema" | "no-schema"; setSchemaFilter: (f: "all" | "has-schema" | "no-schema") => void;
+  search: string; setSearch: (s: string) => void;
+  advancedFilter: AdvancedFilter; setAdvancedFilter: (f: AdvancedFilter) => void;
+}) {
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
-  const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -664,7 +667,6 @@ function SchemasTable({ results, domain }: { results: CrawlResult[]; domain: str
     { key: "schema_content", label: "Schema Content" },
     { key: "schema_type", label: "Schema Type" },
   ];
-  const [advancedFilter, setAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
 
   const getSchemaFieldValue = (r: CrawlResult, field: string): string => {
     switch (field) {

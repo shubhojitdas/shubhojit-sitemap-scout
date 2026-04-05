@@ -59,7 +59,7 @@ export function resetGroupColors() {
  */
 export function buildGraphFromUrls(
   urls: string[],
-  maxDepth = Infinity,
+  maxDepth = 3,
   maxNodes = 500
 ): GraphData {
   resetGroupColors();

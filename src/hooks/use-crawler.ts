@@ -11,6 +11,7 @@ interface CrawlState {
   includeDesc: boolean;
   includeH2: boolean;
   includeH3: boolean;
+  parsedUrls: string[];
 }
 
 const INITIAL_STATE: CrawlState = {
@@ -23,6 +24,7 @@ const INITIAL_STATE: CrawlState = {
   includeDesc: true,
   includeH2: false,
   includeH3: false,
+  parsedUrls: [],
 };
 
 const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '' };
@@ -112,7 +114,7 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
+    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: [] });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
@@ -124,7 +126,7 @@ export function useCrawler() {
       }
 
       pendingUrlsRef.current = urls;
-      setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
+      setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length, parsedUrls: urls }));
       await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
     } catch (err) {
       if (!signal.aborted) {
@@ -154,7 +156,7 @@ export function useCrawler() {
     pendingUrlsRef.current = urls;
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
+    setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: urls });
 
     try {
       await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);

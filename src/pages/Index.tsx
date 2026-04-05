@@ -4,13 +4,14 @@ import { CrawlProgress } from "@/components/CrawlProgress";
 import { StatsCards } from "@/components/StatsCards";
 import { ResultsTable } from "@/components/ResultsTable";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LinkGraph } from "@/components/LinkGraph";
 import { motion } from "framer-motion";
-import { ArrowUp, Linkedin } from "lucide-react";
+import { ArrowUp, Linkedin, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 
 const Index = () => {
-  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, pause, resume, reset, includeTitle, includeDesc, includeH2, includeH3 } = useCrawler();
+  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, pause, resume, reset, includeTitle, includeDesc, includeH2, includeH3, parsedUrls } = useCrawler();
   const [showTop, setShowTop] = useState(false);
   const [domain, setDomain] = useState("");
   const [includeH1, setIncludeH1] = useState(false);
@@ -19,6 +20,7 @@ const Index = () => {
   const [includeRobots, setIncludeRobots] = useState(false);
   const [localIncludeTitle, setLocalIncludeTitle] = useState(true);
   const [localIncludeDesc, setLocalIncludeDesc] = useState(true);
+  const [showLinkGraph, setShowLinkGraph] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setShowTop(window.scrollY > 400);
@@ -154,6 +156,32 @@ const Index = () => {
       {results.length > 0 && (
         <section className="container max-w-6xl mx-auto px-4 pb-16 space-y-6">
           <StatsCards results={results} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} includeRobots={includeRobots} />
+
+          {/* Link Graph Toggle */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant={showLinkGraph ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowLinkGraph(!showLinkGraph)}
+              className="gap-1.5"
+            >
+              <Network className="h-3.5 w-3.5" />
+              {showLinkGraph ? "Hide Link Graph" : "Visual Link Graph"}
+            </Button>
+            {showLinkGraph && (
+              <span className="text-[11px] text-muted-foreground">
+                Visualising {parsedUrls.length > 0 ? parsedUrls.length : results.length} URLs
+              </span>
+            )}
+          </div>
+
+          {/* Link Graph */}
+          {showLinkGraph && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+              <LinkGraph urls={parsedUrls.length > 0 ? parsedUrls : results.map(r => r.url)} />
+            </motion.div>
+          )}
+
           <ResultsTable results={results} domain={domain} includeTitle={localIncludeTitle} includeDesc={localIncludeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={includeImages} includeSchemas={includeSchemas} includeRobots={includeRobots} />
         </section>
       )}

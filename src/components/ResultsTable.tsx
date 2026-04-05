@@ -33,7 +33,7 @@ function extractSchemaTypes(obj: unknown): string {
 
 type SortKey = "url" | "title" | "description" | "status";
 type SortDir = "asc" | "desc";
-type Filter = "all" | "errors" | "missing-title" | "missing-desc" | "title-long" | "multi-h1" | "missing-h1" | "has-robots" | "no-robots" | "noindex" | "nofollow";
+type Filter = "all" | "errors" | "missing-title" | "missing-desc" | "title-long" | "multi-h1" | "missing-h1" | "has-robots" | "no-robots" | "noindex" | "nofollow" | "2xx" | "3xx" | "4xx" | "5xx";
 type ImageFilter = "all" | "missing-alt" | "no-images" | "has-images";
 
 interface ResultsTableProps {
@@ -237,6 +237,10 @@ function MetaTable({
     else if (filter === "no-robots") data = data.filter((r) => !(r.robots ?? '').length);
     else if (filter === "noindex") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('noindex'));
     else if (filter === "nofollow") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('nofollow'));
+    else if (filter === "2xx") data = data.filter((r) => r.statusCode >= 200 && r.statusCode < 300);
+    else if (filter === "3xx") data = data.filter((r) => r.statusCode >= 300 && r.statusCode < 400 || !!r.redirectedUrl);
+    else if (filter === "4xx") data = data.filter((r) => r.statusCode >= 400 && r.statusCode < 500);
+    else if (filter === "5xx") data = data.filter((r) => r.statusCode >= 500 && r.statusCode < 600);
 
     // Advanced filter
     if (isFilterActive(advancedFilter)) {
@@ -280,6 +284,10 @@ function MetaTable({
   const baseFilters: { key: Filter; label: string; icon?: typeof AlertTriangle }[] = [
     { key: "all", label: "All" },
     { key: "errors", label: "Errors", icon: AlertTriangle },
+    { key: "2xx", label: "2xx" },
+    { key: "3xx", label: "3xx" },
+    { key: "4xx", label: "4xx" },
+    { key: "5xx", label: "5xx" },
     ...(includeTitle ? [{ key: "missing-title" as Filter, label: "Missing Title", icon: FileWarning }] : []),
     ...(includeDesc ? [{ key: "missing-desc" as Filter, label: "Missing Desc" }] : []),
     ...(includeTitle ? [{ key: "title-long" as Filter, label: "Title >60ch" }] : []),
@@ -308,7 +316,7 @@ function MetaTable({
     ...(includeH2 ? ['1fr'] : []),
     ...(includeH3 ? ['1fr'] : []),
     ...(includeRobots ? ['0.8fr'] : []),
-    '80px',
+    '100px',
   ].join(' ');
   const gridStyle = { gridTemplateColumns: colTemplate };
 
@@ -460,11 +468,19 @@ function MetaTable({
                       )}
                     </div>
                   )}
-                  <div className="px-3 py-2 flex items-start text-[11px]">
-                    {row.status === "OK" ? (
-                      <span className="text-success font-medium">OK</span>
-                    ) : (
-                      <span className="text-destructive font-medium">Err</span>
+                  <div className="px-3 py-2 flex flex-col gap-0.5 text-[11px]">
+                    <span className={`font-medium ${
+                      row.statusCode >= 200 && row.statusCode < 300 ? 'text-success' :
+                      row.statusCode >= 300 && row.statusCode < 400 ? 'text-warning' :
+                      row.statusCode >= 400 ? 'text-destructive' :
+                      row.status === 'Error' ? 'text-destructive' : 'text-muted-foreground'
+                    }`}>
+                      {row.statusCode > 0 ? row.statusCode : 'Err'}
+                    </span>
+                    {row.redirectedUrl && (
+                      <span className="text-[9px] text-warning break-all leading-tight" title={`Redirected to: ${row.redirectedUrl}`}>
+                        → {row.redirectedUrl.length > 40 ? row.redirectedUrl.slice(0, 40) + '…' : row.redirectedUrl}
+                      </span>
                     )}
                   </div>
                 </div>

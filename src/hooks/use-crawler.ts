@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { CrawlResult, parseSitemapUrls, fetchMetaBatch } from "@/lib/crawl-api";
 
 interface CrawlState {
-  phase: "idle" | "parsing" | "crawling" | "done" | "error";
+  phase: "idle" | "parsing" | "crawling" | "paused" | "done" | "error";
   results: CrawlResult[];
   totalUrls: number;
   processedUrls: number;
@@ -30,11 +30,17 @@ const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: 
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(INITIAL_STATE);
   const controllerRef = useRef<AbortController | null>(null);
+  const pausedRef = useRef(false);
+  const pendingUrlsRef = useRef<string[]>([]);
+  const pendingIndexRef = useRef(0);
+  const crawlOptionsRef = useRef<{ includeTitle: boolean; includeDesc: boolean; includeH1: boolean; includeH2: boolean; includeH3: boolean; includeImages: boolean; includeSchemas: boolean; includeRobots: boolean }>({ includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false });
+  const accumulatedResultsRef = useRef<CrawlResult[]>([]);
 
   const startController = () => {
     if (controllerRef.current) controllerRef.current.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
+    pausedRef.current = false;
     return controller.signal;
   };
 
@@ -48,17 +54,32 @@ export function useCrawler() {
     includeH3: boolean,
     includeImages: boolean,
     includeSchemas: boolean,
-    includeRobots: boolean
+    includeRobots: boolean,
+    startIndex = 0,
+    existingResults: CrawlResult[] = [],
   ) => {
-    const allResults: CrawlResult[] = [];
+    const allResults: CrawlResult[] = [...existingResults];
     const BATCH_SIZE = 10;
 
-    for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+    for (let i = startIndex; i < urls.length; i += BATCH_SIZE) {
       if (signal.aborted) return;
+      if (pausedRef.current) {
+        pendingIndexRef.current = i;
+        accumulatedResultsRef.current = [...allResults];
+        setState((s) => ({ ...s, phase: "paused" }));
+        return;
+      }
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
         const batchResults = await fetchMetaBatch(batch, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
         if (signal.aborted) return;
+        if (pausedRef.current) {
+          allResults.push(...batchResults);
+          pendingIndexRef.current = i + BATCH_SIZE;
+          accumulatedResultsRef.current = [...allResults];
+          setState((s) => ({ ...s, results: [...allResults], processedUrls: Math.min(i + BATCH_SIZE, urls.length), phase: "paused" }));
+          return;
+        }
         allResults.push(...batchResults);
       } catch {
         if (signal.aborted) return;
@@ -70,7 +91,7 @@ export function useCrawler() {
       setState((s) => ({ ...s, results: [...allResults], processedUrls: Math.min(i + BATCH_SIZE, urls.length) }));
     }
 
-    if (!signal.aborted) {
+    if (!signal.aborted && !pausedRef.current) {
       setState((s) => ({ ...s, phase: "done" }));
     }
   };
@@ -87,6 +108,10 @@ export function useCrawler() {
     includeRobots = false,
   ) => {
     const signal = startController();
+    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots };
+    pendingUrlsRef.current = [];
+    pendingIndexRef.current = 0;
+    accumulatedResultsRef.current = [];
     setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
@@ -98,6 +123,7 @@ export function useCrawler() {
         return;
       }
 
+      pendingUrlsRef.current = urls;
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length }));
       await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
     } catch (err) {
@@ -124,6 +150,10 @@ export function useCrawler() {
     includeRobots = false,
   ) => {
     const signal = startController();
+    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots };
+    pendingUrlsRef.current = urls;
+    pendingIndexRef.current = 0;
+    accumulatedResultsRef.current = [];
     setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
@@ -140,13 +170,38 @@ export function useCrawler() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const pause = useCallback(() => {
+    pausedRef.current = true;
+  }, []);
+
+  const resume = useCallback(async () => {
+    pausedRef.current = false;
+    const signal = controllerRef.current?.signal;
+    if (!signal || signal.aborted) return;
+    setState((s) => ({ ...s, phase: "crawling" }));
+    const opts = crawlOptionsRef.current;
+    await runBatches(
+      pendingUrlsRef.current,
+      signal,
+      opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3,
+      opts.includeImages, opts.includeSchemas, opts.includeRobots,
+      pendingIndexRef.current,
+      accumulatedResultsRef.current,
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const reset = useCallback(() => {
     if (controllerRef.current) {
       controllerRef.current.abort();
       controllerRef.current = null;
     }
+    pausedRef.current = false;
+    pendingUrlsRef.current = [];
+    pendingIndexRef.current = 0;
+    accumulatedResultsRef.current = [];
     setState(INITIAL_STATE);
   }, []);
 
-  return { ...state, crawl, crawlUrls, reset };
+  return { ...state, crawl, crawlUrls, pause, resume, reset };
 }

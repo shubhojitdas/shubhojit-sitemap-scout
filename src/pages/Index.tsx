@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
 const Index = () => {
-  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, reset, includeTitle, includeDesc, includeH2, includeH3 } = useCrawler();
+  const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, pause, resume, reset, includeTitle, includeDesc, includeH2, includeH3 } = useCrawler();
   const [showTop, setShowTop] = useState(false);
   const [domain, setDomain] = useState("");
   const [includeH1, setIncludeH1] = useState(false);
@@ -52,7 +52,7 @@ const Index = () => {
     crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots);
   };
 
-  const isLoading = phase === "parsing" || phase === "crawling";
+  const isLoading = phase === "parsing" || phase === "crawling" || phase === "paused";
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,7 +134,7 @@ const Index = () => {
 
       {/* ── Progress ── */}
       <section className="container max-w-5xl mx-auto pb-4 px-4">
-        <CrawlProgress phase={phase} processed={processedUrls} total={totalUrls} />
+        <CrawlProgress phase={phase} processed={processedUrls} total={totalUrls} onPause={pause} onResume={resume} onCancel={reset} />
       </section>
 
       {/* ── Error ── */}

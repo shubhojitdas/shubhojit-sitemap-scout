@@ -1,31 +1,6 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
-
-# Block sensitive paths
 Disallow: /api/
 Disallow: /supabase/
 Disallow: /functions/
-Disallow: /.env
-Disallow: /src/
-Disallow: /node_modules/
-Disallow: /*.json$
-Disallow: /*.ts$
-Disallow: /*.tsx$
-Disallow: /*.config.*
-Disallow: /assets/*.js$
-Disallow: /assets/*.css.map$
 
-# Sitemap
-Sitemap: https://shubhojit-sitemap-scout.lovable.app/sitemap.xml

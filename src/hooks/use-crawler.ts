@@ -11,6 +11,7 @@ interface CrawlState {
   includeDesc: boolean;
   includeH2: boolean;
   includeH3: boolean;
+  parsedUrls: string[];
 }
 
 const INITIAL_STATE: CrawlState = {

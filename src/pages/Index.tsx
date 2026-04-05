@@ -4,10 +4,11 @@ import { CrawlProgress } from "@/components/CrawlProgress";
 import { StatsCards } from "@/components/StatsCards";
 import { ResultsTable } from "@/components/ResultsTable";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LinkGraph } from "@/components/LinkGraph";
 import { motion } from "framer-motion";
-import { ArrowUp, Linkedin } from "lucide-react";
+import { ArrowUp, Linkedin, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 
 const Index = () => {
   const { phase, results, totalUrls, processedUrls, error, crawl, crawlUrls, pause, resume, reset, includeTitle, includeDesc, includeH2, includeH3 } = useCrawler();

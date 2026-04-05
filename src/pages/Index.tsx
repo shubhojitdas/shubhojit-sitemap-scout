@@ -117,7 +117,7 @@ const Index = () => {
             transition={{ delay: 0.1, duration: 0.4 }}
           >
             <div className="rounded-xl border border-border bg-card p-4 card-elevated">
-              <CrawlForm onCrawl={handleCrawl} onCrawlUrls={handleCrawlUrls} isLoading={isLoading} onReset={reset} />
+              <CrawlForm onCrawl={handleCrawl} onCrawlUrls={handleCrawlUrls} isLoading={isLoading} isPaused={phase === "paused"} onReset={reset} onPause={pause} onResume={resume} />
             </div>
           </motion.div>
 

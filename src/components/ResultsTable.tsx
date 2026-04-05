@@ -103,6 +103,17 @@ function SearchBarWithGear({
 export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots }: ResultsTableProps) {
   const [activeView, setActiveView] = useState<"meta" | "images" | "schemas">("meta");
 
+  // Lift filter state so it persists across tab switches
+  const [metaFilter, setMetaFilter] = useState<Filter>("all");
+  const [metaSearch, setMetaSearch] = useState("");
+  const [metaAdvancedFilter, setMetaAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
+  const [metaSortKey, setMetaSortKey] = useState<SortKey>("url");
+  const [metaSortDir, setMetaSortDir] = useState<SortDir>("asc");
+
+  const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
+  const [imgSearch, setImgSearch] = useState("");
+  const [imgAdvancedFilter, setImgAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
+
   if (results.length === 0) return null;
 
   const hasTabs = includeImages || includeSchemas;
@@ -111,40 +122,56 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
       {hasTabs ? (
         <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas")}>
-          <TabsList className="h-8 bg-muted/50">
-            <TabsTrigger value="meta" className="text-xs gap-1.5 h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+          <TabsList className="h-9 bg-muted p-1 rounded-lg border border-border">
+            <TabsTrigger value="meta" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <Search className="h-3 w-3" />
               SEO Metadata
             </TabsTrigger>
             {includeImages && (
-              <TabsTrigger value="images" className="text-xs gap-1.5 h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <TabsTrigger value="images" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 <Image className="h-3 w-3" />
                 Image Alt Texts
               </TabsTrigger>
             )}
             {includeSchemas && (
-              <TabsTrigger value="schemas" className="text-xs gap-1.5 h-7 px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <TabsTrigger value="schemas" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 <Code className="h-3 w-3" />
                 Schema Markup
               </TabsTrigger>
             )}
           </TabsList>
-          <TabsContent value="meta" className="mt-3">
-            <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots} />
+          <TabsContent value="meta" className="mt-4">
+            <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots}
+              filter={metaFilter} setFilter={setMetaFilter}
+              search={metaSearch} setSearch={setMetaSearch}
+              advancedFilter={metaAdvancedFilter} setAdvancedFilter={setMetaAdvancedFilter}
+              sortKey={metaSortKey} setSortKey={setMetaSortKey}
+              sortDir={metaSortDir} setSortDir={setMetaSortDir}
+            />
           </TabsContent>
           {includeImages && (
-            <TabsContent value="images" className="mt-3">
-              <ImagesTable results={results} domain={domain} />
+            <TabsContent value="images" className="mt-4">
+              <ImagesTable results={results} domain={domain}
+                imgFilter={imgFilter} setImgFilter={setImgFilter}
+                search={imgSearch} setSearch={setImgSearch}
+                advancedFilter={imgAdvancedFilter} setAdvancedFilter={setImgAdvancedFilter}
+              />
             </TabsContent>
           )}
           {includeSchemas && (
-            <TabsContent value="schemas" className="mt-3">
+            <TabsContent value="schemas" className="mt-4">
               <SchemasTable results={results} domain={domain} />
             </TabsContent>
           )}
         </Tabs>
       ) : (
-        <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots} />
+        <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots}
+          filter={metaFilter} setFilter={setMetaFilter}
+          search={metaSearch} setSearch={setMetaSearch}
+          advancedFilter={metaAdvancedFilter} setAdvancedFilter={setMetaAdvancedFilter}
+          sortKey={metaSortKey} setSortKey={setMetaSortKey}
+          sortDir={metaSortDir} setSortDir={setMetaSortDir}
+        />
       )}
     </motion.div>
   );

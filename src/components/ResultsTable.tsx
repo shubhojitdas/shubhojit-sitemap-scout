@@ -180,15 +180,17 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
 // ─── SEO Metadata table ───────────────────────────────────────────────────────
 function MetaTable({
   results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeRobots,
+  filter, setFilter, search, setSearch, advancedFilter, setAdvancedFilter, sortKey, setSortKey, sortDir, setSortDir,
 }: {
   results: CrawlResult[]; domain: string; includeTitle: boolean; includeDesc: boolean;
   includeH1: boolean; includeH2: boolean; includeH3: boolean; includeImages: boolean; includeRobots: boolean;
+  filter: Filter; setFilter: (f: Filter) => void;
+  search: string; setSearch: (s: string) => void;
+  advancedFilter: AdvancedFilter; setAdvancedFilter: (f: AdvancedFilter) => void;
+  sortKey: SortKey; setSortKey: (k: SortKey) => void;
+  sortDir: SortDir; setSortDir: (d: SortDir) => void;
 }) {
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("url");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [filter, setFilter] = useState<Filter>("all");
   const [copied, setCopied] = useState(false);
   const parentRef = useRef<HTMLDivElement>(null);
 

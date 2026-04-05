@@ -33,7 +33,7 @@ function extractSchemaTypes(obj: unknown): string {
 
 type SortKey = "url" | "title" | "description" | "status";
 type SortDir = "asc" | "desc";
-type Filter = "all" | "errors" | "missing-title" | "missing-desc" | "title-long" | "multi-h1" | "missing-h1" | "has-robots" | "no-robots" | "noindex" | "nofollow";
+type Filter = "all" | "errors" | "missing-title" | "missing-desc" | "title-long" | "multi-h1" | "missing-h1" | "has-robots" | "no-robots" | "noindex" | "nofollow" | "2xx" | "3xx" | "4xx" | "5xx";
 type ImageFilter = "all" | "missing-alt" | "no-images" | "has-images";
 
 interface ResultsTableProps {

@@ -206,7 +206,6 @@ function MetaTable({
     return f;
   }, [includeTitle, includeDesc, includeH1, includeH2, includeH3, includeRobots]);
 
-  const [advancedFilter, setAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
 
   const getMetaFieldValue = (r: CrawlResult, field: string): string => {
     switch (field) {

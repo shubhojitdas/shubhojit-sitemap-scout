@@ -284,6 +284,10 @@ function MetaTable({
   const baseFilters: { key: Filter; label: string; icon?: typeof AlertTriangle }[] = [
     { key: "all", label: "All" },
     { key: "errors", label: "Errors", icon: AlertTriangle },
+    { key: "2xx", label: "2xx" },
+    { key: "3xx", label: "3xx" },
+    { key: "4xx", label: "4xx" },
+    { key: "5xx", label: "5xx" },
     ...(includeTitle ? [{ key: "missing-title" as Filter, label: "Missing Title", icon: FileWarning }] : []),
     ...(includeDesc ? [{ key: "missing-desc" as Filter, label: "Missing Desc" }] : []),
     ...(includeTitle ? [{ key: "title-long" as Filter, label: "Title >60ch" }] : []),

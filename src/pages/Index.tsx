@@ -20,6 +20,7 @@ const Index = () => {
   const [includeRobots, setIncludeRobots] = useState(false);
   const [localIncludeTitle, setLocalIncludeTitle] = useState(true);
   const [localIncludeDesc, setLocalIncludeDesc] = useState(true);
+  const [showLinkGraph, setShowLinkGraph] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setShowTop(window.scrollY > 400);

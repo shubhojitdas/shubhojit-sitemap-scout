@@ -114,7 +114,7 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3 });
+    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: [] });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);

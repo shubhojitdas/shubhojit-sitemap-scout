@@ -52,7 +52,7 @@ const Index = () => {
     crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots);
   };
 
-  const isLoading = phase === "parsing" || phase === "crawling";
+  const isLoading = phase === "parsing" || phase === "crawling" || phase === "paused";
 
   return (
     <div className="min-h-screen bg-background">

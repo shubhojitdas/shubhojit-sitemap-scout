@@ -44,16 +44,12 @@ async function parseSitemap(url: string, domain: string, visited: Set<string>): 
   const childSitemaps = extractLocValues(xml, 'sitemap');
 
   if (childSitemaps.length > 0) {
-    // Fetch child sitemaps concurrently in batches of 5
-    const BATCH = 5;
-    for (let i = 0; i < childSitemaps.length; i += BATCH) {
-      const batch = childSitemaps.slice(i, i + BATCH);
-      const results = await Promise.all(
-        batch.map((child) => parseSitemap(child, domain, visited))
-      );
-      for (const childUrls of results) {
-        urls.push(...childUrls);
-      }
+    // Fetch ALL child sitemaps concurrently for speed
+    const results = await Promise.all(
+      childSitemaps.map((child) => parseSitemap(child, domain, visited))
+    );
+    for (const childUrls of results) {
+      urls.push(...childUrls);
       if (urls.length >= 50000) break;
     }
     return urls.slice(0, 50000);

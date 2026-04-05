@@ -183,6 +183,22 @@ export default function LinkGraphView() {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden" ref={containerRef}>
+      {/* Header */}
+      <header className="border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-30">
+        <div className="container max-w-5xl mx-auto flex items-center justify-between h-12 px-4">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm tracking-tight text-foreground">Sitemap Scout</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <ThemeToggle />
+            <a href="https://www.linkedin.com/in/shubhojitdas/" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground">
+                <Linkedin className="h-3.5 w-3.5" />
+              </Button>
+            </a>
+          </div>
+        </div>
+      </header>
       {/* Loading */}
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-20">

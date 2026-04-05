@@ -109,14 +109,8 @@ export function StatsCards({ results, includeTitle, includeDesc, includeH1, incl
     ...(includeRobots ? robotsStats : []),
   ];
 
-  const colCount = stats.length;
-  const cols =
-    colCount <= 4 ? "grid-cols-2 lg:grid-cols-4" :
-    colCount <= 7 ? "grid-cols-2 lg:grid-cols-4 xl:grid-cols-7" :
-    "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10";
-
   return (
-    <div className={`grid ${cols} gap-2`}>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
       {stats.map((stat, i) => (
         <motion.div
           key={stat.label}

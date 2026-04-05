@@ -474,10 +474,13 @@ function MetaTable({
 }
 
 // ─── Image Alt Texts table ────────────────────────────────────────────────────
-function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: string }) {
+function ImagesTable({ results, domain, imgFilter, setImgFilter, search, setSearch, advancedFilter, setAdvancedFilter }: {
+  results: CrawlResult[]; domain: string;
+  imgFilter: ImageFilter; setImgFilter: (f: ImageFilter) => void;
+  search: string; setSearch: (s: string) => void;
+  advancedFilter: AdvancedFilter; setAdvancedFilter: (f: AdvancedFilter) => void;
+}) {
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
-  const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
   const [copied, setCopied] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
@@ -486,7 +489,6 @@ function ImagesTable({ results, domain }: { results: CrawlResult[]; domain: stri
     { key: "img_src", label: "Image URL" },
     { key: "img_alt", label: "Alt Text" },
   ];
-  const [advancedFilter, setAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
 
   const getImgFieldValue = (r: CrawlResult, field: string): string => {
     switch (field) {

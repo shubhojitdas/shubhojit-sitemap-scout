@@ -12,7 +12,10 @@ interface CrawlFormProps {
   onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean) => void;
   onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean) => void;
   isLoading: boolean;
+  isPaused: boolean;
   onReset: () => void;
+  onPause: () => void;
+  onResume: () => void;
 }
 
 function parseUrlsFromText(text: string): string[] {

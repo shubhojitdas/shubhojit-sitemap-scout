@@ -253,9 +253,10 @@ async function fetchMeta(
   includeImages: boolean,
   includeSchemas: boolean,
   includeRobots: boolean,
+  includeCanonical: boolean,
 ): Promise<CrawlResult> {
   const start = Date.now();
-  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', status: 'Error', statusCode: 0, fetchTime: '0s' };
+  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', status: 'Error', statusCode: 0, fetchTime: '0s' };
   try {
     const { resp, redirectedUrl } = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
@@ -265,6 +266,8 @@ async function fetchMeta(
     }
 
     const html = await resp.text();
+    const canonical = includeCanonical ? extractCanonical(html) : '';
+    const canonicalStatus = includeCanonical ? getCanonicalStatus(url, canonical) : undefined;
     return {
       url,
       title: includeTitle ? extractTitle(html) : '',
@@ -275,6 +278,8 @@ async function fetchMeta(
       images: includeImages ? extractImages(html, url) : [],
       schemas: includeSchemas ? extractSchemaMarkups(html) : [],
       robots: includeRobots ? extractMetaRobots(html) : '',
+      canonical: includeCanonical ? canonical : undefined,
+      canonicalStatus,
       status: 'OK',
       statusCode: resp.status,
       redirectedUrl,

@@ -307,6 +307,7 @@ Deno.serve(async (req) => {
       includeImages = false,
       includeSchemas = false,
       includeRobots = false,
+      includeCanonical = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -316,14 +317,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Concurrency of 5 to reduce server-side pressure
     const batchSize = 5;
     const results: CrawlResult[] = [];
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots))
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical))
       );
       results.push(...batchResults);
     }

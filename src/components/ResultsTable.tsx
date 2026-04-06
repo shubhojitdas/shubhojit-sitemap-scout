@@ -873,3 +873,145 @@ function SchemasTable({ results, domain, schemaFilter, setSchemaFilter, search, 
     </div>
   );
 }
+
+// ─── Canonical URL table ──────────────────────────────────────────────────────
+function CanonicalTable({ results, domain, canonicalFilter, setCanonicalFilter, search, setSearch, advancedFilter, setAdvancedFilter }: {
+  results: CrawlResult[]; domain: string;
+  canonicalFilter: "all" | "self-referencing" | "canonicalised" | "missing"; setCanonicalFilter: (f: "all" | "self-referencing" | "canonicalised" | "missing") => void;
+  search: string; setSearch: (s: string) => void;
+  advancedFilter: AdvancedFilter; setAdvancedFilter: (f: AdvancedFilter) => void;
+}) {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const canonicalFields = [
+    { key: "url", label: "Page URL" },
+    { key: "canonical", label: "Canonical URL" },
+    { key: "canonicalStatus", label: "Status" },
+  ];
+
+  const getCanonicalFieldValue = (r: CrawlResult, field: string): string => {
+    switch (field) {
+      case "url": return r.url;
+      case "canonical": return r.canonical ?? "";
+      case "canonicalStatus": return r.canonicalStatus ?? "Missing";
+      default: return "";
+    }
+  };
+
+  const filteredResults = useMemo(() => {
+    let data = results.filter((r) => r.status === "OK");
+    if (canonicalFilter === "self-referencing") data = data.filter((r) => r.canonicalStatus === "Self Referencing");
+    else if (canonicalFilter === "canonicalised") data = data.filter((r) => r.canonicalStatus === "Canonicalised");
+    else if (canonicalFilter === "missing") data = data.filter((r) => r.canonicalStatus === "Missing" || !r.canonical);
+
+    if (isFilterActive(advancedFilter)) {
+      data = applyAdvancedFilter(data, advancedFilter, getCanonicalFieldValue);
+    } else if (search) {
+      const q = search.toLowerCase();
+      data = data.filter((r) =>
+        r.url.toLowerCase().includes(q) ||
+        (r.canonical ?? "").toLowerCase().includes(q)
+      );
+    }
+    return data;
+  }, [results, canonicalFilter, search, advancedFilter]);
+
+  const handleCopy = () => {
+    const rows = ["Page URL,Canonical URL,Status"];
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    filteredResults.forEach((r) => {
+      rows.push(`${escape(r.url)},${escape(r.canonical ?? "")},${escape(r.canonicalStatus ?? "Missing")}`);
+    });
+    navigator.clipboard.writeText(rows.join("\n"));
+    setCopied(true);
+    toast({ title: "Copied!", description: `${filteredResults.length} rows copied as CSV` });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const rows = ["Page URL,Canonical URL,Status"];
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    results.filter((r) => r.status === "OK").forEach((r) => {
+      rows.push(`${escape(r.url)},${escape(r.canonical ?? "")},${escape(r.canonicalStatus ?? "Missing")}`);
+    });
+    downloadCSV(rows.join("\n"), `${domain}-canonical`);
+    toast({ title: "Downloaded!", description: "Canonical URL CSV saved" });
+  };
+
+  const filters: { key: "all" | "self-referencing" | "canonicalised" | "missing"; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "self-referencing", label: "Self Referencing" },
+    { key: "canonicalised", label: "Canonicalised" },
+    { key: "missing", label: "Missing" },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+        <div className="flex gap-1.5 flex-wrap">
+          {filters.map((f) => (
+            <Button key={f.key} size="sm" variant={canonicalFilter === f.key ? "default" : "outline"} onClick={() => setCanonicalFilter(f.key)} className="text-[11px] h-7 px-2.5">
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex gap-1.5 items-center w-full sm:w-auto">
+          <SearchBarWithGear
+            search={search}
+            setSearch={setSearch}
+            placeholder="Filter URL or canonical..."
+            fields={canonicalFields}
+            advancedFilter={advancedFilter}
+            setAdvancedFilter={setAdvancedFilter}
+          />
+          <Button size="sm" variant="outline" onClick={handleCopy} className="h-7 gap-1 text-[11px] px-2.5">
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            Copy
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleDownload} className="h-7 gap-1 text-[11px] px-2.5">
+            <Download className="h-3 w-3" /> CSV
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">{filteredResults.length} pages</p>
+
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="grid grid-cols-[1.5fr_1.5fr_120px] gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+          <div className="px-3 py-2">Page URL</div>
+          <div className="px-3 py-2">Canonical URL</div>
+          <div className="px-3 py-2">Status</div>
+        </div>
+
+        <div className="overflow-auto max-h-[600px] divide-y divide-border">
+          {filteredResults.length === 0 ? (
+            <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">No results</div>
+          ) : (
+            filteredResults.map((row, index) => (
+              <div key={index} className="grid grid-cols-[1.5fr_1.5fr_120px] gap-0 hover:bg-muted/20 transition-colors text-xs">
+                <div className="px-3 py-2 break-all font-mono text-[11px] text-muted-foreground">{row.url}</div>
+                <div className="px-3 py-2 break-all font-mono text-[11px]">
+                  {row.canonical ? (
+                    <span className="text-foreground">{row.canonical}</span>
+                  ) : (
+                    <span className="text-muted-foreground italic">(none)</span>
+                  )}
+                </div>
+                <div className="px-3 py-2 text-[11px]">
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                    row.canonicalStatus === 'Self Referencing' ? 'bg-success/15 text-success' :
+                    row.canonicalStatus === 'Canonicalised' ? 'bg-warning/15 text-warning' :
+                    'bg-destructive/15 text-destructive'
+                  }`}>
+                    {row.canonicalStatus ?? 'Missing'}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

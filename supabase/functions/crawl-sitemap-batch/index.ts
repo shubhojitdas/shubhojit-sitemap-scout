@@ -101,12 +101,10 @@ function extractMetaRobots(html: string): string {
 
 function extractSchemaMarkups(html: string): string[] {
   const schemas: string[] = [];
-  // Match any <script> tag with type="application/ld+json", regardless of other attributes
   const openTagRegex = /<script\s[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>/gi;
   let openMatch;
   while ((openMatch = openTagRegex.exec(html)) !== null) {
     const startIdx = openMatch.index + openMatch[0].length;
-    // Find the closing </script> tag — use a case-insensitive search
     const closeIdx = html.toLowerCase().indexOf('</script>', startIdx);
     if (closeIdx === -1) continue;
     const content = html.slice(startIdx, closeIdx).trim();
@@ -115,11 +113,39 @@ function extractSchemaMarkups(html: string): string[] {
       const parsed = JSON.parse(content);
       schemas.push(JSON.stringify(parsed, null, 2));
     } catch {
-      // Still include raw content so the user can see it
       schemas.push(content);
     }
   }
   return schemas;
+}
+
+function extractCanonical(html: string): string {
+  const linkRegex = /<link\s([^>]+?)\/?>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    const attrs = match[1];
+    const relMatch = attrs.match(/\brel\s*=\s*["']canonical["']/i);
+    if (!relMatch) continue;
+    let hrefMatch = attrs.match(/\bhref\s*=\s*"([^"]*)"/i);
+    if (!hrefMatch) {
+      hrefMatch = attrs.match(/\bhref\s*=\s*'([^']*)'/i);
+    }
+    if (hrefMatch && hrefMatch[1]) {
+      return decodeHtmlEntities(hrefMatch[1]).trim();
+    }
+  }
+  return '';
+}
+
+function getCanonicalStatus(pageUrl: string, canonical: string): 'Self Referencing' | 'Canonicalised' | 'Missing' {
+  if (!canonical) return 'Missing';
+  try {
+    const pageNorm = new URL(pageUrl).href.replace(/\/+$/, '');
+    const canonNorm = new URL(canonical).href.replace(/\/+$/, '');
+    return pageNorm === canonNorm ? 'Self Referencing' : 'Canonicalised';
+  } catch {
+    return pageUrl === canonical ? 'Self Referencing' : 'Canonicalised';
+  }
 }
 
 function extractImages(html: string, baseUrl: string): ImageData[] {

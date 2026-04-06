@@ -110,6 +110,7 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
   const [metaSortDir, setMetaSortDir] = useState<SortDir>("asc");
   const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
   const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
+  const [canonicalFilter, setCanonicalFilter] = useState<"all" | "self-referencing" | "canonicalised" | "missing">("all");
 
   // Shared search & advanced filter across all tabs
   const [universalSearch, setUniversalSearch] = useState("");

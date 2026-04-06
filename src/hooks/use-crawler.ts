@@ -152,16 +152,17 @@ export function useCrawler() {
     includeImages = false,
     includeSchemas = false,
     includeRobots = false,
+    includeCanonical = false,
   ) => {
     const signal = startController();
-    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots };
+    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical };
     pendingUrlsRef.current = urls;
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: urls });
 
     try {
-      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
+      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({

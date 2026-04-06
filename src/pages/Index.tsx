@@ -147,7 +147,7 @@ const Index = () => {
             transition={{ duration: 0.4, delay: 0.05 }}
           >
             <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-[1.1] gradient-text pb-1">
-              Sitemap Scout - A Lightweight SEO Tool
+              Sitemap Scout | SEO Data Extractor
             </h1>
             <p className="text-[11px] text-muted-foreground/50 mt-1 tracking-wide">by Shubhojit Das</p>
             <p className="text-muted-foreground text-sm sm:text-[15px] mt-2.5 max-w-md mx-auto leading-relaxed">

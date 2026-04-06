@@ -189,7 +189,7 @@ export function useCrawler() {
       pendingUrlsRef.current,
       signal,
       opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3,
-      opts.includeImages, opts.includeSchemas, opts.includeRobots,
+      opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical,
       pendingIndexRef.current,
       accumulatedResultsRef.current,
     );

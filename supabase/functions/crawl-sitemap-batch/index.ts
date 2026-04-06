@@ -18,6 +18,8 @@ interface CrawlResult {
   images?: ImageData[];
   schemas?: string[];
   robots?: string;
+  canonical?: string;
+  canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
   status: 'OK' | 'Error';
   statusCode: number;
   redirectedUrl?: string;

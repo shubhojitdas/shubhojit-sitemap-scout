@@ -141,6 +141,12 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
                 Schema Markup
               </TabsTrigger>
             )}
+            {includeCanonical && (
+              <TabsTrigger value="canonical" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                <Link2 className="h-3 w-3" />
+                Canonical
+              </TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="meta" className="mt-4">
             <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots}
@@ -164,6 +170,15 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
             <TabsContent value="schemas" className="mt-4">
               <SchemasTable results={results} domain={domain}
                 schemaFilter={schemaFilter} setSchemaFilter={setSchemaFilter}
+                search={universalSearch} setSearch={setUniversalSearch}
+                advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
+              />
+            </TabsContent>
+          )}
+          {includeCanonical && (
+            <TabsContent value="canonical" className="mt-4">
+              <CanonicalTable results={results} domain={domain}
+                canonicalFilter={canonicalFilter} setCanonicalFilter={setCanonicalFilter}
                 search={universalSearch} setSearch={setUniversalSearch}
                 advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
               />

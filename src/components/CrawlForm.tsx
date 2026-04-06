@@ -57,6 +57,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
   const [includeImages, setIncludeImages] = useState(false);
   const [includeSchemas, setIncludeSchemas] = useState(false);
   const [includeRobots, setIncludeRobots] = useState(false);
+  const [includeCanonical, setIncludeCanonical] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSitemapSubmit = (e: React.FormEvent) => {

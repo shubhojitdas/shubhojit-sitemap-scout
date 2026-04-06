@@ -102,7 +102,7 @@ function SearchBarWithGear({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical }: ResultsTableProps) {
-  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas">("meta");
+  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical">("meta");
 
   // Universal filter state shared across all tabs
   const [metaFilter, setMetaFilter] = useState<Filter>("all");

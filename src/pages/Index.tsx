@@ -34,6 +34,7 @@ const Index = () => {
   const [includeImages, setIncludeImages] = useState(false);
   const [includeSchemas, setIncludeSchemas] = useState(false);
   const [includeRobots, setIncludeRobots] = useState(false);
+  const [includeCanonical, setIncludeCanonical] = useState(false);
   const [localIncludeTitle, setLocalIncludeTitle] = useState(true);
   const [localIncludeDesc, setLocalIncludeDesc] = useState(true);
   const [showLinkGraph, setShowLinkGraph] = useState(false);

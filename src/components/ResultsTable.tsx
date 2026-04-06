@@ -123,7 +123,7 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
       {hasTabs ? (
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas")}>
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas" | "canonical")}>
           <TabsList className="h-9 bg-muted p-1 rounded-lg border border-border">
             <TabsTrigger value="meta" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <Search className="h-3 w-3" />

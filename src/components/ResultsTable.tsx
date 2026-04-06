@@ -47,6 +47,7 @@ interface ResultsTableProps {
   includeImages: boolean;
   includeSchemas: boolean;
   includeRobots: boolean;
+  includeCanonical: boolean;
 }
 
 // ─── Search bar with gear icon ────────────────────────────────────────────────

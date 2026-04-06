@@ -109,9 +109,10 @@ export function useCrawler() {
     includeImages = false,
     includeSchemas = false,
     includeRobots = false,
+    includeCanonical = false,
   ) => {
     const signal = startController();
-    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots };
+    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical };
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
@@ -128,7 +129,7 @@ export function useCrawler() {
 
       pendingUrlsRef.current = urls;
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length, parsedUrls: urls }));
-      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
+      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({

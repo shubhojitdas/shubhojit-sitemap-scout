@@ -255,6 +255,7 @@ const Index = () => {
             includeImages={includeImages}
             includeSchemas={includeSchemas}
             includeRobots={includeRobots}
+            includeCanonical={includeCanonical}
           />
         </section>
       )}

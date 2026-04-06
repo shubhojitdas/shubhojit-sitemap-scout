@@ -108,14 +108,11 @@ export function buildGraphFromUrls(
     const topGroup = pathParts.length > 0 ? `/${pathParts[0]}/` : "root";
 
     // Build intermediate nodes up to the leaf
-    let currentPath = rootOrigin;
     let parentId = rootId;
 
     for (let i = 0; i < pathParts.length; i++) {
-      currentPath += "/" + pathParts[i];
-      const nodeId = currentPath.endsWith("/") ? currentPath : currentPath + (i < pathParts.length - 1 ? "/" : "");
-      // normalise: intermediate segments get trailing slash, leaf doesn't
-      const normId = i < pathParts.length - 1 ? currentPath + "/" : currentPath;
+      // Normalise all node IDs to NOT have trailing slash (except root)
+      const normId = rootOrigin + "/" + pathParts.slice(0, i + 1).join("/");
       const depth = i + 1;
 
       if (depth > maxDepth) break;
@@ -134,10 +131,8 @@ export function buildGraphFromUrls(
         });
       }
 
-      // Add link parent -> child
-      const linkKey = `${parentId}|${normId}`;
+      // Add link parent -> child (avoid duplicates)
       if (parentId !== normId) {
-        // Avoid duplicate links
         const exists = links.some(
           (l) => l.source === parentId && l.target === normId
         );

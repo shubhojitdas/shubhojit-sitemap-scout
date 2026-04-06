@@ -18,6 +18,8 @@ interface CrawlResult {
   images?: ImageData[];
   schemas?: string[];
   robots?: string;
+  canonical?: string;
+  canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
   status: 'OK' | 'Error';
   statusCode: number;
   redirectedUrl?: string;
@@ -99,12 +101,10 @@ function extractMetaRobots(html: string): string {
 
 function extractSchemaMarkups(html: string): string[] {
   const schemas: string[] = [];
-  // Match any <script> tag with type="application/ld+json", regardless of other attributes
   const openTagRegex = /<script\s[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>/gi;
   let openMatch;
   while ((openMatch = openTagRegex.exec(html)) !== null) {
     const startIdx = openMatch.index + openMatch[0].length;
-    // Find the closing </script> tag — use a case-insensitive search
     const closeIdx = html.toLowerCase().indexOf('</script>', startIdx);
     if (closeIdx === -1) continue;
     const content = html.slice(startIdx, closeIdx).trim();
@@ -113,11 +113,39 @@ function extractSchemaMarkups(html: string): string[] {
       const parsed = JSON.parse(content);
       schemas.push(JSON.stringify(parsed, null, 2));
     } catch {
-      // Still include raw content so the user can see it
       schemas.push(content);
     }
   }
   return schemas;
+}
+
+function extractCanonical(html: string): string {
+  const linkRegex = /<link\s([^>]+?)\/?>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    const attrs = match[1];
+    const relMatch = attrs.match(/\brel\s*=\s*["']canonical["']/i);
+    if (!relMatch) continue;
+    let hrefMatch = attrs.match(/\bhref\s*=\s*"([^"]*)"/i);
+    if (!hrefMatch) {
+      hrefMatch = attrs.match(/\bhref\s*=\s*'([^']*)'/i);
+    }
+    if (hrefMatch && hrefMatch[1]) {
+      return decodeHtmlEntities(hrefMatch[1]).trim();
+    }
+  }
+  return '';
+}
+
+function getCanonicalStatus(pageUrl: string, canonical: string): 'Self Referencing' | 'Canonicalised' | 'Missing' {
+  if (!canonical) return 'Missing';
+  try {
+    const pageNorm = new URL(pageUrl).href.replace(/\/+$/, '');
+    const canonNorm = new URL(canonical).href.replace(/\/+$/, '');
+    return pageNorm === canonNorm ? 'Self Referencing' : 'Canonicalised';
+  } catch {
+    return pageUrl === canonical ? 'Self Referencing' : 'Canonicalised';
+  }
 }
 
 function extractImages(html: string, baseUrl: string): ImageData[] {
@@ -225,9 +253,10 @@ async function fetchMeta(
   includeImages: boolean,
   includeSchemas: boolean,
   includeRobots: boolean,
+  includeCanonical: boolean,
 ): Promise<CrawlResult> {
   const start = Date.now();
-  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', status: 'Error', statusCode: 0, fetchTime: '0s' };
+  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', status: 'Error', statusCode: 0, fetchTime: '0s' };
   try {
     const { resp, redirectedUrl } = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
@@ -237,6 +266,8 @@ async function fetchMeta(
     }
 
     const html = await resp.text();
+    const canonical = includeCanonical ? extractCanonical(html) : '';
+    const canonicalStatus = includeCanonical ? getCanonicalStatus(url, canonical) : undefined;
     return {
       url,
       title: includeTitle ? extractTitle(html) : '',
@@ -247,6 +278,8 @@ async function fetchMeta(
       images: includeImages ? extractImages(html, url) : [],
       schemas: includeSchemas ? extractSchemaMarkups(html) : [],
       robots: includeRobots ? extractMetaRobots(html) : '',
+      canonical: includeCanonical ? canonical : undefined,
+      canonicalStatus,
       status: 'OK',
       statusCode: resp.status,
       redirectedUrl,
@@ -274,6 +307,7 @@ Deno.serve(async (req) => {
       includeImages = false,
       includeSchemas = false,
       includeRobots = false,
+      includeCanonical = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -283,14 +317,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Concurrency of 5 to reduce server-side pressure
     const batchSize = 5;
     const results: CrawlResult[] = [];
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots))
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical))
       );
       results.push(...batchResults);
     }

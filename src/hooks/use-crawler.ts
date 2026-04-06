@@ -27,7 +27,7 @@ const INITIAL_STATE: CrawlState = {
   parsedUrls: [],
 };
 
-const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '' };
+const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const };
 
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(INITIAL_STATE);
@@ -35,7 +35,7 @@ export function useCrawler() {
   const pausedRef = useRef(false);
   const pendingUrlsRef = useRef<string[]>([]);
   const pendingIndexRef = useRef(0);
-  const crawlOptionsRef = useRef<{ includeTitle: boolean; includeDesc: boolean; includeH1: boolean; includeH2: boolean; includeH3: boolean; includeImages: boolean; includeSchemas: boolean; includeRobots: boolean }>({ includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false });
+  const crawlOptionsRef = useRef<{ includeTitle: boolean; includeDesc: boolean; includeH1: boolean; includeH2: boolean; includeH3: boolean; includeImages: boolean; includeSchemas: boolean; includeRobots: boolean; includeCanonical: boolean }>({ includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false });
   const accumulatedResultsRef = useRef<CrawlResult[]>([]);
 
   const startController = () => {
@@ -57,6 +57,7 @@ export function useCrawler() {
     includeImages: boolean,
     includeSchemas: boolean,
     includeRobots: boolean,
+    includeCanonical: boolean,
     startIndex = 0,
     existingResults: CrawlResult[] = [],
   ) => {
@@ -73,7 +74,7 @@ export function useCrawler() {
       }
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
-        const batchResults = await fetchMetaBatch(batch, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
+        const batchResults = await fetchMetaBatch(batch, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical);
         if (signal.aborted) return;
         if (pausedRef.current) {
           allResults.push(...batchResults);
@@ -108,9 +109,10 @@ export function useCrawler() {
     includeImages = false,
     includeSchemas = false,
     includeRobots = false,
+    includeCanonical = false,
   ) => {
     const signal = startController();
-    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots };
+    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical };
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
@@ -127,7 +129,7 @@ export function useCrawler() {
 
       pendingUrlsRef.current = urls;
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length, parsedUrls: urls }));
-      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
+      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -150,16 +152,17 @@ export function useCrawler() {
     includeImages = false,
     includeSchemas = false,
     includeRobots = false,
+    includeCanonical = false,
   ) => {
     const signal = startController();
-    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots };
+    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical };
     pendingUrlsRef.current = urls;
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: urls });
 
     try {
-      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots);
+      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -186,7 +189,7 @@ export function useCrawler() {
       pendingUrlsRef.current,
       signal,
       opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3,
-      opts.includeImages, opts.includeSchemas, opts.includeRobots,
+      opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical,
       pendingIndexRef.current,
       accumulatedResultsRef.current,
     );

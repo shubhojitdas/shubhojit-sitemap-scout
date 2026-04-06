@@ -15,6 +15,8 @@ export interface CrawlResult {
   images?: ImageData[];
   schemas?: string[];
   robots?: string;
+  canonical?: string;
+  canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
   status: "OK" | "Error";
   statusCode: number;
   redirectedUrl?: string;
@@ -41,9 +43,10 @@ export async function fetchMetaBatch(
   includeImages = false,
   includeSchemas = false,
   includeRobots = false,
+  includeCanonical = false,
 ): Promise<CrawlResult[]> {
   const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots },
+    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical },
   });
 
   if (error) throw new Error(error.message);
@@ -60,6 +63,7 @@ export function generateCSV(
   includeH3 = false,
   includeImages = false,
   includeRobots = false,
+  includeCanonical = false,
 ): string {
   const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
 
@@ -86,6 +90,7 @@ export function generateCSV(
   if (includeH2) headerParts.push("H2 Tags", "H2 Count");
   if (includeH3) headerParts.push("H3 Tags", "H3 Count");
   if (includeRobots) headerParts.push("Meta Robots");
+  if (includeCanonical) headerParts.push("Canonical URL", "Canonical Status");
   headerParts.push("Status", "Response Code", "Fetch Time");
   const header = headerParts.join(",");
 
@@ -97,6 +102,7 @@ export function generateCSV(
     if (includeH2) { parts.push(escape((r.h2s ?? []).join(" | ")), String((r.h2s ?? []).length)); }
     if (includeH3) { parts.push(escape((r.h3s ?? []).join(" | ")), String((r.h3s ?? []).length)); }
     if (includeRobots) { parts.push(escape(r.robots ?? '')); }
+    if (includeCanonical) { parts.push(escape(r.canonical ?? ''), escape(r.canonicalStatus ?? 'Missing')); }
     parts.push(r.status, String(r.statusCode), r.fetchTime);
     return parts.join(",");
   });

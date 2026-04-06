@@ -191,6 +191,12 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
         <Bot className="h-3.5 w-3.5" />
         Meta Robots
       </Label>
+
+      <Label htmlFor="include-canonical" className={pillClass(includeCanonical)}>
+        <Checkbox id="include-canonical" checked={includeCanonical} onCheckedChange={(v) => setIncludeCanonical(!!v)} disabled={isLoading} className="hidden" />
+        <Link2 className="h-3.5 w-3.5" />
+        Canonical
+      </Label>
     </div>
   );
 

@@ -55,6 +55,7 @@ const Index = () => {
     withImages: boolean,
     withSchemas: boolean,
     withRobots: boolean,
+    withCanonical: boolean,
   ) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
@@ -66,9 +67,10 @@ const Index = () => {
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
     setIncludeRobots(withRobots);
+    setIncludeCanonical(withCanonical);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots);
+    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical);
   };
 
   const handleCrawlUrls = (
@@ -81,14 +83,16 @@ const Index = () => {
     withImages: boolean,
     withSchemas: boolean,
     withRobots: boolean,
+    withCanonical: boolean,
   ) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
     setIncludeRobots(withRobots);
+    setIncludeCanonical(withCanonical);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots);
+    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling" || phase === "paused";

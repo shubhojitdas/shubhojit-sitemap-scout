@@ -27,7 +27,7 @@ const INITIAL_STATE: CrawlState = {
   parsedUrls: [],
 };
 
-const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '' };
+const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const };
 
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(INITIAL_STATE);

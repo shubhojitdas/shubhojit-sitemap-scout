@@ -57,6 +57,7 @@ export function useCrawler() {
     includeImages: boolean,
     includeSchemas: boolean,
     includeRobots: boolean,
+    includeCanonical: boolean,
     startIndex = 0,
     existingResults: CrawlResult[] = [],
   ) => {

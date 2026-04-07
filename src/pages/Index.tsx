@@ -149,7 +149,17 @@ const Index = () => {
             <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-[1.1] gradient-text pb-1">
               SEO Sitemap Scout
             </h1>
-            <p className="text-[11px] text-muted-foreground/50 mt-1 tracking-wide">by Shubhojit Das</p>
+            <p className="text-[13px] mt-1.5 tracking-wide font-semibold gradient-text">
+              by{" "}
+              <a
+                href="https://www.linkedin.com/in/shubhojitdas/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-primary/40 underline-offset-2 hover:decoration-primary transition-colors"
+              >
+                Shubhojit Das
+              </a>
+            </p>
             <p className="text-muted-foreground text-sm sm:text-[15px] mt-2.5 max-w-md mx-auto leading-relaxed">
               Crawl any sitemap and extract Meta Titles, Descriptions, Headings, Image Alt Texts, Schema Markup, and
               Meta Robots. Visualize your site's link structure. Export in seconds.

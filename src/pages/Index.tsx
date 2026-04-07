@@ -149,7 +149,7 @@ const Index = () => {
             <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-[1.1] gradient-text pb-1">
               SEO Sitemap Scout
             </h1>
-            <p className="text-[15px] mt-1.5 tracking-wide font-semibold gradient-text">
+            <p className="text-[15px] mt-2.5 tracking-wide font-semibold gradient-text">
               by{" "}
               <a
                 href="https://www.linkedin.com/in/shubhojitdas/"

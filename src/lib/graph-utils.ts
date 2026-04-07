@@ -84,49 +84,22 @@ export function buildGraphFromUrls(
     urlsByOrigin.get(origin)!.push(parsed);
   }
 
-  const multiDomain = urlsByOrigin.size > 1;
-
-  // If multiple domains, create a virtual super-root
-  const superRootId = "__super_root__";
-  if (multiDomain) {
-    nodeMap.set(superRootId, {
-      id: superRootId,
-      label: "All Domains",
-      group: "root",
-      depth: 0,
-      fullUrl: "",
-      parentId: null,
-      val: 10,
-    });
-    getGroupColor("root");
-  }
-
-  // Process each origin independently
+  // Process each origin independently – no super-root, domains stay separate
   for (const [origin, parsedUrls] of urlsByOrigin) {
     const rootId = origin + "/";
-    const domainDepthOffset = multiDomain ? 1 : 0;
 
     // Add domain root node
     if (!nodeMap.has(rootId)) {
       nodeMap.set(rootId, {
         id: rootId,
-        label: multiDomain ? new URL(origin).hostname : "/",
-        group: multiDomain ? new URL(origin).hostname : "root",
-        depth: domainDepthOffset,
+        label: new URL(origin).hostname,
+        group: new URL(origin).hostname,
+        depth: 0,
         fullUrl: rootId,
-        parentId: multiDomain ? superRootId : null,
+        parentId: null,
         val: 8,
       });
-      if (multiDomain) {
-        getGroupColor(new URL(origin).hostname);
-      } else {
-        getGroupColor("root");
-      }
-
-      // Link super-root -> domain root
-      if (multiDomain) {
-        links.push({ source: superRootId, target: rootId });
-      }
+      getGroupColor(new URL(origin).hostname);
     }
 
     // Process each URL under this origin

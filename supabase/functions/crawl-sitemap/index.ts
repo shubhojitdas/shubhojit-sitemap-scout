@@ -4,16 +4,24 @@ const corsHeaders = {
 };
 
 function extractLocValues(xml: string, wrapperTag: string): string[] {
-  // Matches <loc> values with or without CDATA wrappers
-  const regex = new RegExp(
-    `<${wrapperTag}>[\\s\\S]*?<loc>\\s*(?:<!\\[CDATA\\[)?\\s*(.*?)\\s*(?:\\]\\]>)?\\s*<\\/loc>[\\s\\S]*?<\\/${wrapperTag}>`,
+  // Matches <loc> values with or without CDATA wrappers, handles multiline and namespaced tags
+  const results: string[] = [];
+
+  // Strategy: find all <loc>...</loc> blocks within <wrapperTag>...</wrapperTag>
+  const wrapperRegex = new RegExp(
+    `<${wrapperTag}[^>]*>[\\s\\S]*?<\\/${wrapperTag}>`,
     'gi'
   );
-  const results: string[] = [];
-  let match;
-  while ((match = regex.exec(xml)) !== null) {
-    const loc = match[1].replace(/&amp;/g, '&').trim();
-    if (loc) results.push(loc);
+  const locRegex = /<loc[^>]*>\s*(?:<!\[CDATA\[)?\s*([\s\S]*?)\s*(?:\]\]>)?\s*<\/loc>/i;
+
+  let wrapperMatch;
+  while ((wrapperMatch = wrapperRegex.exec(xml)) !== null) {
+    const block = wrapperMatch[0];
+    const locMatch = block.match(locRegex);
+    if (locMatch && locMatch[1]) {
+      const loc = locMatch[1].replace(/&amp;/g, '&').replace(/\s+/g, '').trim();
+      if (loc) results.push(loc);
+    }
   }
   return results;
 }

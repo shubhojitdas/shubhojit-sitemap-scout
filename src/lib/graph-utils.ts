@@ -55,6 +55,7 @@ export function resetGroupColors() {
 
 /**
  * Build a graph from a flat array of URL strings.
+ * Groups URLs by their origin (domain) so different domains are never mixed.
  * maxDepth & maxNodes allow filtering for performance.
  */
 export function buildGraphFromUrls(
@@ -67,32 +68,10 @@ export function buildGraphFromUrls(
   const nodeMap = new Map<string, GraphNode>();
   const links: GraphLink[] = [];
 
-  // Ensure we have a root
   if (urls.length === 0) return { nodes: [], links: [] };
 
-  // Determine root origin from the first URL
-  let rootOrigin: string;
-  try {
-    rootOrigin = new URL(urls[0]).origin;
-  } catch {
-    rootOrigin = "https://unknown.com";
-  }
-
-  const rootId = rootOrigin + "/";
-
-  // Always add root node
-  nodeMap.set(rootId, {
-    id: rootId,
-    label: "/",
-    group: "root",
-    depth: 0,
-    fullUrl: rootId,
-    parentId: null,
-    val: 8,
-  });
-  getGroupColor("root"); // assign color
-
-  // Process each URL
+  // Group URLs by origin
+  const urlsByOrigin = new Map<string, URL[]>();
   for (const rawUrl of urls) {
     let parsed: URL;
     try {
@@ -100,55 +79,106 @@ export function buildGraphFromUrls(
     } catch {
       continue;
     }
+    const origin = parsed.origin;
+    if (!urlsByOrigin.has(origin)) urlsByOrigin.set(origin, []);
+    urlsByOrigin.get(origin)!.push(parsed);
+  }
 
-    const pathParts = parsed.pathname
-      .split("/")
-      .filter((p) => p.length > 0);
+  const multiDomain = urlsByOrigin.size > 1;
 
-    const topGroup = pathParts.length > 0 ? `/${pathParts[0]}/` : "root";
+  // If multiple domains, create a virtual super-root
+  const superRootId = "__super_root__";
+  if (multiDomain) {
+    nodeMap.set(superRootId, {
+      id: superRootId,
+      label: "All Domains",
+      group: "root",
+      depth: 0,
+      fullUrl: "",
+      parentId: null,
+      val: 10,
+    });
+    getGroupColor("root");
+  }
 
-    // Build intermediate nodes up to the leaf
-    let parentId = rootId;
+  // Process each origin independently
+  for (const [origin, parsedUrls] of urlsByOrigin) {
+    const rootId = origin + "/";
+    const domainDepthOffset = multiDomain ? 1 : 0;
 
-    for (let i = 0; i < pathParts.length; i++) {
-      // Normalise all node IDs to NOT have trailing slash (except root)
-      const normId = rootOrigin + "/" + pathParts.slice(0, i + 1).join("/");
-      const depth = i + 1;
-
-      if (depth > maxDepth) break;
-
-      if (!nodeMap.has(normId)) {
-        const group = i === 0 ? `/${pathParts[0]}/` : topGroup;
-        getGroupColor(group);
-        nodeMap.set(normId, {
-          id: normId,
-          label: "/" + pathParts.slice(0, i + 1).join("/"),
-          group,
-          depth,
-          fullUrl: parsed.origin + "/" + pathParts.slice(0, i + 1).join("/"),
-          parentId,
-          val: Math.max(1, 4 - depth),
-        });
+    // Add domain root node
+    if (!nodeMap.has(rootId)) {
+      nodeMap.set(rootId, {
+        id: rootId,
+        label: multiDomain ? new URL(origin).hostname : "/",
+        group: multiDomain ? new URL(origin).hostname : "root",
+        depth: domainDepthOffset,
+        fullUrl: rootId,
+        parentId: multiDomain ? superRootId : null,
+        val: 8,
+      });
+      if (multiDomain) {
+        getGroupColor(new URL(origin).hostname);
+      } else {
+        getGroupColor("root");
       }
 
-      // Add link parent -> child (avoid duplicates)
-      if (parentId !== normId) {
-        const exists = links.some(
-          (l) => l.source === parentId && l.target === normId
-        );
-        if (!exists) {
-          links.push({ source: parentId, target: normId });
+      // Link super-root -> domain root
+      if (multiDomain) {
+        links.push({ source: superRootId, target: rootId });
+      }
+    }
+
+    // Process each URL under this origin
+    for (const parsed of parsedUrls) {
+      const pathParts = parsed.pathname
+        .split("/")
+        .filter((p) => p.length > 0);
+
+      const topGroup = pathParts.length > 0
+        ? (multiDomain ? `${new URL(origin).hostname}/${pathParts[0]}` : `/${pathParts[0]}/`)
+        : (multiDomain ? new URL(origin).hostname : "root");
+
+      let parentId = rootId;
+
+      for (let i = 0; i < pathParts.length; i++) {
+        const normId = origin + "/" + pathParts.slice(0, i + 1).join("/");
+        const depth = i + 1 + domainDepthOffset;
+
+        if (depth > maxDepth) break;
+
+        if (!nodeMap.has(normId)) {
+          const group = i === 0 ? topGroup : topGroup;
+          getGroupColor(group);
+          nodeMap.set(normId, {
+            id: normId,
+            label: "/" + pathParts.slice(0, i + 1).join("/"),
+            group,
+            depth,
+            fullUrl: origin + "/" + pathParts.slice(0, i + 1).join("/"),
+            parentId,
+            val: Math.max(1, 4 - depth),
+          });
         }
-      }
 
-      parentId = normId;
+        // Add link parent -> child (avoid duplicates)
+        if (parentId !== normId) {
+          const exists = links.some(
+            (l) => l.source === parentId && l.target === normId
+          );
+          if (!exists) {
+            links.push({ source: parentId, target: normId });
+          }
+        }
+
+        parentId = normId;
+      }
     }
   }
 
   // Enforce maxNodes
   let nodes = Array.from(nodeMap.values());
   if (nodes.length > maxNodes) {
-    // Prioritise lower depth nodes
     nodes.sort((a, b) => a.depth - b.depth);
     nodes = nodes.slice(0, maxNodes);
     const nodeIds = new Set(nodes.map((n) => n.id));

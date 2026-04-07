@@ -24,7 +24,7 @@ export default function LinkGraphView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [maxDepth, setMaxDepth] = useState(3);
   const [maxNodes, setMaxNodes] = useState(500);
-  const [nodeDistance, setNodeDistance] = useState(30);
+  const [nodeDistance, setNodeDistance] = useState(15);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 });

@@ -108,15 +108,16 @@ export function buildGraphFromUrls(
         .split("/")
         .filter((p) => p.length > 0);
 
+      const hostname = new URL(origin).hostname;
       const topGroup = pathParts.length > 0
-        ? (multiDomain ? `${new URL(origin).hostname}/${pathParts[0]}` : `/${pathParts[0]}/`)
-        : (multiDomain ? new URL(origin).hostname : "root");
+        ? `${hostname}/${pathParts[0]}`
+        : hostname;
 
       let parentId = rootId;
 
       for (let i = 0; i < pathParts.length; i++) {
         const normId = origin + "/" + pathParts.slice(0, i + 1).join("/");
-        const depth = i + 1 + domainDepthOffset;
+        const depth = i + 1;
 
         if (depth > maxDepth) break;
 

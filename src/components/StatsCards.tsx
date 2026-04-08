@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Globe, CheckCircle, XCircle, BarChart3, Heading1, Image, Code, Bot } from "lucide-react";
+import { Globe, CheckCircle, XCircle, BarChart3, Heading1, Image, Code, Bot, Languages } from "lucide-react";
 import { CrawlResult } from "@/lib/crawl-api";
 
 interface StatsCardsProps {
@@ -12,9 +12,10 @@ interface StatsCardsProps {
   includeImages: boolean;
   includeSchemas: boolean;
   includeRobots: boolean;
+  includeHreflangs?: boolean;
 }
 
-export function StatsCards({ results, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots }: StatsCardsProps) {
+export function StatsCards({ results, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeHreflangs }: StatsCardsProps) {
   if (results.length === 0) return null;
 
   const total = results.length;
@@ -99,6 +100,16 @@ export function StatsCards({ results, includeTitle, includeDesc, includeH1, incl
     { label: "Nofollow", value: nofollowPages.toLocaleString(), icon: Bot, color: "text-warning" },
   ];
 
+  const pagesWithHreflang = results.filter((r) => (r.hreflangs ?? []).length > 0).length;
+  const pagesNoHreflang = results.filter((r) => (r.hreflangs ?? []).length === 0).length;
+  const pagesWithXDefault = results.filter((r) => (r.hreflangs ?? []).some(h => h.hreflang === "x-default")).length;
+
+  const hreflangStats = [
+    { label: "Has Hreflang", value: pagesWithHreflang.toLocaleString(), icon: Languages, color: "text-foreground" },
+    { label: "No Hreflang", value: pagesNoHreflang.toLocaleString(), icon: Languages, color: "text-destructive" },
+    { label: "x-default", value: pagesWithXDefault.toLocaleString(), icon: Languages, color: "text-muted-foreground" },
+  ];
+
   const stats = [
     ...baseStats,
     ...(includeH1 ? h1Stats : []),
@@ -107,6 +118,7 @@ export function StatsCards({ results, includeTitle, includeDesc, includeH1, incl
     ...(includeImages ? imageStats : []),
     ...(includeSchemas ? schemaStats : []),
     ...(includeRobots ? robotsStats : []),
+    ...(includeHreflangs ? hreflangStats : []),
   ];
 
   return (

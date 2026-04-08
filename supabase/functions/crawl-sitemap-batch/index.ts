@@ -8,6 +8,11 @@ interface ImageData {
   alt: string | null;
 }
 
+interface HreflangEntry {
+  href: string;
+  hreflang: string;
+}
+
 interface CrawlResult {
   url: string;
   title: string;
@@ -20,6 +25,7 @@ interface CrawlResult {
   robots?: string;
   canonical?: string;
   canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
+  hreflangs?: HreflangEntry[];
   status: 'OK' | 'Error';
   statusCode: number;
   redirectedUrl?: string;
@@ -148,6 +154,28 @@ function getCanonicalStatus(pageUrl: string, canonical: string): 'Self Referenci
   }
 }
 
+function extractHreflangs(html: string): HreflangEntry[] {
+  const entries: HreflangEntry[] = [];
+  const linkRegex = /<link\s([^>]+?)\/?>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    const attrs = match[1];
+    const relMatch = attrs.match(/\brel\s*=\s*["']alternate["']/i);
+    if (!relMatch) continue;
+    const hreflangMatch = attrs.match(/\bhreflang\s*=\s*["']([^"']+)["']/i);
+    if (!hreflangMatch) continue;
+    let hrefMatch = attrs.match(/\bhref\s*=\s*"([^"]*)"/i);
+    if (!hrefMatch) hrefMatch = attrs.match(/\bhref\s*=\s*'([^']*)'/i);
+    if (hrefMatch && hrefMatch[1]) {
+      entries.push({
+        href: decodeHtmlEntities(hrefMatch[1]).trim(),
+        hreflang: decodeHtmlEntities(hreflangMatch[1]).trim(),
+      });
+    }
+  }
+  return entries;
+}
+
 function extractImages(html: string, baseUrl: string): ImageData[] {
   const images: ImageData[] = [];
   const imgRegex = /<img\s([^>]+)>/gi;
@@ -254,9 +282,10 @@ async function fetchMeta(
   includeSchemas: boolean,
   includeRobots: boolean,
   includeCanonical: boolean,
+  includeHreflangs: boolean,
 ): Promise<CrawlResult> {
   const start = Date.now();
-  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', status: 'Error', statusCode: 0, fetchTime: '0s' };
+  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
   try {
     const { resp, redirectedUrl } = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
@@ -280,6 +309,7 @@ async function fetchMeta(
       robots: includeRobots ? extractMetaRobots(html) : '',
       canonical: includeCanonical ? canonical : undefined,
       canonicalStatus,
+      hreflangs: includeHreflangs ? extractHreflangs(html) : [],
       status: 'OK',
       statusCode: resp.status,
       redirectedUrl,
@@ -308,6 +338,7 @@ Deno.serve(async (req) => {
       includeSchemas = false,
       includeRobots = false,
       includeCanonical = false,
+      includeHreflangs = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -323,7 +354,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical))
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs))
       );
       results.push(...batchResults);
     }

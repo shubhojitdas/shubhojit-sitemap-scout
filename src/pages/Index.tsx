@@ -47,6 +47,7 @@ const Index = () => {
   const [includeSchemas, setIncludeSchemas] = useState(false);
   const [includeRobots, setIncludeRobots] = useState(false);
   const [includeCanonical, setIncludeCanonical] = useState(false);
+  const [includeHreflangs, setIncludeHreflangs] = useState(false);
   const [localIncludeTitle, setLocalIncludeTitle] = useState(true);
   const [localIncludeDesc, setLocalIncludeDesc] = useState(true);
   const [showLinkGraph, setShowLinkGraph] = useState(false);
@@ -68,6 +69,7 @@ const Index = () => {
     withSchemas: boolean,
     withRobots: boolean,
     withCanonical: boolean,
+    withHreflangs: boolean,
   ) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
@@ -80,9 +82,10 @@ const Index = () => {
     setIncludeSchemas(withSchemas);
     setIncludeRobots(withRobots);
     setIncludeCanonical(withCanonical);
+    setIncludeHreflangs(withHreflangs);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical);
+    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs);
   };
 
   const handleCrawlUrls = (
@@ -96,15 +99,17 @@ const Index = () => {
     withSchemas: boolean,
     withRobots: boolean,
     withCanonical: boolean,
+    withHreflangs: boolean,
   ) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
     setIncludeSchemas(withSchemas);
     setIncludeRobots(withRobots);
     setIncludeCanonical(withCanonical);
+    setIncludeHreflangs(withHreflangs);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical);
+    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling" || phase === "paused";
@@ -239,6 +244,7 @@ const Index = () => {
             includeImages={includeImages}
             includeSchemas={includeSchemas}
             includeRobots={includeRobots}
+            includeHreflangs={includeHreflangs}
           />
 
           {/* Link Graph Toggle */}
@@ -313,6 +319,7 @@ const Index = () => {
             includeSchemas={includeSchemas}
             includeRobots={includeRobots}
             includeCanonical={includeCanonical}
+            includeHreflangs={includeHreflangs}
           />
         </section>
       )}

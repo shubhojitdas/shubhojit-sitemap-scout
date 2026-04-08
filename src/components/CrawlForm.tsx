@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Image, Code, Bot, Pause, Play, Link2 } from "lucide-react";
+import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -164,13 +164,13 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
 
       <Label htmlFor="include-h2" className={pillClass(includeH2)}>
         <Checkbox id="include-h2" checked={includeH2} onCheckedChange={(v) => setIncludeH2(!!v)} disabled={isLoading} className="hidden" />
-        <Heading1 className="h-3.5 w-3.5" />
+        <Heading2 className="h-3.5 w-3.5" />
         &lt;H2&gt; tags
       </Label>
 
       <Label htmlFor="include-h3" className={pillClass(includeH3)}>
         <Checkbox id="include-h3" checked={includeH3} onCheckedChange={(v) => setIncludeH3(!!v)} disabled={isLoading} className="hidden" />
-        <Heading1 className="h-3.5 w-3.5" />
+        <Heading3 className="h-3.5 w-3.5" />
         &lt;H3&gt; tags
       </Label>
 

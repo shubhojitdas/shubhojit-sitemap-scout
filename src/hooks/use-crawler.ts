@@ -58,6 +58,11 @@ function persistState(state: CrawlState) {
 
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(() => loadPersistedState() || INITIAL_STATE);
+
+  // Persist state whenever results change
+  useEffect(() => {
+    persistState(state);
+  }, [state]);
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);
   const pendingUrlsRef = useRef<string[]>([]);

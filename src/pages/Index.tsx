@@ -244,6 +244,7 @@ const Index = () => {
             includeImages={includeImages}
             includeSchemas={includeSchemas}
             includeRobots={includeRobots}
+            includeHreflangs={includeHreflangs}
           />
 
           {/* Link Graph Toggle */}

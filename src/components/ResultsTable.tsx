@@ -1032,3 +1032,210 @@ function CanonicalTable({ results, domain, canonicalFilter, setCanonicalFilter, 
     </div>
   );
 }
+
+// ─── Hreflang table ───────────────────────────────────────────────────────────
+function HreflangTable({ results, domain, hreflangFilter, setHreflangFilter, search, setSearch, advancedFilter, setAdvancedFilter }: {
+  results: CrawlResult[]; domain: string;
+  hreflangFilter: "all" | "has-hreflang" | "no-hreflang" | "has-x-default"; setHreflangFilter: (f: "all" | "has-hreflang" | "no-hreflang" | "has-x-default") => void;
+  search: string; setSearch: (s: string) => void;
+  advancedFilter: AdvancedFilter; setAdvancedFilter: (f: AdvancedFilter) => void;
+}) {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  const hreflangFields = [
+    { key: "url", label: "Page URL" },
+    { key: "hreflang_count", label: "Hreflang Count" },
+    { key: "languages", label: "Languages" },
+  ];
+
+  const getHreflangFieldValue = (r: CrawlResult, field: string): string => {
+    switch (field) {
+      case "url": return r.url;
+      case "hreflang_count": return String((r.hreflangs ?? []).length);
+      case "languages": return (r.hreflangs ?? []).map(h => h.hreflang).join(", ");
+      default: return "";
+    }
+  };
+
+  const filteredResults = useMemo(() => {
+    let data = results.filter((r) => r.status === "OK");
+    if (hreflangFilter === "has-hreflang") data = data.filter((r) => (r.hreflangs ?? []).length > 0);
+    else if (hreflangFilter === "no-hreflang") data = data.filter((r) => (r.hreflangs ?? []).length === 0);
+    else if (hreflangFilter === "has-x-default") data = data.filter((r) => (r.hreflangs ?? []).some(h => h.hreflang === "x-default"));
+
+    if (isFilterActive(advancedFilter)) {
+      data = applyAdvancedFilter(data, advancedFilter, getHreflangFieldValue);
+    } else if (search) {
+      const q = search.toLowerCase();
+      data = data.filter((r) =>
+        r.url.toLowerCase().includes(q) ||
+        (r.hreflangs ?? []).some((h) => h.href.toLowerCase().includes(q) || h.hreflang.toLowerCase().includes(q))
+      );
+    }
+    return data;
+  }, [results, hreflangFilter, search, advancedFilter]);
+
+  const toggleRow = (i: number) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+  };
+
+  const handleCopy = () => {
+    const rows = ["Page URL,Hreflang,Alternate URL"];
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    filteredResults.forEach((r) => {
+      const hreflangs = r.hreflangs ?? [];
+      if (hreflangs.length === 0) {
+        rows.push(`${escape(r.url)},,No hreflang tags`);
+      } else {
+        hreflangs.forEach((h) => {
+          rows.push(`${escape(r.url)},${escape(h.hreflang)},${escape(h.href)}`);
+        });
+      }
+    });
+    navigator.clipboard.writeText(rows.join("\n"));
+    setCopied(true);
+    toast({ title: "Copied!", description: `${filteredResults.length} pages copied as CSV` });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const rows = ["Page URL,Hreflang,Alternate URL"];
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    results.filter((r) => r.status === "OK").forEach((r) => {
+      const hreflangs = r.hreflangs ?? [];
+      if (hreflangs.length === 0) {
+        rows.push(`${escape(r.url)},,No hreflang tags`);
+      } else {
+        hreflangs.forEach((h) => {
+          rows.push(`${escape(r.url)},${escape(h.hreflang)},${escape(h.href)}`);
+        });
+      }
+    });
+    downloadCSV(rows.join("\n"), `${domain}-hreflang`);
+    toast({ title: "Downloaded!", description: "Hreflang CSV saved" });
+  };
+
+  const filters: { key: "all" | "has-hreflang" | "no-hreflang" | "has-x-default"; label: string }[] = [
+    { key: "all", label: "All Pages" },
+    { key: "has-hreflang", label: "Has Hreflang" },
+    { key: "no-hreflang", label: "No Hreflang" },
+    { key: "has-x-default", label: "Has x-default" },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+        <div className="flex gap-1.5 flex-wrap">
+          {filters.map((f) => (
+            <Button key={f.key} size="sm" variant={hreflangFilter === f.key ? "default" : "outline"} onClick={() => setHreflangFilter(f.key)} className="text-[11px] h-7 px-2.5">
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex gap-1.5 items-center w-full sm:w-auto">
+          <SearchBarWithGear
+            search={search}
+            setSearch={setSearch}
+            placeholder="Filter URL or language..."
+            fields={hreflangFields}
+            advancedFilter={advancedFilter}
+            setAdvancedFilter={setAdvancedFilter}
+          />
+          <Button size="sm" variant="outline" onClick={handleCopy} className="h-7 gap-1 text-[11px] px-2.5">
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            Copy
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleDownload} className="h-7 gap-1 text-[11px] px-2.5">
+            <Download className="h-3 w-3" /> CSV
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">{filteredResults.length} pages</p>
+
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="grid grid-cols-[1.5fr_100px_1fr] gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+          <div className="px-3 py-2">Page URL</div>
+          <div className="px-3 py-2 text-center">Tags</div>
+          <div className="px-3 py-2">Languages</div>
+        </div>
+
+        <div className="overflow-auto max-h-[600px] divide-y divide-border">
+          {filteredResults.length === 0 ? (
+            <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">No results</div>
+          ) : (
+            filteredResults.map((row, index) => {
+              const hreflangs = row.hreflangs ?? [];
+              const isExpanded = expandedRows.has(index);
+              const hasXDefault = hreflangs.some(h => h.hreflang === "x-default");
+
+              return (
+                <div key={index}>
+                  <button className="w-full grid grid-cols-[1.5fr_100px_1fr] gap-0 hover:bg-muted/20 transition-colors text-left" onClick={() => hreflangs.length > 0 && toggleRow(index)}>
+                    <div className="px-3 py-2 font-mono text-[11px] text-muted-foreground break-all">{row.url}</div>
+                    <div className="px-3 py-2 text-center text-[11px] font-medium">
+                      {hreflangs.length === 0 ? <span className="text-muted-foreground">—</span> : <span>{hreflangs.length}</span>}
+                    </div>
+                    <div className="px-3 py-2 text-[11px]">
+                      {hreflangs.length === 0 ? (
+                        <span className="text-muted-foreground italic">No hreflang tags</span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <span className="flex gap-1 flex-wrap">
+                            {hreflangs.map((h, i) => (
+                              <span key={i} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                h.hreflang === "x-default" ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary"
+                              }`}>
+                                {h.hreflang}
+                              </span>
+                            ))}
+                          </span>
+                          <span className="text-muted-foreground ml-auto text-[10px]">{isExpanded ? "▲" : "▼"}</span>
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {isExpanded && hreflangs.length > 0 && (
+                    <div className="bg-muted/10 border-t border-border">
+                      <div className="px-6 py-2">
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr className="text-muted-foreground">
+                              <th className="text-left py-1 font-medium w-24">Language</th>
+                              <th className="text-left py-1 font-medium">Alternate URL</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/30">
+                            {hreflangs.map((h, hIdx) => (
+                              <tr key={hIdx}>
+                                <td className="py-1.5">
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                    h.hreflang === "x-default" ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary"
+                                  }`}>
+                                    {h.hreflang}
+                                  </span>
+                                </td>
+                                <td className="py-1.5 font-mono text-muted-foreground break-all">{h.href}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

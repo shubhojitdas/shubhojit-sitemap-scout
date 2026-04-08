@@ -240,5 +240,18 @@ export function useCrawler() {
     setState(INITIAL_STATE);
   }, []);
 
-  return { ...state, crawl, crawlUrls, pause, resume, reset };
+  const clearCrawl = useCallback(() => {
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
+    }
+    pausedRef.current = false;
+    pendingUrlsRef.current = [];
+    pendingIndexRef.current = 0;
+    accumulatedResultsRef.current = [];
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    setState(INITIAL_STATE);
+  }, []);
+
+  return { ...state, crawl, crawlUrls, pause, resume, reset, clearCrawl };
 }

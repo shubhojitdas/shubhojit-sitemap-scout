@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { CrawlResult, parseSitemapUrls, fetchMetaBatch } from "@/lib/crawl-api";
 
 interface CrawlState {
@@ -27,10 +27,42 @@ const INITIAL_STATE: CrawlState = {
   parsedUrls: [],
 };
 
+const STORAGE_KEY = "sitemap-scout-crawl-data";
+
 const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const };
 
+function loadPersistedState(): CrawlState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as CrawlState;
+    // Only restore if there are actual results
+    if (data.results && data.results.length > 0) {
+      // If it was mid-crawl, mark as paused so user knows it's not live
+      if (data.phase === "crawling" || data.phase === "parsing") {
+        data.phase = "done";
+      }
+      return data;
+    }
+  } catch { /* ignore corrupt data */ }
+  return null;
+}
+
+function persistState(state: CrawlState) {
+  try {
+    if (state.results.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+  } catch { /* storage full or unavailable */ }
+}
+
 export function useCrawler() {
-  const [state, setState] = useState<CrawlState>(INITIAL_STATE);
+  const [state, setState] = useState<CrawlState>(() => loadPersistedState() || INITIAL_STATE);
+
+  // Persist state whenever results change
+  useEffect(() => {
+    persistState(state);
+  }, [state]);
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);
   const pendingUrlsRef = useRef<string[]>([]);
@@ -208,5 +240,18 @@ export function useCrawler() {
     setState(INITIAL_STATE);
   }, []);
 
-  return { ...state, crawl, crawlUrls, pause, resume, reset };
+  const clearCrawl = useCallback(() => {
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
+    }
+    pausedRef.current = false;
+    pendingUrlsRef.current = [];
+    pendingIndexRef.current = 0;
+    accumulatedResultsRef.current = [];
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    setState(INITIAL_STATE);
+  }, []);
+
+  return { ...state, crawl, crawlUrls, pause, resume, reset, clearCrawl };
 }

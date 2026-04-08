@@ -9,6 +9,17 @@ import { motion } from "framer-motion";
 import { ArrowUp, Linkedin, Network, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, lazy, Suspense } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Index = () => {
   const {
@@ -241,20 +252,41 @@ const Index = () => {
               <Network className="h-3.5 w-3.5" />
               {showLinkGraph ? "Hide Link Graph" : "Visual Link Graph"}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (window.confirm("Are you sure? All crawled data will be permanently deleted and you'll need to re-crawl.")) {
-                  clearCrawl();
-                  setShowLinkGraph(false);
-                }
-              }}
-              className="gap-1.5 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Clear Crawl Data
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Clear Crawl Data
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="border-border/60 bg-background/95 backdrop-blur-xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                    <Trash2 className="h-5 w-5" />
+                    Clear All Crawl Data
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-muted-foreground">
+                    This will permanently delete all crawled data including results, stats, and progress. You will need to re-crawl the sitemap to get the data back. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="border-border/60">Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      clearCrawl();
+                      setShowLinkGraph(false);
+                    }}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete All Data
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             {showLinkGraph && (
               <span className="text-[11px] text-muted-foreground">
                 Visualising {parsedUrls.length > 0 ? parsedUrls.length : results.length} URLs

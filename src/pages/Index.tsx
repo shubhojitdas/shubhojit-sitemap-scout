@@ -231,7 +231,7 @@ const Index = () => {
           />
 
           {/* Link Graph Toggle */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant={showLinkGraph ? "default" : "outline"}
               size="sm"
@@ -240,6 +240,20 @@ const Index = () => {
             >
               <Network className="h-3.5 w-3.5" />
               {showLinkGraph ? "Hide Link Graph" : "Visual Link Graph"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (window.confirm("Are you sure? All crawled data will be permanently deleted and you'll need to re-crawl.")) {
+                  clearCrawl();
+                  setShowLinkGraph(false);
+                }
+              }}
+              className="gap-1.5 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear Crawl Data
             </Button>
             {showLinkGraph && (
               <span className="text-[11px] text-muted-foreground">

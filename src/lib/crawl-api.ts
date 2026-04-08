@@ -5,6 +5,11 @@ export interface ImageData {
   alt: string | null;
 }
 
+export interface HreflangEntry {
+  href: string;
+  hreflang: string;
+}
+
 export interface CrawlResult {
   url: string;
   title: string;
@@ -17,6 +22,7 @@ export interface CrawlResult {
   robots?: string;
   canonical?: string;
   canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
+  hreflangs?: HreflangEntry[];
   status: "OK" | "Error";
   statusCode: number;
   redirectedUrl?: string;
@@ -44,9 +50,10 @@ export async function fetchMetaBatch(
   includeSchemas = false,
   includeRobots = false,
   includeCanonical = false,
+  includeHreflangs = false,
 ): Promise<CrawlResult[]> {
   const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical },
+    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs },
   });
 
   if (error) throw new Error(error.message);

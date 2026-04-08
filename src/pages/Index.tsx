@@ -6,7 +6,7 @@ import { ResultsTable } from "@/components/ResultsTable";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LinkGraph } from "@/components/LinkGraph";
 import { motion } from "framer-motion";
-import { ArrowUp, Linkedin, Network } from "lucide-react";
+import { ArrowUp, Linkedin, Network, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, lazy, Suspense } from "react";
 

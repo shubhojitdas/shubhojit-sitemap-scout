@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { CrawlResult, generateCSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Image, Code, ClipboardCopy, Bot, Settings2, Link2 } from "lucide-react";
+import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -48,6 +48,7 @@ interface ResultsTableProps {
   includeSchemas: boolean;
   includeRobots: boolean;
   includeCanonical: boolean;
+  includeHreflangs: boolean;
 }
 
 // ─── Search bar with gear icon ────────────────────────────────────────────────
@@ -101,8 +102,8 @@ function SearchBarWithGear({
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical }: ResultsTableProps) {
-  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical">("meta");
+export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs }: ResultsTableProps) {
+  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs">("meta");
 
   // Universal filter state shared across all tabs
   const [metaFilter, setMetaFilter] = useState<Filter>("all");
@@ -111,6 +112,7 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
   const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
   const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
   const [canonicalFilter, setCanonicalFilter] = useState<"all" | "self-referencing" | "canonicalised" | "missing">("all");
+  const [hreflangFilter, setHreflangFilter] = useState<"all" | "has-hreflang" | "no-hreflang" | "has-x-default">("all");
 
   // Shared search & advanced filter across all tabs
   const [universalSearch, setUniversalSearch] = useState("");
@@ -118,12 +120,12 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
 
   if (results.length === 0) return null;
 
-  const hasTabs = includeImages || includeSchemas || includeCanonical;
+  const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
       {hasTabs ? (
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas" | "canonical")}>
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas" | "canonical" | "hreflangs")}>
           <TabsList className="h-9 bg-muted p-1 rounded-lg border border-border">
             <TabsTrigger value="meta" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <Search className="h-3 w-3" />

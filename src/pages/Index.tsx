@@ -22,6 +22,7 @@ const Index = () => {
     pause,
     resume,
     reset,
+    clearCrawl,
     includeTitle,
     includeDesc,
     includeH2,

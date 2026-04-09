@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { CrawlResult, generateCSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages } from "lucide-react";
+import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Heading2, Heading3, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -272,7 +272,7 @@ function MetaTable({
     else if (filter === "noindex") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('noindex'));
     else if (filter === "nofollow") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('nofollow'));
     else if (filter === "2xx") data = data.filter((r) => r.statusCode >= 200 && r.statusCode < 300);
-    else if (filter === "3xx") data = data.filter((r) => r.statusCode >= 300 && r.statusCode < 400 || !!r.redirectedUrl);
+    else if (filter === "3xx") data = data.filter((r) => (r.statusCode >= 300 && r.statusCode < 400) || !!r.redirectStatusCode);
     else if (filter === "4xx") data = data.filter((r) => r.statusCode >= 400 && r.statusCode < 500);
     else if (filter === "5xx") data = data.filter((r) => r.statusCode >= 500 && r.statusCode < 600);
 
@@ -411,10 +411,10 @@ function MetaTable({
             <div className="flex items-center gap-1 px-3 py-2 text-left"><Heading1 className="h-3 w-3" /> H1 Tags</div>
           )}
           {includeH2 && (
-            <div className="flex items-center gap-1 px-3 py-2 text-left"><Heading1 className="h-3 w-3" /> H2 Tags</div>
+            <div className="flex items-center gap-1 px-3 py-2 text-left"><Heading2 className="h-3 w-3" /> H2 Tags</div>
           )}
           {includeH3 && (
-            <div className="flex items-center gap-1 px-3 py-2 text-left"><Heading1 className="h-3 w-3" /> H3 Tags</div>
+            <div className="flex items-center gap-1 px-3 py-2 text-left"><Heading3 className="h-3 w-3" /> H3 Tags</div>
           )}
           {includeRobots && (
             <div className="flex items-center gap-1 px-3 py-2 text-left"><Bot className="h-3 w-3" /> Meta Robots</div>
@@ -503,18 +503,35 @@ function MetaTable({
                     </div>
                   )}
                   <div className="px-3 py-2 flex flex-col gap-0.5 text-[11px]">
-                    <span className={`font-medium ${
-                      row.statusCode >= 200 && row.statusCode < 300 ? 'text-success' :
-                      row.statusCode >= 300 && row.statusCode < 400 ? 'text-warning' :
-                      row.statusCode >= 400 ? 'text-destructive' :
-                      row.status === 'Error' ? 'text-destructive' : 'text-muted-foreground'
-                    }`}>
-                      {row.statusCode > 0 ? row.statusCode : 'Err'}
-                    </span>
-                    {row.redirectedUrl && (
-                      <span className="text-[9px] text-warning break-all leading-tight" title={`Redirected to: ${row.redirectedUrl}`}>
-                        → {row.redirectedUrl.length > 40 ? row.redirectedUrl.slice(0, 40) + '…' : row.redirectedUrl}
-                      </span>
+                    {row.redirectedUrl && row.redirectStatusCode ? (
+                      <>
+                        <span className="font-medium text-warning">
+                          {row.redirectStatusCode}
+                          <span className="text-[9px] ml-1 opacity-75">
+                            {row.redirectStatusCode === 301 ? 'Permanent' :
+                             row.redirectStatusCode === 302 ? 'Found' :
+                             row.redirectStatusCode === 307 ? 'Temp' :
+                             row.redirectStatusCode === 308 ? 'Perm' : 'Redirect'}
+                          </span>
+                        </span>
+                        <span className="text-[9px] text-muted-foreground">
+                          Final: <span className={`font-medium ${row.statusCode >= 200 && row.statusCode < 300 ? 'text-success' : row.statusCode >= 400 ? 'text-destructive' : 'text-warning'}`}>{row.statusCode}</span>
+                        </span>
+                        <span className="text-[9px] text-warning break-all leading-tight" title={`Redirected to: ${row.redirectedUrl}`}>
+                          → {row.redirectedUrl.length > 40 ? row.redirectedUrl.slice(0, 40) + '…' : row.redirectedUrl}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className={`font-medium ${
+                          row.statusCode >= 200 && row.statusCode < 300 ? 'text-success' :
+                          row.statusCode >= 300 && row.statusCode < 400 ? 'text-warning' :
+                          row.statusCode >= 400 ? 'text-destructive' :
+                          row.status === 'Error' ? 'text-destructive' : 'text-muted-foreground'
+                        }`}>
+                          {row.statusCode > 0 ? row.statusCode : 'Err'}
+                        </span>
+                      </>
                     )}
                   </div>
                 </div>

@@ -25,6 +25,7 @@ export interface CrawlResult {
   hreflangs?: HreflangEntry[];
   status: "OK" | "Error";
   statusCode: number;
+  redirectStatusCode?: number;
   redirectedUrl?: string;
   fetchTime: string;
 }

@@ -28,6 +28,7 @@ interface CrawlResult {
   hreflangs?: HreflangEntry[];
   status: 'OK' | 'Error';
   statusCode: number;
+  redirectStatusCode?: number;
   redirectedUrl?: string;
   fetchTime: string;
 }
@@ -204,11 +205,10 @@ function extractImages(html: string, baseUrl: string): ImageData[] {
 }
 
 // Fetch with retry, manual redirect tracking
-async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Response; redirectedUrl?: string }> {
+async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Response; redirectedUrl?: string; redirectStatusCode?: number }> {
   const retryableStatuses = new Set([408, 425, 429, 500, 502, 503, 504]);
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      // First try with redirect: 'manual' to detect redirects
       const resp = await fetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)',
@@ -219,8 +219,8 @@ async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Respons
         redirect: 'manual',
       });
 
-      // Handle redirects manually to track final URL
       if (resp.status >= 300 && resp.status < 400) {
+        const originalRedirectStatus = resp.status;
         const location = resp.headers.get('location');
         if (location) {
           let finalUrl: string;
@@ -229,7 +229,6 @@ async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Respons
           } catch {
             finalUrl = location;
           }
-          // Follow the redirect chain (up to 5 hops)
           let currentUrl = finalUrl;
           let finalResp: Response | null = null;
           for (let hop = 0; hop < 5; hop++) {
@@ -252,10 +251,9 @@ async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Respons
             break;
           }
           if (!finalResp) {
-            // Couldn't resolve, return original redirect status
-            return { resp, redirectedUrl: currentUrl };
+            return { resp, redirectedUrl: currentUrl, redirectStatusCode: originalRedirectStatus };
           }
-          return { resp: finalResp, redirectedUrl: currentUrl };
+          return { resp: finalResp, redirectedUrl: currentUrl, redirectStatusCode: originalRedirectStatus };
         }
       }
 

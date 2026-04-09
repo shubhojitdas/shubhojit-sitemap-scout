@@ -63,6 +63,27 @@ export function useCrawler() {
   useEffect(() => {
     persistState(state);
   }, [state]);
+
+  // Warn user before closing tab/browser if crawl data exists & clear data on close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (state.results.length > 0) {
+        e.preventDefault();
+      }
+    };
+    const handleUnload = () => {
+      if (state.results.length > 0) {
+        try { localStorage.removeItem(STORAGE_KEY); } catch {}
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("unload", handleUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("unload", handleUnload);
+    };
+  }, [state.results.length]);
+
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);
   const pendingUrlsRef = useRef<string[]>([]);

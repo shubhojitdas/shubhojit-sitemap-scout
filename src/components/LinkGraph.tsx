@@ -429,7 +429,7 @@ document.getElementById('zoomBtn').addEventListener('click', () => Graph.zoomToF
       )}
 
       {/* Controls */}
-      <div className="absolute top-3 left-3 z-10 flex flex-col gap-2.5 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 max-w-[210px] shadow-lg">
+      <div className="absolute top-3 left-3 z-10 flex flex-col gap-2.5 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 max-w-[410px] shadow-lg">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-foreground">Controls</span>
           <div className="flex gap-1">

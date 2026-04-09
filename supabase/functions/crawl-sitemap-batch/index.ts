@@ -285,11 +285,11 @@ async function fetchMeta(
   const start = Date.now();
   const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
   try {
-    const { resp, redirectedUrl } = await fetchWithRetry(url);
+    const { resp, redirectedUrl, redirectStatusCode } = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
 
     if (!resp.ok) {
-      return { ...empty, statusCode: resp.status, redirectedUrl, fetchTime: elapsed };
+      return { ...empty, statusCode: resp.status, redirectedUrl, redirectStatusCode, fetchTime: elapsed };
     }
 
     const html = await resp.text();
@@ -310,6 +310,7 @@ async function fetchMeta(
       hreflangs: includeHreflangs ? extractHreflangs(html) : [],
       status: 'OK',
       statusCode: resp.status,
+      redirectStatusCode,
       redirectedUrl,
       fetchTime: elapsed,
     };

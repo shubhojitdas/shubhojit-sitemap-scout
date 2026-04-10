@@ -29,7 +29,7 @@ const INITIAL_STATE: CrawlState = {
 
 const STORAGE_KEY = "sitemap-scout-crawl-data";
 
-const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const, hreflangs: [] };
+const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const, hreflangs: [], internalLinks: [] };
 
 function loadPersistedState(): CrawlState | null {
   try {
@@ -88,7 +88,7 @@ export function useCrawler() {
   const pausedRef = useRef(false);
   const pendingUrlsRef = useRef<string[]>([]);
   const pendingIndexRef = useRef(0);
-  const crawlOptionsRef = useRef<{ includeTitle: boolean; includeDesc: boolean; includeH1: boolean; includeH2: boolean; includeH3: boolean; includeImages: boolean; includeSchemas: boolean; includeRobots: boolean; includeCanonical: boolean; includeHreflangs: boolean }>({ includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false });
+  const crawlOptionsRef = useRef<{ includeTitle: boolean; includeDesc: boolean; includeH1: boolean; includeH2: boolean; includeH3: boolean; includeImages: boolean; includeSchemas: boolean; includeRobots: boolean; includeCanonical: boolean; includeHreflangs: boolean; includeInternalLinks: boolean }>({ includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false, includeInternalLinks: false });
   const accumulatedResultsRef = useRef<CrawlResult[]>([]);
 
   const startController = () => {

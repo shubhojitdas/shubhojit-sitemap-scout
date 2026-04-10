@@ -255,17 +255,39 @@ function stripByClassId(html: string): string {
 function extractMainContent(html: string): string {
   const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
   if (articleMatch && articleMatch[1].length > 200) return articleMatch[1];
-  
+
   const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
   if (mainMatch && mainMatch[1].length > 200) return mainMatch[1];
-  
+
   const roleMainMatch = html.match(/<[^>]+role\s*=\s*["']main["'][^>]*>([\s\S]*?)<\/(?:div|section)>/i);
   if (roleMainMatch && roleMainMatch[1].length > 200) return roleMainMatch[1];
-  
+
+  // Text-density heuristic: find the div/section with the most paragraphs and headings
   let body = html;
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   if (bodyMatch) body = bodyMatch[1];
-  
+
+  const blockRegex = /<(div|section)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+  let bestBlock = '';
+  let bestScore = 0;
+  let blockMatch;
+
+  while ((blockMatch = blockRegex.exec(body)) !== null) {
+    const content = blockMatch[2];
+    if (content.length < 300) continue;
+    const pCount = (content.match(/<p[\s>]/gi) || []).length;
+    const hCount = (content.match(/<h[2-6][\s>]/gi) || []).length;
+    const textLen = content.replace(/<[^>]+>/g, '').trim().length;
+    const score = (pCount * 10) + (hCount * 15) + (textLen / 100);
+    if (score > bestScore) {
+      bestScore = score;
+      bestBlock = content;
+    }
+  }
+
+  if (bestBlock && bestScore > 50) return bestBlock;
+
+  // Fallback: strip non-content areas
   body = stripTagBlocks(body, 'nav');
   body = stripTagBlocks(body, 'header');
   body = stripTagBlocks(body, 'footer');
@@ -275,7 +297,7 @@ function extractMainContent(html: string): string {
   body = stripTagBlocks(body, 'noscript');
   body = stripTagBlocks(body, 'iframe');
   body = stripByClassId(body);
-  
+
   return body;
 }
 

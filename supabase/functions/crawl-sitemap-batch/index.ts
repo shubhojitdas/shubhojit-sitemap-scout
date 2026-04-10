@@ -32,6 +32,7 @@ interface CrawlResult {
   canonical?: string;
   canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
   hreflangs?: HreflangEntry[];
+  internalLinks?: InternalLinkData[];
   status: 'OK' | 'Error';
   statusCode: number;
   redirectStatusCode?: number;

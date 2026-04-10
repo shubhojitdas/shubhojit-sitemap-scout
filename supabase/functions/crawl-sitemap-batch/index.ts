@@ -429,6 +429,7 @@ async function fetchMeta(
       canonical: includeCanonical ? canonical : undefined,
       canonicalStatus,
       hreflangs: includeHreflangs ? extractHreflangs(html) : [],
+      internalLinks: includeInternalLinks ? extractInternalLinks(html, url) : [],
       status: 'OK',
       statusCode: resp.status,
       redirectStatusCode,

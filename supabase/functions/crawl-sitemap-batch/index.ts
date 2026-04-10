@@ -13,6 +13,12 @@ interface HreflangEntry {
   hreflang: string;
 }
 
+interface InternalLinkData {
+  anchorText: string;
+  href: string;
+  isInternal: boolean;
+}
+
 interface CrawlResult {
   url: string;
   title: string;

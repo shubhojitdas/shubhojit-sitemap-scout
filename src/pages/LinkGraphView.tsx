@@ -140,52 +140,35 @@ export default function LinkGraphView() {
     (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const n = node as GraphNode & { x: number; y: number };
       const isRoot = n.depth === 0;
-      const radius = isRoot ? 7 : Math.max(2, 4.5 - n.depth * 0.5);
+      const radius = isRoot ? 6 : Math.max(2, 4 - n.depth * 0.4);
       const isHighlighted = !hoveredNode || highlightNodes.has(n.id);
-      const alpha = hoveredNode ? (isHighlighted ? 1 : 0.12) : 0.92;
+      const alpha = hoveredNode ? (isHighlighted ? 1 : 0.15) : 0.9;
       const color = getGroupColor(n.group);
 
-      // Glow effect for highlighted nodes
-      if (isHighlighted && hoveredNode) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, radius + 4, 0, 2 * Math.PI);
-        const gradient = ctx.createRadialGradient(n.x, n.y, radius, n.x, n.y, radius + 4);
-        gradient.addColorStop(0, color + "40");
-        gradient.addColorStop(1, color + "00");
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // Node body with subtle gradient
+      // Node circle
       ctx.beginPath();
       ctx.arc(n.x, n.y, radius, 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.globalAlpha = alpha;
       ctx.fill();
 
-      // Bright border for root nodes
+      // Subtle ring for root nodes
       if (isRoot) {
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5 / globalScale;
-        ctx.globalAlpha = alpha * 0.6;
+        ctx.lineWidth = 1.2 / globalScale;
+        ctx.globalAlpha = alpha * 0.5;
         ctx.stroke();
       }
 
-      // Labels
+      // Labels — clean, no shadows
       const shouldLabel = isRoot || (showLabels && isHighlighted && globalScale > 1.8);
       if (shouldLabel) {
         const fontSize = Math.max(isRoot ? 10 / globalScale : 8 / globalScale, 1.5);
-        ctx.font = `${isRoot ? 600 : 500} ${fontSize}px Inter, system-ui, sans-serif`;
+        ctx.font = `${isRoot ? 600 : 400} ${fontSize}px Inter, system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.globalAlpha = alpha * 0.9;
-
-        // Text shadow for readability
+        ctx.globalAlpha = alpha * 0.85;
         const label = n.depth <= 1 ? n.label : "/" + n.label.split("/").pop();
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
-        ctx.fillText(label, n.x + 0.3, n.y + radius + 2.3);
         ctx.fillStyle = isRoot ? "#fff" : color;
         ctx.fillText(label, n.x, n.y + radius + 2);
       }
@@ -449,9 +432,10 @@ export default function LinkGraphView() {
         }}
         onNodeHover={(node: any) => setHoveredNode(node as GraphNode | null)}
         onNodeClick={(node: any) => setSelectedNode(node as GraphNode)}
-        cooldownTicks={100}
-        d3AlphaDecay={0.05}
-        d3VelocityDecay={0.35}
+        cooldownTicks={120}
+        d3AlphaDecay={0.04}
+        d3VelocityDecay={0.25}
+        warmupTicks={30}
         enableZoomInteraction
         enablePanInteraction
       />

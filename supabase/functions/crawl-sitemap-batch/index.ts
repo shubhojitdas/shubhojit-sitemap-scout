@@ -401,9 +401,10 @@ async function fetchMeta(
   includeRobots: boolean,
   includeCanonical: boolean,
   includeHreflangs: boolean,
+  includeInternalLinks: boolean,
 ): Promise<CrawlResult> {
   const start = Date.now();
-  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
+  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], internalLinks: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
   try {
     const { resp, redirectedUrl, redirectStatusCode } = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';

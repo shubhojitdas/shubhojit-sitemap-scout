@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { CrawlResult, generateCSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Heading2, Heading3, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages } from "lucide-react";
+import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Heading2, Heading3, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages, LinkIcon, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -49,6 +49,7 @@ interface ResultsTableProps {
   includeRobots: boolean;
   includeCanonical: boolean;
   includeHreflangs: boolean;
+  includeInternalLinks: boolean;
 }
 
 // ─── Search bar with gear icon ────────────────────────────────────────────────
@@ -102,8 +103,8 @@ function SearchBarWithGear({
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs }: ResultsTableProps) {
-  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs">("meta");
+export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks }: ResultsTableProps) {
+  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks">("meta");
 
   // Universal filter state shared across all tabs
   const [metaFilter, setMetaFilter] = useState<Filter>("all");
@@ -113,6 +114,7 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
   const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
   const [canonicalFilter, setCanonicalFilter] = useState<"all" | "self-referencing" | "canonicalised" | "missing">("all");
   const [hreflangFilter, setHreflangFilter] = useState<"all" | "has-hreflang" | "no-hreflang" | "has-x-default">("all");
+  const [internalLinksFilter, setInternalLinksFilter] = useState<"all" | "has-internal" | "has-external" | "no-links">("all");
 
   // Shared search & advanced filter across all tabs
   const [universalSearch, setUniversalSearch] = useState("");
@@ -120,12 +122,12 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
 
   if (results.length === 0) return null;
 
-  const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs;
+  const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs || includeInternalLinks;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
       {hasTabs ? (
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas" | "canonical" | "hreflangs")}>
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks")}>
           <TabsList className="h-9 bg-muted p-1 rounded-lg border border-border">
             <TabsTrigger value="meta" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <Search className="h-3 w-3" />
@@ -153,6 +155,12 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
               <TabsTrigger value="hreflangs" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 <Languages className="h-3 w-3" />
                 Hreflang
+              </TabsTrigger>
+            )}
+            {includeInternalLinks && (
+              <TabsTrigger value="internalLinks" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                <LinkIcon className="h-3 w-3" />
+                Internal Links
               </TabsTrigger>
             )}
           </TabsList>
@@ -196,6 +204,15 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
             <TabsContent value="hreflangs" className="mt-4">
               <HreflangTable results={results} domain={domain}
                 hreflangFilter={hreflangFilter} setHreflangFilter={setHreflangFilter}
+                search={universalSearch} setSearch={setUniversalSearch}
+                advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
+              />
+            </TabsContent>
+          )}
+          {includeInternalLinks && (
+            <TabsContent value="internalLinks" className="mt-4">
+              <InternalLinksTable results={results} domain={domain}
+                linkFilter={internalLinksFilter} setLinkFilter={setInternalLinksFilter}
                 search={universalSearch} setSearch={setUniversalSearch}
                 advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
               />
@@ -1240,6 +1257,232 @@ function HreflangTable({ results, domain, hreflangFilter, setHreflangFilter, sea
                                   </span>
                                 </td>
                                 <td className="py-1.5 font-mono text-muted-foreground break-all">{h.href}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Internal Links table ─────────────────────────────────────────────────────
+type InternalLinksFilterType = "all" | "has-internal" | "has-external" | "no-links";
+
+function InternalLinksTable({ results, domain, linkFilter, setLinkFilter, search, setSearch, advancedFilter, setAdvancedFilter }: {
+  results: CrawlResult[]; domain: string;
+  linkFilter: InternalLinksFilterType; setLinkFilter: (f: InternalLinksFilterType) => void;
+  search: string; setSearch: (s: string) => void;
+  advancedFilter: AdvancedFilter; setAdvancedFilter: (f: AdvancedFilter) => void;
+}) {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  const linkFields = [
+    { key: "url", label: "Page URL" },
+    { key: "anchor_text", label: "Anchor Text" },
+    { key: "link_href", label: "Link URL" },
+  ];
+
+  const getLinkFieldValue = (r: CrawlResult, field: string): string => {
+    switch (field) {
+      case "url": return r.url;
+      case "anchor_text": return (r.internalLinks ?? []).map((l) => l.anchorText).join(" | ");
+      case "link_href": return (r.internalLinks ?? []).map((l) => l.href).join(" | ");
+      default: return "";
+    }
+  };
+
+  const filteredResults = useMemo(() => {
+    let data = results.filter((r) => r.status === "OK");
+    const getLinks = (r: CrawlResult) => r.internalLinks ?? [];
+
+    if (linkFilter === "has-internal") data = data.filter((r) => getLinks(r).some((l) => l.isInternal));
+    else if (linkFilter === "has-external") data = data.filter((r) => getLinks(r).some((l) => !l.isInternal));
+    else if (linkFilter === "no-links") data = data.filter((r) => getLinks(r).length === 0);
+
+    if (isFilterActive(advancedFilter)) {
+      data = applyAdvancedFilter(data, advancedFilter, getLinkFieldValue);
+    } else if (search) {
+      const q = search.toLowerCase();
+      data = data.filter((r) =>
+        r.url.toLowerCase().includes(q) ||
+        getLinks(r).some((l) => l.anchorText.toLowerCase().includes(q) || l.href.toLowerCase().includes(q))
+      );
+    }
+    return data;
+  }, [results, linkFilter, search, advancedFilter]);
+
+  const toggleRow = (i: number) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+  };
+
+  const handleCopy = () => {
+    const rows = ["Page URL,Anchor Text,Link URL,Type"];
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    filteredResults.forEach((r) => {
+      const links = r.internalLinks ?? [];
+      if (links.length === 0) {
+        rows.push(`${escape(r.url)},,,"No links found"`);
+      } else {
+        links.forEach((l) => {
+          rows.push(`${escape(r.url)},${escape(l.anchorText)},${escape(l.href)},${l.isInternal ? "Internal" : "External"}`);
+        });
+      }
+    });
+    navigator.clipboard.writeText(rows.join("\n"));
+    setCopied(true);
+    toast({ title: "Copied!", description: `${filteredResults.length} pages copied as CSV` });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const rows = ["Page URL,Anchor Text,Link URL,Type"];
+    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    results.filter((r) => r.status === "OK").forEach((r) => {
+      const links = r.internalLinks ?? [];
+      if (links.length === 0) {
+        rows.push(`${escape(r.url)},,,"No links found"`);
+      } else {
+        links.forEach((l) => {
+          rows.push(`${escape(r.url)},${escape(l.anchorText)},${escape(l.href)},${l.isInternal ? "Internal" : "External"}`);
+        });
+      }
+    });
+    downloadCSV(rows.join("\n"), `${domain}-internal-links`);
+    toast({ title: "Downloaded!", description: "Internal links CSV saved" });
+  };
+
+  const filters: { key: InternalLinksFilterType; label: string }[] = [
+    { key: "all", label: "All Pages" },
+    { key: "has-internal", label: "Has Internal Links" },
+    { key: "has-external", label: "Has External Links" },
+    { key: "no-links", label: "No Links" },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+        <div className="flex gap-1.5 flex-wrap">
+          {filters.map((f) => (
+            <Button key={f.key} size="sm" variant={linkFilter === f.key ? "default" : "outline"} onClick={() => setLinkFilter(f.key)} className="text-[11px] h-7 px-2.5">
+              {f.label}
+            </Button>
+          ))}
+        </div>
+        <div className="flex gap-1.5 items-center w-full sm:w-auto">
+          <SearchBarWithGear
+            search={search}
+            setSearch={setSearch}
+            placeholder="Filter URL, anchor text, link..."
+            fields={linkFields}
+            advancedFilter={advancedFilter}
+            setAdvancedFilter={setAdvancedFilter}
+          />
+          <Button size="sm" variant="outline" onClick={handleCopy} className="h-7 gap-1 text-[11px] px-2.5">
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            Copy
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleDownload} className="h-7 gap-1 text-[11px] px-2.5">
+            <Download className="h-3 w-3" /> CSV
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">{filteredResults.length} pages</p>
+
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="grid grid-cols-[2fr_80px_80px_1fr] gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+          <div className="px-3 py-2">Page URL</div>
+          <div className="px-3 py-2 text-center">Internal</div>
+          <div className="px-3 py-2 text-center">External</div>
+          <div className="px-3 py-2">Summary</div>
+        </div>
+
+        <div className="overflow-auto max-h-[600px] divide-y divide-border">
+          {filteredResults.length === 0 ? (
+            <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">No results</div>
+          ) : (
+            filteredResults.map((row, index) => {
+              const links = row.internalLinks ?? [];
+              const internalCount = links.filter((l) => l.isInternal).length;
+              const externalCount = links.filter((l) => !l.isInternal).length;
+              const isExpanded = expandedRows.has(index);
+
+              return (
+                <div key={index}>
+                  <button className="w-full grid grid-cols-[2fr_80px_80px_1fr] gap-0 hover:bg-muted/20 transition-colors text-left" onClick={() => links.length > 0 && toggleRow(index)}>
+                    <div className="px-3 py-2 font-mono text-[11px] text-muted-foreground break-all">{row.url}</div>
+                    <div className="px-3 py-2 text-center text-[11px] font-medium">
+                      {internalCount > 0 ? (
+                        <span className="text-success">{internalCount}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </div>
+                    <div className="px-3 py-2 text-center text-[11px] font-medium">
+                      {externalCount > 0 ? (
+                        <span className="text-primary">{externalCount}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </div>
+                    <div className="px-3 py-2 text-[11px]">
+                      {links.length === 0 ? (
+                        <span className="text-muted-foreground italic">No content links found</span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-muted-foreground">{links.length} links in main content</span>
+                          <span className="text-muted-foreground ml-auto text-[10px]">{isExpanded ? "▲" : "▼"}</span>
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {isExpanded && links.length > 0 && (
+                    <div className="bg-muted/10 border-t border-border">
+                      <div className="px-6 py-2">
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr className="text-muted-foreground">
+                              <th className="text-left py-1 font-medium w-16">Type</th>
+                              <th className="text-left py-1 font-medium">Anchor Text</th>
+                              <th className="text-left py-1 font-medium">Link URL</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/30">
+                            {links.map((link, lIdx) => (
+                              <tr key={lIdx} className="hover:bg-muted/20">
+                                <td className="py-1.5">
+                                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                    link.isInternal ? "bg-success/15 text-success" : "bg-primary/10 text-primary"
+                                  }`}>
+                                    {link.isInternal ? (
+                                      <><LinkIcon className="h-2.5 w-2.5" /> Int</>
+                                    ) : (
+                                      <><ExternalLink className="h-2.5 w-2.5" /> Ext</>
+                                    )}
+                                  </span>
+                                </td>
+                                <td className="py-1.5 break-words pr-3">{link.anchorText}</td>
+                                <td className="py-1.5 font-mono text-muted-foreground break-all">
+                                  <a href={link.href} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                                    {link.href.length > 80 ? link.href.slice(0, 80) + '…' : link.href}
+                                  </a>
+                                </td>
                               </tr>
                             ))}
                           </tbody>

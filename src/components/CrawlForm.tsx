@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2, Languages } from "lucide-react";
+import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2, Languages, LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import * as XLSX from "xlsx";
 
 interface CrawlFormProps {
-  onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean) => void;
-  onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean) => void;
+  onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean) => void;
+  onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean) => void;
   isLoading: boolean;
   isPaused: boolean;
   onReset: () => void;
@@ -59,25 +59,26 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
   const [includeRobots, setIncludeRobots] = useState(false);
   const [includeCanonical, setIncludeCanonical] = useState(false);
   const [includeHreflangs, setIncludeHreflangs] = useState(false);
+  const [includeInternalLinks, setIncludeInternalLinks] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSitemapSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sitemapUrl.trim()) return;
-    onCrawl(sitemapUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs);
+    onCrawl(sitemapUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks);
   };
 
   const handleUrlsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs);
+    onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
-    onCrawlUrls(fileUrls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs);
+    onCrawlUrls(fileUrls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,6 +204,12 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
         <Checkbox id="include-hreflangs" checked={includeHreflangs} onCheckedChange={(v) => setIncludeHreflangs(!!v)} disabled={isLoading} className="hidden" />
         <Languages className="h-3.5 w-3.5" />
         Hreflang
+      </Label>
+
+      <Label htmlFor="include-internal-links" className={pillClass(includeInternalLinks)}>
+        <Checkbox id="include-internal-links" checked={includeInternalLinks} onCheckedChange={(v) => setIncludeInternalLinks(!!v)} disabled={isLoading} className="hidden" />
+        <LinkIcon className="h-3.5 w-3.5" />
+        Internal Links
       </Label>
     </div>
   );

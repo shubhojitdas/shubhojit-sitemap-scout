@@ -48,6 +48,7 @@ const Index = () => {
   const [includeRobots, setIncludeRobots] = useState(false);
   const [includeCanonical, setIncludeCanonical] = useState(false);
   const [includeHreflangs, setIncludeHreflangs] = useState(false);
+  const [includeInternalLinks, setIncludeInternalLinks] = useState(false);
   const [localIncludeTitle, setLocalIncludeTitle] = useState(true);
   const [localIncludeDesc, setLocalIncludeDesc] = useState(true);
   const [showLinkGraph, setShowLinkGraph] = useState(false);
@@ -70,6 +71,7 @@ const Index = () => {
     withRobots: boolean,
     withCanonical: boolean,
     withHreflangs: boolean,
+    withInternalLinks: boolean,
   ) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
@@ -83,9 +85,10 @@ const Index = () => {
     setIncludeRobots(withRobots);
     setIncludeCanonical(withCanonical);
     setIncludeHreflangs(withHreflangs);
+    setIncludeInternalLinks(withInternalLinks);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs);
+    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks);
   };
 
   const handleCrawlUrls = (
@@ -100,6 +103,7 @@ const Index = () => {
     withRobots: boolean,
     withCanonical: boolean,
     withHreflangs: boolean,
+    withInternalLinks: boolean,
   ) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
@@ -107,9 +111,10 @@ const Index = () => {
     setIncludeRobots(withRobots);
     setIncludeCanonical(withCanonical);
     setIncludeHreflangs(withHreflangs);
+    setIncludeInternalLinks(withInternalLinks);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs);
+    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling" || phase === "paused";
@@ -320,6 +325,7 @@ const Index = () => {
             includeRobots={includeRobots}
             includeCanonical={includeCanonical}
             includeHreflangs={includeHreflangs}
+            includeInternalLinks={includeInternalLinks}
           />
         </section>
       )}

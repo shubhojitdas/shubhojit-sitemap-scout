@@ -13,6 +13,12 @@ interface HreflangEntry {
   hreflang: string;
 }
 
+interface InternalLinkData {
+  anchorText: string;
+  href: string;
+  isInternal: boolean;
+}
+
 interface CrawlResult {
   url: string;
   title: string;
@@ -26,6 +32,7 @@ interface CrawlResult {
   canonical?: string;
   canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
   hreflangs?: HreflangEntry[];
+  internalLinks?: InternalLinkData[];
   status: 'OK' | 'Error';
   statusCode: number;
   redirectStatusCode?: number;
@@ -204,7 +211,142 @@ function extractImages(html: string, baseUrl: string): ImageData[] {
   return images;
 }
 
-// Fetch with retry, manual redirect tracking
+// ─── Main content extraction for internal links ───────────────────────────────
+
+function stripTagBlocks(html: string, tag: string): string {
+  const regex = new RegExp(`<${tag}[\\s>][\\s\\S]*?<\\/${tag}>`, 'gi');
+  return html.replace(regex, '');
+}
+
+function stripByClassId(html: string): string {
+  const tagOpenRegex = /<(div|section|aside|ul|ol|form)\s+[^>]*(class|id)\s*=\s*["'][^"']*\b(nav|menu|sidebar|footer|header|breadcrumb|social|share|widget|advert|cookie|popup|modal|comment|related|newsletter|signup|subscribe|promo|banner|toolbar|topbar|bottombar|masthead|drawer|overlay|lightbox|sticky|dock)\b[^"']*["'][^>]*>/gi;
+  
+  let result = html;
+  const toRemove: { start: number; end: number }[] = [];
+  let match;
+  
+  while ((match = tagOpenRegex.exec(html)) !== null) {
+    const tagName = match[1];
+    const startIdx = match.index;
+    let depth = 1;
+    const closePattern = new RegExp(`<${tagName}[\\s>]|<\\/${tagName}>`, 'gi');
+    closePattern.lastIndex = startIdx + match[0].length;
+    let closeMatch;
+    while ((closeMatch = closePattern.exec(html)) !== null) {
+      if (closeMatch[0].startsWith('</')) {
+        depth--;
+        if (depth === 0) {
+          toRemove.push({ start: startIdx, end: closeMatch.index + closeMatch[0].length });
+          break;
+        }
+      } else {
+        depth++;
+      }
+    }
+  }
+  
+  toRemove.sort((a, b) => b.start - a.start);
+  for (const block of toRemove) {
+    result = result.slice(0, block.start) + result.slice(block.end);
+  }
+  return result;
+}
+
+function extractMainContent(html: string): string {
+  const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+  if (articleMatch && articleMatch[1].length > 200) return articleMatch[1];
+
+  const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+  if (mainMatch && mainMatch[1].length > 200) return mainMatch[1];
+
+  const roleMainMatch = html.match(/<[^>]+role\s*=\s*["']main["'][^>]*>([\s\S]*?)<\/(?:div|section)>/i);
+  if (roleMainMatch && roleMainMatch[1].length > 200) return roleMainMatch[1];
+
+  // Text-density heuristic: find the div/section with the most paragraphs and headings
+  let body = html;
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  if (bodyMatch) body = bodyMatch[1];
+
+  const blockRegex = /<(div|section)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+  let bestBlock = '';
+  let bestScore = 0;
+  let blockMatch;
+
+  while ((blockMatch = blockRegex.exec(body)) !== null) {
+    const content = blockMatch[2];
+    if (content.length < 300) continue;
+    const pCount = (content.match(/<p[\s>]/gi) || []).length;
+    const hCount = (content.match(/<h[2-6][\s>]/gi) || []).length;
+    const textLen = content.replace(/<[^>]+>/g, '').trim().length;
+    const score = (pCount * 10) + (hCount * 15) + (textLen / 100);
+    if (score > bestScore) {
+      bestScore = score;
+      bestBlock = content;
+    }
+  }
+
+  if (bestBlock && bestScore > 50) return bestBlock;
+
+  // Fallback: strip non-content areas
+  body = stripTagBlocks(body, 'nav');
+  body = stripTagBlocks(body, 'header');
+  body = stripTagBlocks(body, 'footer');
+  body = stripTagBlocks(body, 'aside');
+  body = stripTagBlocks(body, 'script');
+  body = stripTagBlocks(body, 'style');
+  body = stripTagBlocks(body, 'noscript');
+  body = stripTagBlocks(body, 'iframe');
+  body = stripByClassId(body);
+
+  return body;
+}
+
+function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[] {
+  const mainContent = extractMainContent(html);
+  const links: InternalLinkData[] = [];
+  const seen = new Set<string>();
+  
+  let pageDomain: string;
+  try {
+    pageDomain = new URL(pageUrl).hostname.replace(/^www\./, '');
+  } catch { pageDomain = ''; }
+  
+  const anchorRegex = /<a\s([^>]+)>([\s\S]*?)<\/a>/gi;
+  let match;
+  
+  while ((match = anchorRegex.exec(mainContent)) !== null) {
+    const attrs = match[1];
+    const innerHtml = match[2];
+    
+    let hrefMatch = attrs.match(/\bhref\s*=\s*"([^"]*)"/i);
+    if (!hrefMatch) hrefMatch = attrs.match(/\bhref\s*=\s*'([^']*)'/i);
+    if (!hrefMatch) continue;
+    
+    let href = decodeHtmlEntities(hrefMatch[1]).trim();
+    if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) continue;
+    
+    try { href = new URL(href, pageUrl).href; } catch { continue; }
+    
+    const anchorText = decodeHtmlEntities(innerHtml.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+    if (!anchorText) continue;
+    
+    const key = href + '||' + anchorText;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    
+    let isInternal = false;
+    try {
+      const linkDomain = new URL(href).hostname.replace(/^www\./, '');
+      isInternal = linkDomain === pageDomain;
+    } catch { isInternal = false; }
+    
+    links.push({ anchorText: anchorText.slice(0, 300), href, isInternal });
+  }
+  
+  return links;
+}
+
+
 async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Response; redirectedUrl?: string; redirectStatusCode?: number }> {
   const retryableStatuses = new Set([408, 425, 429, 500, 502, 503, 504]);
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -281,9 +423,10 @@ async function fetchMeta(
   includeRobots: boolean,
   includeCanonical: boolean,
   includeHreflangs: boolean,
+  includeInternalLinks: boolean,
 ): Promise<CrawlResult> {
   const start = Date.now();
-  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
+  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], internalLinks: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
   try {
     const { resp, redirectedUrl, redirectStatusCode } = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
@@ -308,6 +451,7 @@ async function fetchMeta(
       canonical: includeCanonical ? canonical : undefined,
       canonicalStatus,
       hreflangs: includeHreflangs ? extractHreflangs(html) : [],
+      internalLinks: includeInternalLinks ? extractInternalLinks(html, url) : [],
       status: 'OK',
       statusCode: resp.status,
       redirectStatusCode,
@@ -338,6 +482,7 @@ Deno.serve(async (req) => {
       includeRobots = false,
       includeCanonical = false,
       includeHreflangs = false,
+      includeInternalLinks = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -353,7 +498,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs))
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks))
       );
       results.push(...batchResults);
     }

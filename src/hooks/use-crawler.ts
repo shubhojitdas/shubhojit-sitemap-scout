@@ -29,16 +29,14 @@ const INITIAL_STATE: CrawlState = {
 
 const STORAGE_KEY = "sitemap-scout-crawl-data";
 
-const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const, hreflangs: [] };
+const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const, hreflangs: [], internalLinks: [] };
 
 function loadPersistedState(): CrawlState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as CrawlState;
-    // Only restore if there are actual results
     if (data.results && data.results.length > 0) {
-      // If it was mid-crawl, mark as paused so user knows it's not live
       if (data.phase === "crawling" || data.phase === "parsing") {
         data.phase = "done";
       }
@@ -56,20 +54,30 @@ function persistState(state: CrawlState) {
   } catch { /* storage full or unavailable */ }
 }
 
+interface CrawlOptions {
+  includeTitle: boolean;
+  includeDesc: boolean;
+  includeH1: boolean;
+  includeH2: boolean;
+  includeH3: boolean;
+  includeImages: boolean;
+  includeSchemas: boolean;
+  includeRobots: boolean;
+  includeCanonical: boolean;
+  includeHreflangs: boolean;
+  includeInternalLinks: boolean;
+}
+
+const DEFAULT_OPTS: CrawlOptions = { includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false, includeInternalLinks: false };
+
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(() => loadPersistedState() || INITIAL_STATE);
 
-  // Persist state whenever results change
-  useEffect(() => {
-    persistState(state);
-  }, [state]);
+  useEffect(() => { persistState(state); }, [state]);
 
-  // Warn user before closing tab/browser if crawl data exists & clear data on close
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (state.results.length > 0) {
-        e.preventDefault();
-      }
+      if (state.results.length > 0) { e.preventDefault(); }
     };
     const handleUnload = () => {
       if (state.results.length > 0) {
@@ -88,7 +96,7 @@ export function useCrawler() {
   const pausedRef = useRef(false);
   const pendingUrlsRef = useRef<string[]>([]);
   const pendingIndexRef = useRef(0);
-  const crawlOptionsRef = useRef<{ includeTitle: boolean; includeDesc: boolean; includeH1: boolean; includeH2: boolean; includeH3: boolean; includeImages: boolean; includeSchemas: boolean; includeRobots: boolean; includeCanonical: boolean; includeHreflangs: boolean }>({ includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false });
+  const crawlOptionsRef = useRef<CrawlOptions>(DEFAULT_OPTS);
   const accumulatedResultsRef = useRef<CrawlResult[]>([]);
 
   const startController = () => {
@@ -102,16 +110,7 @@ export function useCrawler() {
   const runBatches = async (
     urls: string[],
     signal: AbortSignal,
-    includeTitle: boolean,
-    includeDesc: boolean,
-    includeH1: boolean,
-    includeH2: boolean,
-    includeH3: boolean,
-    includeImages: boolean,
-    includeSchemas: boolean,
-    includeRobots: boolean,
-    includeCanonical: boolean,
-    includeHreflangs: boolean,
+    opts: CrawlOptions,
     startIndex = 0,
     existingResults: CrawlResult[] = [],
   ) => {
@@ -128,7 +127,7 @@ export function useCrawler() {
       }
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
-        const batchResults = await fetchMetaBatch(batch, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs);
+        const batchResults = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks);
         if (signal.aborted) return;
         if (pausedRef.current) {
           allResults.push(...batchResults);
@@ -165,9 +164,11 @@ export function useCrawler() {
     includeRobots = false,
     includeCanonical = false,
     includeHreflangs = false,
+    includeInternalLinks = false,
   ) => {
     const signal = startController();
-    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks };
+    crawlOptionsRef.current = opts;
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
@@ -184,7 +185,7 @@ export function useCrawler() {
 
       pendingUrlsRef.current = urls;
       setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length, parsedUrls: urls }));
-      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs);
+      await runBatches(urls, signal, opts);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -209,16 +210,18 @@ export function useCrawler() {
     includeRobots = false,
     includeCanonical = false,
     includeHreflangs = false,
+    includeInternalLinks = false,
   ) => {
     const signal = startController();
-    crawlOptionsRef.current = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks };
+    crawlOptionsRef.current = opts;
     pendingUrlsRef.current = urls;
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: urls });
 
     try {
-      await runBatches(urls, signal, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs);
+      await runBatches(urls, signal, opts);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -244,8 +247,7 @@ export function useCrawler() {
     await runBatches(
       pendingUrlsRef.current,
       signal,
-      opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3,
-      opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs,
+      opts,
       pendingIndexRef.current,
       accumulatedResultsRef.current,
     );

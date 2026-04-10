@@ -432,9 +432,10 @@ export default function LinkGraphView() {
         }}
         onNodeHover={(node: any) => setHoveredNode(node as GraphNode | null)}
         onNodeClick={(node: any) => setSelectedNode(node as GraphNode)}
-        cooldownTicks={100}
-        d3AlphaDecay={0.05}
-        d3VelocityDecay={0.35}
+        cooldownTicks={120}
+        d3AlphaDecay={0.04}
+        d3VelocityDecay={0.25}
+        warmupTicks={30}
         enableZoomInteraction
         enablePanInteraction
       />

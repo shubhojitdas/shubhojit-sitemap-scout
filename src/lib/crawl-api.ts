@@ -10,6 +10,12 @@ export interface HreflangEntry {
   hreflang: string;
 }
 
+export interface InternalLinkData {
+  anchorText: string;
+  href: string;
+  isInternal: boolean;
+}
+
 export interface CrawlResult {
   url: string;
   title: string;
@@ -23,6 +29,7 @@ export interface CrawlResult {
   canonical?: string;
   canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
   hreflangs?: HreflangEntry[];
+  internalLinks?: InternalLinkData[];
   status: "OK" | "Error";
   statusCode: number;
   redirectStatusCode?: number;
@@ -52,9 +59,10 @@ export async function fetchMetaBatch(
   includeRobots = false,
   includeCanonical = false,
   includeHreflangs = false,
+  includeInternalLinks = false,
 ): Promise<CrawlResult[]> {
   const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs },
+    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks },
   });
 
   if (error) throw new Error(error.message);

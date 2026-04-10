@@ -112,6 +112,7 @@ export function useCrawler() {
     includeRobots: boolean,
     includeCanonical: boolean,
     includeHreflangs: boolean,
+    includeInternalLinks: boolean,
     startIndex = 0,
     existingResults: CrawlResult[] = [],
   ) => {

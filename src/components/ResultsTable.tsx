@@ -122,7 +122,7 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
 
   if (results.length === 0) return null;
 
-  const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs;
+  const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs || includeInternalLinks;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">

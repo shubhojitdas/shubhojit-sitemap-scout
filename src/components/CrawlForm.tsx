@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import * as XLSX from "xlsx";
 
 interface CrawlFormProps {
-  onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean) => void;
-  onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean) => void;
+  onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
+  onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
   isLoading: boolean;
   isPaused: boolean;
   onReset: () => void;

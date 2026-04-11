@@ -395,6 +395,7 @@ async function fetchMeta(
   includeCanonical: boolean,
   includeHreflangs: boolean,
   includeInternalLinks: boolean,
+  jsRenderedLinks: boolean = false,
 ): Promise<CrawlResult> {
   const start = Date.now();
   const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], internalLinks: [], status: 'Error', statusCode: 0, fetchTime: '0s' };

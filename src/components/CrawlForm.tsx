@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2, Languages, LinkIcon } from "lucide-react";
+import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2, Languages, LinkIcon, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import * as XLSX from "xlsx";
 
 interface CrawlFormProps {
-  onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean) => void;
-  onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean) => void;
+  onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
+  onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
   isLoading: boolean;
   isPaused: boolean;
   onReset: () => void;
@@ -60,25 +60,26 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
   const [includeCanonical, setIncludeCanonical] = useState(false);
   const [includeHreflangs, setIncludeHreflangs] = useState(false);
   const [includeInternalLinks, setIncludeInternalLinks] = useState(false);
+  const [jsRenderedLinks, setJsRenderedLinks] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSitemapSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sitemapUrl.trim()) return;
-    onCrawl(sitemapUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks);
+    onCrawl(sitemapUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
   };
 
   const handleUrlsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks);
+    onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
-    onCrawlUrls(fileUrls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks);
+    onCrawlUrls(fileUrls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,10 +208,21 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
       </Label>
 
       <Label htmlFor="include-internal-links" className={pillClass(includeInternalLinks)}>
-        <Checkbox id="include-internal-links" checked={includeInternalLinks} onCheckedChange={(v) => setIncludeInternalLinks(!!v)} disabled={isLoading} className="hidden" />
+        <Checkbox id="include-internal-links" checked={includeInternalLinks} onCheckedChange={(v) => { setIncludeInternalLinks(!!v); if (!v) setJsRenderedLinks(false); }} disabled={isLoading} className="hidden" />
         <LinkIcon className="h-3.5 w-3.5" />
         Internal Links
       </Label>
+
+      {includeInternalLinks && (
+        <Label htmlFor="js-rendered-links" className={`${pillClass(jsRenderedLinks)} relative`}>
+          <Checkbox id="js-rendered-links" checked={jsRenderedLinks} onCheckedChange={(v) => setJsRenderedLinks(!!v)} disabled={isLoading} className="hidden" />
+          <Zap className="h-3.5 w-3.5" />
+          JS Rendered
+          {jsRenderedLinks && (
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
+          )}
+        </Label>
+      )}
     </div>
   );
 

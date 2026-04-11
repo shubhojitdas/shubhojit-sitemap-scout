@@ -317,6 +317,30 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
   return links;
 }
 
+// ─── JS-rendered link extraction via Jina Reader ──────────────────────────────
+
+async function fetchJsRenderedHtml(url: string): Promise<string | null> {
+  try {
+    const jinaUrl = `https://r.jina.ai/${url}`;
+    const resp = await fetch(jinaUrl, {
+      headers: {
+        'Accept': 'text/html',
+        'X-Return-Format': 'html',
+      },
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!resp.ok) return null;
+    return await resp.text();
+  } catch {
+    return null;
+  }
+}
+
+async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> {
+  const html = await fetchJsRenderedHtml(url);
+  if (!html) return [];
+  return extractInternalLinks(html, url);
+}
 
 async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Response; redirectedUrl?: string; redirectStatusCode?: number }> {
   const retryableStatuses = new Set([408, 425, 429, 500, 502, 503, 504]);
@@ -395,6 +419,7 @@ async function fetchMeta(
   includeCanonical: boolean,
   includeHreflangs: boolean,
   includeInternalLinks: boolean,
+  jsRenderedLinks: boolean = false,
 ): Promise<CrawlResult> {
   const start = Date.now();
   const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], internalLinks: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
@@ -422,7 +447,9 @@ async function fetchMeta(
       canonical: includeCanonical ? canonical : undefined,
       canonicalStatus,
       hreflangs: includeHreflangs ? extractHreflangs(html) : [],
-      internalLinks: includeInternalLinks ? extractInternalLinks(html, url) : [],
+      internalLinks: includeInternalLinks
+        ? (jsRenderedLinks ? await extractJsRenderedLinks(url) : extractInternalLinks(html, url))
+        : [],
       status: 'OK',
       statusCode: resp.status,
       redirectStatusCode,
@@ -454,6 +481,7 @@ Deno.serve(async (req) => {
       includeCanonical = false,
       includeHreflangs = false,
       includeInternalLinks = false,
+      jsRenderedLinks = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -463,13 +491,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    const batchSize = 5;
+    const batchSize = jsRenderedLinks ? 2 : 5;
     const results: CrawlResult[] = [];
 
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks))
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks))
       );
       results.push(...batchResults);
     }

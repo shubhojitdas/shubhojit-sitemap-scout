@@ -317,6 +317,30 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
   return links;
 }
 
+// ─── JS-rendered link extraction via Jina Reader ──────────────────────────────
+
+async function fetchJsRenderedHtml(url: string): Promise<string | null> {
+  try {
+    const jinaUrl = `https://r.jina.ai/${url}`;
+    const resp = await fetch(jinaUrl, {
+      headers: {
+        'Accept': 'text/html',
+        'X-Return-Format': 'html',
+      },
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!resp.ok) return null;
+    return await resp.text();
+  } catch {
+    return null;
+  }
+}
+
+async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> {
+  const html = await fetchJsRenderedHtml(url);
+  if (!html) return [];
+  return extractInternalLinks(html, url);
+}
 
 async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Response; redirectedUrl?: string; redirectStatusCode?: number }> {
   const retryableStatuses = new Set([408, 425, 429, 500, 502, 503, 504]);

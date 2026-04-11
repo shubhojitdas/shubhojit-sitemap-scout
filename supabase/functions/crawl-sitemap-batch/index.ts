@@ -491,7 +491,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const batchSize = 5;
+    const batchSize = jsRenderedLinks ? 2 : 5;
     const results: CrawlResult[] = [];
 
     for (let i = 0; i < urls.length; i += batchSize) {

@@ -208,10 +208,21 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
       </Label>
 
       <Label htmlFor="include-internal-links" className={pillClass(includeInternalLinks)}>
-        <Checkbox id="include-internal-links" checked={includeInternalLinks} onCheckedChange={(v) => setIncludeInternalLinks(!!v)} disabled={isLoading} className="hidden" />
+        <Checkbox id="include-internal-links" checked={includeInternalLinks} onCheckedChange={(v) => { setIncludeInternalLinks(!!v); if (!v) setJsRenderedLinks(false); }} disabled={isLoading} className="hidden" />
         <LinkIcon className="h-3.5 w-3.5" />
         Internal Links
       </Label>
+
+      {includeInternalLinks && (
+        <Label htmlFor="js-rendered-links" className={`${pillClass(jsRenderedLinks)} relative`}>
+          <Checkbox id="js-rendered-links" checked={jsRenderedLinks} onCheckedChange={(v) => setJsRenderedLinks(!!v)} disabled={isLoading} className="hidden" />
+          <Zap className="h-3.5 w-3.5" />
+          JS Rendered
+          {jsRenderedLinks && (
+            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+          )}
+        </Label>
+      )}
     </div>
   );
 

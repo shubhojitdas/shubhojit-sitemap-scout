@@ -60,25 +60,26 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
   const [includeCanonical, setIncludeCanonical] = useState(false);
   const [includeHreflangs, setIncludeHreflangs] = useState(false);
   const [includeInternalLinks, setIncludeInternalLinks] = useState(false);
+  const [jsRenderedLinks, setJsRenderedLinks] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSitemapSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sitemapUrl.trim()) return;
-    onCrawl(sitemapUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks);
+    onCrawl(sitemapUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
   };
 
   const handleUrlsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks);
+    onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
-    onCrawlUrls(fileUrls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks);
+    onCrawlUrls(fileUrls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

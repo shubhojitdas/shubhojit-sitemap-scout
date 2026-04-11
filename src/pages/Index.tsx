@@ -72,6 +72,7 @@ const Index = () => {
     withCanonical: boolean,
     withHreflangs: boolean,
     withInternalLinks: boolean,
+    withJsRenderedLinks: boolean,
   ) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
@@ -88,7 +89,7 @@ const Index = () => {
     setIncludeInternalLinks(withInternalLinks);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks);
+    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks);
   };
 
   const handleCrawlUrls = (
@@ -104,6 +105,7 @@ const Index = () => {
     withCanonical: boolean,
     withHreflangs: boolean,
     withInternalLinks: boolean,
+    withJsRenderedLinks: boolean,
   ) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
@@ -114,7 +116,7 @@ const Index = () => {
     setIncludeInternalLinks(withInternalLinks);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks);
+    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling" || phase === "paused";

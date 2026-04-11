@@ -66,9 +66,10 @@ interface CrawlOptions {
   includeCanonical: boolean;
   includeHreflangs: boolean;
   includeInternalLinks: boolean;
+  jsRenderedLinks: boolean;
 }
 
-const DEFAULT_OPTS: CrawlOptions = { includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false, includeInternalLinks: false };
+const DEFAULT_OPTS: CrawlOptions = { includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false };
 
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(() => loadPersistedState() || INITIAL_STATE);

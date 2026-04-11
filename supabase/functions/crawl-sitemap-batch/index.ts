@@ -447,7 +447,9 @@ async function fetchMeta(
       canonical: includeCanonical ? canonical : undefined,
       canonicalStatus,
       hreflangs: includeHreflangs ? extractHreflangs(html) : [],
-      internalLinks: includeInternalLinks ? extractInternalLinks(html, url) : [],
+      internalLinks: includeInternalLinks
+        ? (jsRenderedLinks ? await extractJsRenderedLinks(url) : extractInternalLinks(html, url))
+        : [],
       status: 'OK',
       statusCode: resp.status,
       redirectStatusCode,
@@ -479,6 +481,7 @@ Deno.serve(async (req) => {
       includeCanonical = false,
       includeHreflangs = false,
       includeInternalLinks = false,
+      jsRenderedLinks = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -494,7 +497,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks))
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks))
       );
       results.push(...batchResults);
     }

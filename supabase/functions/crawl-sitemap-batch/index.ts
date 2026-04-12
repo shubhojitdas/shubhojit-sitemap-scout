@@ -272,6 +272,43 @@ function extractMainContent(html: string): string {
   return body;
 }
 
+function extractCleanAnchorText(innerHtml: string): string {
+  // Strategy: if the <a> wraps a large block (like a product card),
+  // extract the first meaningful short text element instead of all text.
+  
+  // 1. Try to find a heading inside the anchor
+  const headingMatch = innerHtml.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i);
+  if (headingMatch) {
+    const text = decodeHtmlEntities(headingMatch[1].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+    if (text.length > 1) return text.slice(0, 150);
+  }
+  
+  // 2. Try to find a <span>, <strong>, or <b> with short text (likely a label)
+  const labelMatch = innerHtml.match(/<(span|strong|b|em|p)[^>]*>([\s\S]*?)<\/\1>/i);
+  if (labelMatch) {
+    const raw = decodeHtmlEntities(labelMatch[2].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+    if (raw.length > 1 && raw.length <= 100) return raw;
+  }
+  
+  // 3. Try img alt text
+  const imgAltMatch = innerHtml.match(/<img\s[^>]*\balt\s*=\s*["']([^"']+)["']/i);
+  if (imgAltMatch) {
+    const alt = decodeHtmlEntities(imgAltMatch[1]).replace(/\s+/g, ' ').trim();
+    if (alt.length > 1) return alt.slice(0, 150);
+  }
+  
+  // 4. Fallback: get all text, but truncate if too long
+  const fullText = decodeHtmlEntities(innerHtml.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+  if (!fullText) return '';
+  
+  // If text is short enough, use as-is
+  if (fullText.length <= 100) return fullText;
+  
+  // Truncate at word boundary
+  const truncated = fullText.slice(0, 100).replace(/\s+\S*$/, '');
+  return truncated + '…';
+}
+
 function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[] {
   const mainContent = extractMainContent(html);
   const links: InternalLinkData[] = [];
@@ -298,12 +335,12 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
     
     try { href = new URL(href, pageUrl).href; } catch { continue; }
     
-    const anchorText = decodeHtmlEntities(innerHtml.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+    // Extract meaningful anchor text: prefer first heading, img alt, or short text
+    const anchorText = extractCleanAnchorText(innerHtml);
     if (!anchorText) continue;
     
-    const key = href + '||' + anchorText;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    // Deduplicate by href — keep shortest meaningful anchor text per URL
+    const existingIdx = links.findIndex(l => l.href === href);
     
     let isInternal = false;
     try {
@@ -311,7 +348,19 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
       isInternal = linkDomain === pageDomain;
     } catch { isInternal = false; }
     
-    links.push({ anchorText: anchorText.slice(0, 300), href, isInternal });
+    if (existingIdx !== -1) {
+      // Keep the shorter, cleaner anchor text
+      if (anchorText.length < links[existingIdx].anchorText.length && anchorText.length > 1) {
+        links[existingIdx].anchorText = anchorText;
+      }
+      continue;
+    }
+    
+    const key = href + '||' + anchorText;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    
+    links.push({ anchorText, href, isInternal });
   }
   
   return links;

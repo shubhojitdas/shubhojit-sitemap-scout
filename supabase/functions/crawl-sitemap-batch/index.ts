@@ -322,14 +322,20 @@ function extractCardContext(innerHtml: string): string | null {
   const heading = decodeHtmlEntities(headingMatch[1].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
   if (!heading) return null;
   
-  // Try to find a description paragraph or div with text after the heading
-  const descMatches = innerHtml.matchAll(/<(div|p|span)[^>]*class\s*=\s*["'][^"']*(?:text|desc|summary|content|body|detail|excerpt|info)[^"']*["'][^>]*>([\s\S]*?)<\/\1>/gi);
+  // Try to find a description paragraph or div with substantial text
+  // Use a broader match but filter for actual descriptive content
+  const descMatches = innerHtml.matchAll(/<(div|p)[^>]*>([\s\S]*?)<\/\1>/gi);
+  let bestDesc = '';
   for (const dm of descMatches) {
     const desc = decodeHtmlEntities(dm[2].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-    if (desc.length > 20 && desc.length <= 300) {
-      const truncDesc = desc.length > 120 ? desc.slice(0, 120).replace(/\s+\S*$/, '') + '…' : desc;
-      return `${heading} — ${truncDesc}`;
+    // Skip pricing/tax/short snippets - look for actual descriptions (40+ chars)
+    if (desc.length >= 40 && desc.length <= 500 && !desc.match(/MRP|₹|\$|inclusive of|taxes|save |off\b/i)) {
+      if (desc.length > bestDesc.length) bestDesc = desc;
     }
+  }
+  if (bestDesc) {
+    const truncDesc = bestDesc.length > 120 ? bestDesc.slice(0, 120).replace(/\s+\S*$/, '') + '…' : bestDesc;
+    return `${heading} — ${truncDesc}`;
   }
   
   // Fallback: check if there's substantial text beyond the heading

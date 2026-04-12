@@ -298,12 +298,12 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
     
     try { href = new URL(href, pageUrl).href; } catch { continue; }
     
-    const anchorText = decodeHtmlEntities(innerHtml.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+    // Extract meaningful anchor text: prefer first heading, img alt, or short text
+    const anchorText = extractCleanAnchorText(innerHtml);
     if (!anchorText) continue;
     
-    const key = href + '||' + anchorText;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    // Deduplicate by href — keep shortest meaningful anchor text per URL
+    const existingIdx = links.findIndex(l => l.href === href);
     
     let isInternal = false;
     try {
@@ -311,7 +311,19 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
       isInternal = linkDomain === pageDomain;
     } catch { isInternal = false; }
     
-    links.push({ anchorText: anchorText.slice(0, 300), href, isInternal });
+    if (existingIdx !== -1) {
+      // Keep the shorter, cleaner anchor text
+      if (anchorText.length < links[existingIdx].anchorText.length && anchorText.length > 1) {
+        links[existingIdx].anchorText = anchorText;
+      }
+      continue;
+    }
+    
+    const key = href + '||' + anchorText;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    
+    links.push({ anchorText, href, isInternal });
   }
   
   return links;

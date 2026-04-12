@@ -272,6 +272,11 @@ function extractMainContent(html: string): string {
   return body;
 }
 
+function isGenericAnchorText(text: string): boolean {
+  const generic = /^(shop now|read more|click here|learn more|view more|see more|buy now|order now|add to cart|view details|more info|details|here|link|go|visit|explore|discover|get started|continue|next|previous|back|submit|download|sign up|subscribe|join|contact us|get in touch)$/i;
+  return generic.test(text.trim());
+}
+
 function extractCleanAnchorText(innerHtml: string): string {
   // Strategy: if the <a> wraps a large block (like a product card),
   // extract the first meaningful short text element instead of all text.
@@ -309,6 +314,64 @@ function extractCleanAnchorText(innerHtml: string): string {
   return truncated + '…';
 }
 
+function extractCardContext(innerHtml: string): string | null {
+  // For card-like anchors (large blocks), extract heading + description snippet
+  const headingMatch = innerHtml.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i);
+  if (!headingMatch) return null;
+  
+  const heading = decodeHtmlEntities(headingMatch[1].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+  if (!heading) return null;
+  
+  // Try to find a description paragraph or div with substantial text
+  // Use a broader match but filter for actual descriptive content
+  const descMatches = innerHtml.matchAll(/<(div|p)[^>]*>([\s\S]*?)<\/\1>/gi);
+  let bestDesc = '';
+  for (const dm of descMatches) {
+    const desc = decodeHtmlEntities(dm[2].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+    // Skip pricing/tax/short snippets - look for actual descriptions (40+ chars)
+    if (desc.length >= 40 && desc.length <= 500 && !desc.match(/MRP|₹|\$|inclusive of|taxes|save |off\b/i)) {
+      if (desc.length > bestDesc.length) bestDesc = desc;
+    }
+  }
+  if (bestDesc) {
+    // Remove the heading text from the description if it starts with it
+    let cleanDesc = bestDesc;
+    if (cleanDesc.startsWith(heading)) {
+      cleanDesc = cleanDesc.slice(heading.length).trim();
+    }
+    // Also remove heading if repeated with slight variations (e.g., with ® symbols)
+    const headingNoSup = heading.replace(/[®™©]/g, '').trim();
+    if (cleanDesc.replace(/[®™©]/g, '').trim().startsWith(headingNoSup)) {
+      cleanDesc = cleanDesc.replace(/[®™©]/g, '').trim().slice(headingNoSup.length).trim();
+    }
+    if (cleanDesc.length > 20) {
+      const truncDesc = cleanDesc.length > 120 ? cleanDesc.slice(0, 120).replace(/\s+\S*$/, '') + '…' : cleanDesc;
+      return `${heading} — ${truncDesc}`;
+    }
+  }
+  
+  // Fallback: check if there's substantial text beyond the heading
+  const fullText = decodeHtmlEntities(innerHtml.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+  // Find last occurrence of heading to skip repeated headings
+  const headingIdx = fullText.lastIndexOf(heading);
+  if (headingIdx !== -1 && fullText.length > headingIdx + heading.length + 30) {
+    let afterHeading = fullText.slice(headingIdx + heading.length).trim();
+    // Skip pricing info
+    if (afterHeading.match(/MRP|₹|\$|inclusive of|taxes/i)) {
+      // Try to extract just the descriptive part before pricing
+      const pricingIdx = afterHeading.search(/MRP|₹|\$/i);
+      if (pricingIdx > 20) afterHeading = afterHeading.slice(0, pricingIdx).trim();
+      else return null;
+    }
+    if (afterHeading.length > 20) {
+      const truncAfter = afterHeading.length > 120 ? afterHeading.slice(0, 120).replace(/\s+\S*$/, '') + '…' : afterHeading;
+      return `${heading} — ${truncAfter}`;
+    }
+  }
+  
+  return null;
+}
+
 function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[] {
   const mainContent = extractMainContent(html);
   const links: InternalLinkData[] = [];
@@ -335,32 +398,72 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
     
     try { href = new URL(href, pageUrl).href; } catch { continue; }
     
-    // Extract meaningful anchor text: prefer first heading, img alt, or short text
-    const anchorText = extractCleanAnchorText(innerHtml);
-    if (!anchorText) continue;
-    
-    // Deduplicate by href — keep shortest meaningful anchor text per URL
-    const existingIdx = links.findIndex(l => l.href === href);
-    
     let isInternal = false;
     try {
       const linkDomain = new URL(href).hostname.replace(/^www\./, '');
       isInternal = linkDomain === pageDomain;
     } catch { isInternal = false; }
     
-    if (existingIdx !== -1) {
-      // Keep the shorter, cleaner anchor text
-      if (anchorText.length < links[existingIdx].anchorText.length && anchorText.length > 1) {
-        links[existingIdx].anchorText = anchorText;
-      }
-      continue;
+    // For card-like anchors, try to get rich context
+    const cardContext = extractCardContext(innerHtml);
+    // Standard anchor text extraction
+    const anchorText = extractCleanAnchorText(innerHtml);
+    
+    // Use card context if available AND the standard text is generic or very short
+    let finalText = anchorText;
+    if (cardContext && (isGenericAnchorText(anchorText) || anchorText.length <= 3)) {
+      finalText = cardContext;
+    } else if (cardContext && anchorText === cardContext.split(' — ')[0]) {
+      // anchorText matches just the heading from the card, use richer card context
+      finalText = cardContext;
     }
     
-    const key = href + '||' + anchorText;
+    if (!finalText) continue;
+    
+    // Deduplicate: keep all unique anchor text + href combos
+    // But skip truly duplicate entries and skip generic texts if a descriptive one exists
+    const key = href + '||' + finalText;
     if (seen.has(key)) continue;
     seen.add(key);
     
-    links.push({ anchorText, href, isInternal });
+    // Check if we already have this href with a better (non-generic) text
+    const existingForHref = links.filter(l => l.href === href);
+    if (isGenericAnchorText(finalText) && existingForHref.length > 0) {
+      // Skip generic text if we already have a descriptive entry for this URL
+      continue;
+    }
+    
+    // If this is descriptive and we have generic entries for the same href, remove them
+    if (!isGenericAnchorText(finalText) && existingForHref.length > 0) {
+      const genericIndices: number[] = [];
+      for (let i = links.length - 1; i >= 0; i--) {
+        if (links[i].href === href && isGenericAnchorText(links[i].anchorText)) {
+          genericIndices.push(i);
+        }
+      }
+      for (const idx of genericIndices) {
+        seen.delete(links[idx].href + '||' + links[idx].anchorText);
+        links.splice(idx, 1);
+      }
+    }
+    
+    // Also deduplicate if a shorter version of the same text exists (e.g., heading vs heading + desc)
+    // Keep the richer version
+    const existingSameHref = links.filter(l => l.href === href);
+    const isDuplicate = existingSameHref.some(l => {
+      // If one text is a prefix/subset of the other, keep the longer (richer) one
+      if (finalText.startsWith(l.anchorText) || l.anchorText.startsWith(finalText)) {
+        if (finalText.length > l.anchorText.length) {
+          // Replace shorter with longer
+          l.anchorText = finalText;
+        }
+        return true;
+      }
+      return false;
+    });
+    if (isDuplicate) continue;
+    
+    links.push({ anchorText: finalText, href, isInternal });
   }
   
   return links;

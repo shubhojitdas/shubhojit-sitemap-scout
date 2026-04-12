@@ -334,15 +334,35 @@ function extractCardContext(innerHtml: string): string | null {
     }
   }
   if (bestDesc) {
-    const truncDesc = bestDesc.length > 120 ? bestDesc.slice(0, 120).replace(/\s+\S*$/, '') + '…' : bestDesc;
-    return `${heading} — ${truncDesc}`;
+    // Remove the heading text from the description if it starts with it
+    let cleanDesc = bestDesc;
+    if (cleanDesc.startsWith(heading)) {
+      cleanDesc = cleanDesc.slice(heading.length).trim();
+    }
+    // Also remove heading if repeated with slight variations (e.g., with ® symbols)
+    const headingNoSup = heading.replace(/[®™©]/g, '').trim();
+    if (cleanDesc.replace(/[®™©]/g, '').trim().startsWith(headingNoSup)) {
+      cleanDesc = cleanDesc.replace(/[®™©]/g, '').trim().slice(headingNoSup.length).trim();
+    }
+    if (cleanDesc.length > 20) {
+      const truncDesc = cleanDesc.length > 120 ? cleanDesc.slice(0, 120).replace(/\s+\S*$/, '') + '…' : cleanDesc;
+      return `${heading} — ${truncDesc}`;
+    }
   }
   
   // Fallback: check if there's substantial text beyond the heading
   const fullText = decodeHtmlEntities(innerHtml.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-  if (fullText.length > heading.length + 30) {
-    // There's more content, it's likely a card
-    const afterHeading = fullText.slice(fullText.indexOf(heading) + heading.length).trim();
+  // Find last occurrence of heading to skip repeated headings
+  const headingIdx = fullText.lastIndexOf(heading);
+  if (headingIdx !== -1 && fullText.length > headingIdx + heading.length + 30) {
+    let afterHeading = fullText.slice(headingIdx + heading.length).trim();
+    // Skip pricing info
+    if (afterHeading.match(/MRP|₹|\$|inclusive of|taxes/i)) {
+      // Try to extract just the descriptive part before pricing
+      const pricingIdx = afterHeading.search(/MRP|₹|\$/i);
+      if (pricingIdx > 20) afterHeading = afterHeading.slice(0, pricingIdx).trim();
+      else return null;
+    }
     if (afterHeading.length > 20) {
       const truncAfter = afterHeading.length > 120 ? afterHeading.slice(0, 120).replace(/\s+\S*$/, '') + '…' : afterHeading;
       return `${heading} — ${truncAfter}`;

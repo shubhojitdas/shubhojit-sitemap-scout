@@ -177,6 +177,8 @@ const Index = () => {
               by{" "}
               <a
                 href="/shubhojit-das"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="underline decoration-primary/40 underline-offset-2 hover:decoration-primary transition-colors"
               >
                 Shubhojit Das

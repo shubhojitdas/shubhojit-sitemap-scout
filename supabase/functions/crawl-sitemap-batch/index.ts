@@ -414,8 +414,6 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
     }
     
     if (!finalText) continue;
-    });
-    if (isDuplicate) continue;
     
     links.push({ anchorText: finalText, href, isInternal });
   }

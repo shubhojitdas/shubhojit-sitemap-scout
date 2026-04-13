@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LinkGraphView from "./pages/LinkGraphView";
 import AboutShubhojit from "./pages/AboutShubhojit";
+import CmsLogin from "./pages/CmsLogin";
+import CmsDashboard from "./pages/CmsDashboard";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +22,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/shubhojit-das" element={<AboutShubhojit />} />
           <Route path="/link-graph-view" element={<LinkGraphView />} />
+          <Route path="/cms/login" element={<CmsLogin />} />
+          <Route path="/cms" element={<CmsDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

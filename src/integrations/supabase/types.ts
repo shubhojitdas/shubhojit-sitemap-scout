@@ -14,7 +14,146 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      about_experience: {
+        Row: {
+          company: string
+          description: string | null
+          featured_post_title: string | null
+          featured_post_url: string | null
+          id: string
+          period: string
+          role: string
+          sort_order: number
+        }
+        Insert: {
+          company: string
+          description?: string | null
+          featured_post_title?: string | null
+          featured_post_url?: string | null
+          id?: string
+          period: string
+          role: string
+          sort_order?: number
+        }
+        Update: {
+          company?: string
+          description?: string | null
+          featured_post_title?: string | null
+          featured_post_url?: string | null
+          id?: string
+          period?: string
+          role?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      about_experience_achievements: {
+        Row: {
+          experience_id: string
+          id: string
+          sort_order: number
+          text: string
+        }
+        Insert: {
+          experience_id: string
+          id?: string
+          sort_order?: number
+          text: string
+        }
+        Update: {
+          experience_id?: string
+          id?: string
+          sort_order?: number
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "about_experience_achievements_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "about_experience"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      about_featured_posts: {
+        Row: {
+          description: string | null
+          id: string
+          sort_order: number
+          source_label: string | null
+          title: string
+          url: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          sort_order?: number
+          source_label?: string | null
+          title: string
+          url: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          sort_order?: number
+          source_label?: string | null
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      about_profile: {
+        Row: {
+          about_paragraphs: string[]
+          id: string
+          image_url: string | null
+          linkedin_url: string | null
+          name: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          about_paragraphs?: string[]
+          id?: string
+          image_url?: string | null
+          linkedin_url?: string | null
+          name?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          about_paragraphs?: string[]
+          id?: string
+          image_url?: string | null
+          linkedin_url?: string | null
+          name?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      about_skills: {
+        Row: {
+          icon_name: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          icon_name?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          icon_name?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

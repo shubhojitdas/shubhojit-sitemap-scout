@@ -176,7 +176,7 @@ const Index = () => {
             <p className="text-[15px] mt-3 tracking-wide font-semibold gradient-text">
               by{" "}
               <a
-                href="https://www.linkedin.com/in/shubhojitdas/"
+                href="/shubhojit-das"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline decoration-primary/40 underline-offset-2 hover:decoration-primary transition-colors"

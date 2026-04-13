@@ -375,7 +375,6 @@ function extractCardContext(innerHtml: string): string | null {
 function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[] {
   const mainContent = extractMainContent(html);
   const links: InternalLinkData[] = [];
-  const seen = new Set<string>();
   
   let pageDomain: string;
   try {
@@ -404,64 +403,17 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
       isInternal = linkDomain === pageDomain;
     } catch { isInternal = false; }
     
-    // For card-like anchors, try to get rich context
+    // Extract anchor text — use card context for richer description when available
     const cardContext = extractCardContext(innerHtml);
-    // Standard anchor text extraction
     const anchorText = extractCleanAnchorText(innerHtml);
     
-    // Use card context if available AND the standard text is generic or very short
+    // Use card context to enrich the text, but KEEP the original anchor text too
     let finalText = anchorText;
-    if (cardContext && (isGenericAnchorText(anchorText) || anchorText.length <= 3)) {
-      finalText = cardContext;
-    } else if (cardContext && anchorText === cardContext.split(' — ')[0]) {
-      // anchorText matches just the heading from the card, use richer card context
+    if (cardContext && (anchorText.length <= 3 || anchorText === cardContext.split(' — ')[0])) {
       finalText = cardContext;
     }
     
     if (!finalText) continue;
-    
-    // Deduplicate: keep all unique anchor text + href combos
-    // But skip truly duplicate entries and skip generic texts if a descriptive one exists
-    const key = href + '||' + finalText;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    
-    // Check if we already have this href with a better (non-generic) text
-    const existingForHref = links.filter(l => l.href === href);
-    if (isGenericAnchorText(finalText) && existingForHref.length > 0) {
-      // Skip generic text if we already have a descriptive entry for this URL
-      continue;
-    }
-    
-    // If this is descriptive and we have generic entries for the same href, remove them
-    if (!isGenericAnchorText(finalText) && existingForHref.length > 0) {
-      const genericIndices: number[] = [];
-      for (let i = links.length - 1; i >= 0; i--) {
-        if (links[i].href === href && isGenericAnchorText(links[i].anchorText)) {
-          genericIndices.push(i);
-        }
-      }
-      for (const idx of genericIndices) {
-        seen.delete(links[idx].href + '||' + links[idx].anchorText);
-        links.splice(idx, 1);
-      }
-    }
-    
-    // Also deduplicate if a shorter version of the same text exists (e.g., heading vs heading + desc)
-    // Keep the richer version
-    const existingSameHref = links.filter(l => l.href === href);
-    const isDuplicate = existingSameHref.some(l => {
-      // If one text is a prefix/subset of the other, keep the longer (richer) one
-      if (finalText.startsWith(l.anchorText) || l.anchorText.startsWith(finalText)) {
-        if (finalText.length > l.anchorText.length) {
-          // Replace shorter with longer
-          l.anchorText = finalText;
-        }
-        return true;
-      }
-      return false;
-    });
-    if (isDuplicate) continue;
     
     links.push({ anchorText: finalText, href, isInternal });
   }

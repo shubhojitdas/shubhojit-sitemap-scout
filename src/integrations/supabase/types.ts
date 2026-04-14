@@ -18,32 +18,44 @@ export type Database = {
         Row: {
           company: string
           description: string | null
+          end_date: string | null
           featured_post_title: string | null
           featured_post_url: string | null
           id: string
+          image_url: string | null
+          is_current: boolean
           period: string
           role: string
           sort_order: number
+          start_date: string | null
         }
         Insert: {
           company: string
           description?: string | null
+          end_date?: string | null
           featured_post_title?: string | null
           featured_post_url?: string | null
           id?: string
+          image_url?: string | null
+          is_current?: boolean
           period: string
           role: string
           sort_order?: number
+          start_date?: string | null
         }
         Update: {
           company?: string
           description?: string | null
+          end_date?: string | null
           featured_post_title?: string | null
           featured_post_url?: string | null
           id?: string
+          image_url?: string | null
+          is_current?: boolean
           period?: string
           role?: string
           sort_order?: number
+          start_date?: string | null
         }
         Relationships: []
       }
@@ -80,6 +92,7 @@ export type Database = {
         Row: {
           description: string | null
           id: string
+          image_url: string | null
           sort_order: number
           source_label: string | null
           title: string
@@ -88,6 +101,7 @@ export type Database = {
         Insert: {
           description?: string | null
           id?: string
+          image_url?: string | null
           sort_order?: number
           source_label?: string | null
           title: string
@@ -96,6 +110,7 @@ export type Database = {
         Update: {
           description?: string | null
           id?: string
+          image_url?: string | null
           sort_order?: number
           source_label?: string | null
           title?: string

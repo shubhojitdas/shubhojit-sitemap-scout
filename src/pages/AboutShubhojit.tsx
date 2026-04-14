@@ -1,48 +1,24 @@
+import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import {
-  Linkedin,
-  ArrowLeft,
-  ExternalLink,
-  Briefcase,
-  Award,
-  Code,
-  Search,
-  Globe,
-  BarChart3,
-  FileCode,
-  Wrench,
-  Heart,
-  Zap,
-  Layout,
-  Database,
-  Shield,
-  Cpu,
-  Terminal,
-  Link as LinkIconLucide,
-  Settings,
-  Monitor,
-  Smartphone,
-  Server,
-  Cloud,
+  Linkedin, ArrowLeft, ExternalLink, Briefcase, Award, Code, Search, Globe,
+  BarChart3, FileCode, Wrench, Heart, Zap, Layout, Database, Shield, Cpu,
+  Terminal, Link as LinkIconLucide, Settings, Monitor, Smartphone, Server, Cloud,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
-  useAboutProfile,
-  useAboutSkills,
-  useAboutExperience,
-  useAboutFeaturedPosts,
+  useAboutProfile, useAboutSkills, useAboutExperience, useAboutFeaturedPosts,
 } from "@/hooks/use-about-cms";
-import profilePhotoFallback from "@/assets/shubhojit-placeholder.jpg";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
+    opacity: 1, y: 0,
     transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" as const },
   }),
 };
@@ -56,12 +32,13 @@ const iconMap: Record<string, any> = {
 const getIcon = (name: string) => iconMap[name] || Code;
 
 const AboutShubhojit = () => {
-  const { data: profile } = useAboutProfile();
+  const { data: profile, isLoading: profileLoading } = useAboutProfile();
   const { data: skills = [] } = useAboutSkills();
   const { data: experiences = [] } = useAboutExperience();
   const { data: featuredPosts = [] } = useAboutFeaturedPosts();
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  const photoUrl = profile?.image_url || profilePhotoFallback;
+  const photoUrl = profile?.image_url;
   const name = profile?.name || "Shubhojit Das";
   const title = profile?.title || "Technical SEO Specialist · Front-End Enthusiast";
   const paragraphs = profile?.about_paragraphs || [];
@@ -95,8 +72,22 @@ const AboutShubhojit = () => {
           {/* Hero */}
           <motion.section initial="hidden" animate="visible" className="flex flex-col md:flex-row gap-8 items-start">
             <motion.div custom={0} variants={fadeUp} className="shrink-0">
-              <div className="w-36 h-36 rounded-2xl overflow-hidden border border-border card-elevated">
-                <img src={photoUrl} alt={`${name} - SEO Specialist`} width={144} height={144} className="w-full h-full object-cover" />
+              <div className="w-44 h-44 rounded-2xl overflow-hidden border border-border card-elevated">
+                {profileLoading || !photoUrl ? (
+                  <Skeleton className="w-full h-full" />
+                ) : (
+                  <>
+                    {!imageLoaded && <Skeleton className="w-full h-full absolute inset-0" />}
+                    <img
+                      src={photoUrl}
+                      alt={`${name} - SEO Specialist`}
+                      width={176}
+                      height={176}
+                      className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+                      onLoad={() => setImageLoaded(true)}
+                    />
+                  </>
+                )}
               </div>
             </motion.div>
             <div className="space-y-4 flex-1">
@@ -161,6 +152,9 @@ const AboutShubhojit = () => {
                           </div>
                           <Badge variant="outline" className="text-[10px] shrink-0">{exp.period}</Badge>
                         </div>
+                        {exp.image_url && (
+                          <img src={exp.image_url} alt={`${exp.company} featured`} className="w-full max-h-48 rounded-lg object-cover border border-border" />
+                        )}
                         {exp.description && <p className="text-xs text-muted-foreground">{exp.description}</p>}
                         {exp.achievements && exp.achievements.length > 0 && (
                           <ul className="space-y-1.5">
@@ -197,7 +191,10 @@ const AboutShubhojit = () => {
                 {featuredPosts.map((post, i) => (
                   <motion.div key={post.id} custom={i + 1} variants={fadeUp}>
                     <a href={post.url} target="_blank" rel="noopener noreferrer" className="block h-full">
-                      <Card className="card-elevated border-border h-full hover:border-muted-foreground/30 transition-colors">
+                      <Card className="card-elevated border-border h-full hover:border-muted-foreground/30 transition-colors overflow-hidden">
+                        {post.image_url && (
+                          <img src={post.image_url} alt={post.title} className="w-full h-32 object-cover" />
+                        )}
                         <CardContent className="p-5 space-y-2">
                           <h3 className="font-semibold text-sm leading-snug">{post.title}</h3>
                           {post.description && <p className="text-xs text-muted-foreground leading-relaxed">{post.description}</p>}

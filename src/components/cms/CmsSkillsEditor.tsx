@@ -3,9 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAboutSkills, useAddSkill, useUpdateSkill, useDeleteSkill } from "@/hooks/use-about-cms";
+import { useAboutSkills, useAddSkill, useUpdateSkill, useDeleteSkill, useReorderSkills } from "@/hooks/use-about-cms";
 import { toast } from "sonner";
 import { Plus, Trash2, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const ICON_OPTIONS = [
   "Code", "Wrench", "FileCode", "Search", "Globe", "BarChart3",
@@ -13,14 +30,53 @@ const ICON_OPTIONS = [
   "Link", "Settings", "Monitor", "Smartphone", "Server", "Cloud",
 ];
 
+function SortableSkillItem({ skill, onUpdate, onDelete }: {
+  skill: any;
+  onUpdate: (skill: any, field: string, value: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: skill.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
+      <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none">
+        <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+      </button>
+      <Input
+        defaultValue={skill.name}
+        onBlur={(e) => e.target.value !== skill.name && onUpdate(skill, "name", e.target.value)}
+        className="flex-1 h-8 text-sm"
+      />
+      <Select defaultValue={skill.icon_name} onValueChange={(v) => onUpdate(skill, "icon_name", v)}>
+        <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {ICON_OPTIONS.map((icon) => (
+            <SelectItem key={icon} value={icon}>{icon}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button variant="ghost" size="icon" onClick={() => onDelete(skill.id)} className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0">
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
+
 export const CmsSkillsEditor = () => {
   const { data: skills = [], isLoading } = useAboutSkills();
   const addSkill = useAddSkill();
   const updateSkill = useUpdateSkill();
   const deleteSkill = useDeleteSkill();
+  const reorderSkills = useReorderSkills();
 
   const [newName, setNewName] = useState("");
   const [newIcon, setNewIcon] = useState("Code");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
@@ -48,6 +104,16 @@ export const CmsSkillsEditor = () => {
     } catch (err: any) {
       toast.error(err.message);
     }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = skills.findIndex((s) => s.id === active.id);
+    const newIndex = skills.findIndex((s) => s.id === over.id);
+    const reordered = arrayMove(skills, oldIndex, newIndex);
+    const updates = reordered.map((s, i) => ({ id: s.id, sort_order: i }));
+    await reorderSkills.mutateAsync(updates);
   };
 
   if (isLoading) return <div className="text-sm text-muted-foreground">Loading...</div>;
@@ -79,30 +145,16 @@ export const CmsSkillsEditor = () => {
 
       <Card className="card-elevated border-border">
         <CardHeader>
-          <CardTitle className="text-sm">Current Skills ({skills.length})</CardTitle>
+          <CardTitle className="text-sm">Current Skills ({skills.length}) — Drag to reorder</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {skills.map((skill) => (
-            <div key={skill.id} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-muted/30">
-              <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-              <Input
-                defaultValue={skill.name}
-                onBlur={(e) => e.target.value !== skill.name && handleUpdate(skill, "name", e.target.value)}
-                className="flex-1 h-8 text-sm"
-              />
-              <Select defaultValue={skill.icon_name} onValueChange={(v) => handleUpdate(skill, "icon_name", v)}>
-                <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ICON_OPTIONS.map((icon) => (
-                    <SelectItem key={icon} value={icon}>{icon}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant="ghost" size="icon" onClick={() => handleDelete(skill.id)} className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0">
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ))}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={skills.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+              {skills.map((skill) => (
+                <SortableSkillItem key={skill.id} skill={skill} onUpdate={handleUpdate} onDelete={handleDelete} />
+              ))}
+            </SortableContext>
+          </DndContext>
           {skills.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No skills added yet</p>}
         </CardContent>
       </Card>

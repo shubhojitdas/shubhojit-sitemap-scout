@@ -34,6 +34,10 @@ export interface AboutExperience {
   description: string | null;
   featured_post_url: string | null;
   featured_post_title: string | null;
+  image_url: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
   sort_order: number;
   achievements?: AboutExperienceAchievement[];
 }
@@ -44,6 +48,7 @@ export interface AboutFeaturedPost {
   description: string | null;
   url: string;
   source_label: string | null;
+  image_url: string | null;
   sort_order: number;
 }
 
@@ -93,12 +98,12 @@ export function useAboutExperience() {
         .order("sort_order");
       if (achError) throw achError;
 
-      return (experiences as AboutExperience[]).map((exp) => ({
+      return (experiences as any[]).map((exp) => ({
         ...exp,
         achievements: (achievements as AboutExperienceAchievement[]).filter(
           (a) => a.experience_id === exp.id
         ),
-      }));
+      })) as AboutExperience[];
     },
   });
 }
@@ -138,7 +143,7 @@ export function useUploadProfileImage() {
   return useMutation({
     mutationFn: async ({ file, profileId }: { file: File; profileId: string }) => {
       const ext = file.name.split(".").pop();
-      const path = `profile-photo.${ext}`;
+      const path = `profile-photo-${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("profile-images")
         .upload(path, file, { upsert: true });
@@ -156,6 +161,25 @@ export function useUploadProfileImage() {
       return urlData.publicUrl;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["about-profile"] }),
+  });
+}
+
+// Generic image upload for CMS items
+export function useUploadCmsImage() {
+  return useMutation({
+    mutationFn: async ({ file, folder }: { file: File; folder: string }) => {
+      const ext = file.name.split(".").pop();
+      const path = `${folder}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("profile-images")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("profile-images")
+        .getPublicUrl(path);
+      return urlData.publicUrl;
+    },
   });
 }
 
@@ -194,6 +218,19 @@ export function useDeleteSkill() {
   });
 }
 
+export function useReorderSkills() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (skills: { id: string; sort_order: number }[]) => {
+      for (const s of skills) {
+        const { error } = await supabase.from("about_skills").update({ sort_order: s.sort_order }).eq("id", s.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["about-skills"] }),
+  });
+}
+
 // Experience mutations
 export function useAddExperience() {
   const qc = useQueryClient();
@@ -224,6 +261,19 @@ export function useDeleteExperience() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("about_experience").delete().eq("id", id);
       if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["about-experience"] }),
+  });
+}
+
+export function useReorderExperience() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; sort_order: number }[]) => {
+      for (const s of items) {
+        const { error } = await supabase.from("about_experience").update({ sort_order: s.sort_order }).eq("id", s.id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["about-experience"] }),
   });
@@ -294,6 +344,19 @@ export function useDeleteFeaturedPost() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("about_featured_posts").delete().eq("id", id);
       if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["about-featured-posts"] }),
+  });
+}
+
+export function useReorderFeaturedPosts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; sort_order: number }[]) => {
+      for (const s of items) {
+        const { error } = await supabase.from("about_featured_posts").update({ sort_order: s.sort_order }).eq("id", s.id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["about-featured-posts"] }),
   });

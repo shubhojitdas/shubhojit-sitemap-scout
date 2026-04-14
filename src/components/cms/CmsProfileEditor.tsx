@@ -73,10 +73,10 @@ export const CmsProfileEditor = () => {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             {profile?.image_url ? (
-              <img src={profile.image_url} alt="Profile" className="w-20 h-20 rounded-xl object-cover border border-border" />
+              <img src={profile.image_url} alt="Profile" className="w-28 h-28 rounded-xl object-cover border border-border" />
             ) : (
-              <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center border border-border">
-                <Image className="h-6 w-6 text-muted-foreground" />
+              <div className="w-28 h-28 rounded-xl bg-muted flex items-center justify-center border border-border">
+                <Image className="h-8 w-8 text-muted-foreground" />
               </div>
             )}
             <div>

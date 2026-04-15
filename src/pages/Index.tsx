@@ -181,7 +181,7 @@ const Index = () => {
                 rel="noopener noreferrer"
                 className="relative inline-block"
               >
-                <span className="underline decoration-primary/40 underline-offset-2 hover:decoration-primary transition-colors">Shubhojit Das</span>
+                <span className="relative z-10 underline decoration-primary/40 underline-offset-2 hover:decoration-primary transition-colors">Shubhojit Das</span>
                 <svg
                   className="absolute -inset-x-2 -inset-y-1.5 w-[calc(100%+16px)] h-[calc(100%+12px)] pointer-events-none"
                   viewBox="0 0 200 60"
@@ -194,7 +194,7 @@ const Index = () => {
                     cy="30"
                     rx="92"
                     ry="24"
-                    stroke="hsl(var(--highlight))"
+                    stroke="hsl(var(--foreground))"
                     strokeWidth="3"
                     strokeLinecap="round"
                     strokeDasharray="600"

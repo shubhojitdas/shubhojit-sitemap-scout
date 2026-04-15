@@ -157,3 +157,24 @@
     -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 40%, transparent 100%);
   }
 }
+
+@keyframes doodle-circle {
+  0% {
+    stroke-dashoffset: 900;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  60% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.animate-doodle-circle {
+  animation: doodle-circle 2s ease-out 0.8s forwards;
+}

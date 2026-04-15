@@ -227,7 +227,21 @@ export function useReorderSkills() {
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["about-skills"] }),
+    onMutate: async (newOrder) => {
+      await qc.cancelQueries({ queryKey: ["about-skills"] });
+      const prev = qc.getQueryData<AboutSkill[]>(["about-skills"]);
+      if (prev) {
+        const updated = [...prev].sort((a, b) => {
+          const aOrder = newOrder.find(n => n.id === a.id)?.sort_order ?? a.sort_order;
+          const bOrder = newOrder.find(n => n.id === b.id)?.sort_order ?? b.sort_order;
+          return aOrder - bOrder;
+        });
+        qc.setQueryData(["about-skills"], updated);
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => { if (ctx?.prev) qc.setQueryData(["about-skills"], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["about-skills"] }),
   });
 }
 
@@ -275,7 +289,21 @@ export function useReorderExperience() {
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["about-experience"] }),
+    onMutate: async (newOrder) => {
+      await qc.cancelQueries({ queryKey: ["about-experience"] });
+      const prev = qc.getQueryData<AboutExperience[]>(["about-experience"]);
+      if (prev) {
+        const updated = [...prev].sort((a, b) => {
+          const aOrder = newOrder.find(n => n.id === a.id)?.sort_order ?? a.sort_order;
+          const bOrder = newOrder.find(n => n.id === b.id)?.sort_order ?? b.sort_order;
+          return aOrder - bOrder;
+        });
+        qc.setQueryData(["about-experience"], updated);
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => { if (ctx?.prev) qc.setQueryData(["about-experience"], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["about-experience"] }),
   });
 }
 
@@ -358,6 +386,20 @@ export function useReorderFeaturedPosts() {
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["about-featured-posts"] }),
+    onMutate: async (newOrder) => {
+      await qc.cancelQueries({ queryKey: ["about-featured-posts"] });
+      const prev = qc.getQueryData<AboutFeaturedPost[]>(["about-featured-posts"]);
+      if (prev) {
+        const updated = [...prev].sort((a, b) => {
+          const aOrder = newOrder.find(n => n.id === a.id)?.sort_order ?? a.sort_order;
+          const bOrder = newOrder.find(n => n.id === b.id)?.sort_order ?? b.sort_order;
+          return aOrder - bOrder;
+        });
+        qc.setQueryData(["about-featured-posts"], updated);
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => { if (ctx?.prev) qc.setQueryData(["about-featured-posts"], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["about-featured-posts"] }),
   });
 }

@@ -160,21 +160,30 @@
 
 @keyframes doodle-circle {
   0% {
-    stroke-dashoffset: 900;
+    stroke-dashoffset: 600;
     opacity: 0;
   }
-  10% {
+  8% {
     opacity: 1;
   }
-  60% {
+  45% {
     stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  55% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  90% {
+    stroke-dashoffset: 600;
+    opacity: 0.3;
   }
   100% {
-    stroke-dashoffset: 0;
-    opacity: 1;
+    stroke-dashoffset: 600;
+    opacity: 0;
   }
 }
 
 .animate-doodle-circle {
-  animation: doodle-circle 2s ease-out 0.8s forwards;
+  animation: doodle-circle 3s ease-in-out infinite;
 }

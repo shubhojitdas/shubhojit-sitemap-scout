@@ -92,29 +92,8 @@ const AboutShubhojit = () => {
             </motion.div>
             <div className="space-y-4 flex-1">
               <motion.div custom={1} variants={fadeUp}>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight gradient-text relative inline-block">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight gradient-text">
                   {name}
-                  <svg
-                    className="absolute -inset-x-3 -inset-y-2 w-[calc(100%+24px)] h-[calc(100%+16px)] pointer-events-none"
-                    viewBox="0 0 300 80"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    preserveAspectRatio="none"
-                  >
-                    <ellipse
-                      cx="150"
-                      cy="40"
-                      rx="140"
-                      ry="32"
-                      stroke="hsl(var(--highlight))"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeDasharray="900"
-                      strokeDashoffset="900"
-                      transform="rotate(-2 150 40)"
-                      className="animate-doodle-circle"
-                    />
-                  </svg>
                 </h1>
                 <p className="text-muted-foreground text-sm mt-1 font-medium">{title}</p>
               </motion.div>

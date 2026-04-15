@@ -179,9 +179,30 @@ const Index = () => {
                 href="/shubhojit-das"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline decoration-primary/40 underline-offset-2 hover:decoration-primary transition-colors"
+                className="relative inline-block"
               >
-                Shubhojit Das
+                <span className="underline decoration-primary/40 underline-offset-2 hover:decoration-primary transition-colors">Shubhojit Das</span>
+                <svg
+                  className="absolute -inset-x-2 -inset-y-1.5 w-[calc(100%+16px)] h-[calc(100%+12px)] pointer-events-none"
+                  viewBox="0 0 200 60"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  preserveAspectRatio="none"
+                >
+                  <ellipse
+                    cx="100"
+                    cy="30"
+                    rx="92"
+                    ry="24"
+                    stroke="hsl(var(--highlight))"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray="600"
+                    strokeDashoffset="600"
+                    transform="rotate(-3 100 30)"
+                    className="animate-doodle-circle"
+                  />
+                </svg>
               </a>
             </p>
             <p className="text-muted-foreground text-sm sm:text-[15px] mt-2.5 max-w-md mx-auto leading-relaxed">

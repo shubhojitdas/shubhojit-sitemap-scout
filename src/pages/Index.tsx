@@ -173,7 +173,7 @@ const Index = () => {
             <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-[1.1] gradient-text pb-1">
               SEO Sitemap Scout
             </h1>
-            <p className="text-[15px] mt-3 tracking-wide font-semibold gradient-text">
+            <p className="text-[15px] mt-3 tracking-wide font-semibold text-muted-foreground">
               by{" "}
               <a
                 href="/shubhojit-das"
@@ -181,9 +181,9 @@ const Index = () => {
                 rel="noopener noreferrer"
                 className="relative inline-block"
               >
-                <span className="relative z-10 underline decoration-primary/40 underline-offset-2 hover:decoration-primary transition-colors">Shubhojit Das</span>
+                <span className="relative z-10 text-foreground underline decoration-foreground/30 underline-offset-2 hover:decoration-foreground transition-colors">Shubhojit Das</span>
                 <svg
-                  className="absolute -inset-x-2 -inset-y-1.5 w-[calc(100%+16px)] h-[calc(100%+12px)] pointer-events-none"
+                  className="absolute -inset-x-3 -inset-y-2 w-[calc(100%+24px)] h-[calc(100%+16px)] pointer-events-none"
                   viewBox="0 0 200 60"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -195,7 +195,7 @@ const Index = () => {
                     rx="92"
                     ry="24"
                     stroke="hsl(var(--foreground))"
-                    strokeWidth="3"
+                    strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeDasharray="600"
                     strokeDashoffset="600"

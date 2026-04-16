@@ -99,7 +99,7 @@ const AboutShubhojit = () => {
               </motion.div>
               <motion.div custom={2} variants={fadeUp} className="text-sm leading-relaxed text-muted-foreground space-y-3">
                 {paragraphs.map((p, i) => (
-                  <p key={i}>{p}</p>
+                  <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
                 ))}
               </motion.div>
               <motion.div custom={3} variants={fadeUp}>
@@ -161,9 +161,9 @@ const AboutShubhojit = () => {
                         {exp.achievements && exp.achievements.length > 0 && (
                           <ul className="space-y-1.5">
                             {exp.achievements.map((a) => (
-                              <li key={a.id} className="text-xs text-muted-foreground flex items-start gap-2">
-                                <Award className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground/60" />
-                                {a.text}
+                              <li key={a.id} className="text-sm text-muted-foreground flex items-start gap-2">
+                                <Award className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground/60" />
+                                <span dangerouslySetInnerHTML={{ __html: a.text }} />
                               </li>
                             ))}
                           </ul>

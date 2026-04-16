@@ -199,7 +199,7 @@ const AboutShubhojit = () => {
                         )}
                         <CardContent className="p-5 flex flex-col flex-1">
                           <h3 className="font-semibold text-sm leading-snug">{post.title}</h3>
-                          {post.description && <p className="text-xs text-muted-foreground leading-relaxed mt-2">{post.description}</p>}
+                          {post.description && <p className="text-xs text-muted-foreground leading-relaxed mt-2" dangerouslySetInnerHTML={{ __html: post.description }} />}
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 mt-auto pt-3">
                             <ExternalLink className="h-2.5 w-2.5" />
                             View on {post.source_label || "Web"}

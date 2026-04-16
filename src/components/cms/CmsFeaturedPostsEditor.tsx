@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,26 @@ import {
   arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { RichTextToolbar } from "@/components/cms/RichTextToolbar";
+
+function RichTextPostDescription({ defaultValue, onSave }: { defaultValue: string; onSave: (v: string | null) => void }) {
+  const [value, setValue] = useState(defaultValue);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs text-muted-foreground">Description</label>
+      <RichTextToolbar textareaRef={ref} value={value} onChange={setValue} />
+      <Textarea
+        ref={ref}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => value !== defaultValue && onSave(value || null)}
+        rows={2}
+        className="text-sm font-mono"
+      />
+    </div>
+  );
+}
 
 function SortablePostItem({ post, children }: { post: any; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: post.id });
@@ -155,15 +175,10 @@ export const CmsFeaturedPostsEditor = () => {
                           className="h-8 text-sm font-semibold"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">Description</label>
-                        <Textarea
-                          defaultValue={post.description || ""}
-                          onBlur={(e) => handleUpdate(post, "description", e.target.value || null)}
-                          rows={2}
-                          className="text-sm"
-                        />
-                      </div>
+                      <RichTextPostDescription
+                        defaultValue={post.description || ""}
+                        onSave={(val) => handleUpdate(post, "description", val)}
+                      />
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <label className="text-xs text-muted-foreground flex items-center gap-1"><LinkIcon className="h-3 w-3" /> URL</label>

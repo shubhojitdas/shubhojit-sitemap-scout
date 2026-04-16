@@ -8,6 +8,21 @@ import { toast } from "sonner";
 import { Save, Upload, Plus, Trash2, Image } from "lucide-react";
 import { RichTextToolbar } from "@/components/cms/RichTextToolbar";
 
+function ParagraphEditor({ value, onChange, onRemove }: { value: string; onChange: (v: string) => void; onRemove: () => void }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  return (
+    <div className="space-y-1.5">
+      <RichTextToolbar textareaRef={ref} value={value} onChange={onChange} />
+      <div className="flex gap-2">
+        <Textarea ref={ref} value={value} onChange={(e) => onChange(e.target.value)} rows={3} className="text-sm flex-1 font-mono" />
+        <Button variant="ghost" size="icon" onClick={onRemove} className="shrink-0 h-9 w-9 text-muted-foreground hover:text-destructive">
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export const CmsProfileEditor = () => {
   const { data: profile, isLoading } = useAboutProfile();
   const updateProfile = useUpdateProfile();

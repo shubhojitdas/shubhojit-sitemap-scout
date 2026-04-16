@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Trash2, Award, ChevronDown, ChevronUp, Link as LinkIcon, Upload, GripVertical, Image } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { RichTextToolbar } from "@/components/cms/RichTextToolbar";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from "@dnd-kit/core";
@@ -354,15 +355,10 @@ export const CmsExperienceEditor = () => {
                           </label>
                         </div>
 
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Description</label>
-                          <Textarea
-                            defaultValue={exp.description || ""}
-                            onBlur={(e) => handleUpdateField(exp, "description", e.target.value)}
-                            rows={2}
-                            className="text-sm"
-                          />
-                        </div>
+                        <RichTextDescription
+                          defaultValue={exp.description || ""}
+                          onSave={(val) => handleUpdateField(exp, "description", val)}
+                        />
 
                         {/* Featured image */}
                         <div className="space-y-2">

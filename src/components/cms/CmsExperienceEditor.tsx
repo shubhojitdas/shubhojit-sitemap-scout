@@ -95,18 +95,14 @@ function SortableExpItem({ exp, children }: { exp: AboutExperience; children: Re
 
 function RichTextDescription({ defaultValue, onSave }: { defaultValue: string; onSave: (v: string) => void }) {
   const [value, setValue] = useState(defaultValue);
-  const ref = useRef<HTMLTextAreaElement>(null);
   return (
     <div className="space-y-1.5">
       <label className="text-xs text-muted-foreground">Description</label>
-      <RichTextToolbar textareaRef={ref} value={value} onChange={setValue} />
-      <Textarea
-        ref={ref}
+      <RichTextArea
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={setValue}
         onBlur={() => value !== defaultValue && onSave(value)}
         rows={3}
-        className="text-sm font-mono"
       />
     </div>
   );

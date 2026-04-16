@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Trash2, Award, ChevronDown, ChevronUp, Link as LinkIcon, Upload, GripVertical, Image } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { RichTextToolbar } from "@/components/cms/RichTextToolbar";
+import { RichTextArea } from "@/components/cms/RichTextToolbar";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from "@dnd-kit/core";

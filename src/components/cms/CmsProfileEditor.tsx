@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAboutProfile, useUpdateProfile, useUploadProfileImage } from "@/hooks/use-about-cms";
 import { toast } from "sonner";
 import { Save, Upload, Plus, Trash2, Image } from "lucide-react";
-import { RichTextToolbar } from "@/components/cms/RichTextToolbar";
+import { RichTextArea } from "@/components/cms/RichTextToolbar";
 
 function ParagraphEditor({ value, onChange, onRemove }: { value: string; onChange: (v: string) => void; onRemove: () => void }) {
   const ref = useRef<HTMLTextAreaElement>(null);

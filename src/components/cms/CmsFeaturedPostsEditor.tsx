@@ -16,7 +16,7 @@ import {
   arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { RichTextToolbar } from "@/components/cms/RichTextToolbar";
+import { RichTextArea } from "@/components/cms/RichTextToolbar";
 
 function RichTextPostDescription({ defaultValue, onSave }: { defaultValue: string; onSave: (v: string | null) => void }) {
   const [value, setValue] = useState(defaultValue);

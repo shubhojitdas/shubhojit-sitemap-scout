@@ -174,12 +174,12 @@ const Index = () => {
               SEO Sitemap Scout
             </h1>
             <p className="text-[15px] mt-3 tracking-wide font-semibold text-muted-foreground">
-              by{" "}
+              by{"  "}
               <a
                 href="/shubhojit-das"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative inline-block"
+                className="relative inline-block ml-1"
               >
                 <span className="relative z-10 text-foreground underline decoration-foreground/30 underline-offset-2 hover:decoration-foreground transition-colors">Shubhojit Das</span>
                 <svg

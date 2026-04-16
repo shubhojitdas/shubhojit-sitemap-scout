@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Trash2, Award, ChevronDown, ChevronUp, Link as LinkIcon, Upload, GripVertical, Image } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { RichTextToolbar } from "@/components/cms/RichTextToolbar";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from "@dnd-kit/core";
@@ -88,6 +89,25 @@ function SortableExpItem({ exp, children }: { exp: AboutExperience; children: Re
         </button>
         <div className="flex-1">{children}</div>
       </div>
+    </div>
+  );
+}
+
+function RichTextDescription({ defaultValue, onSave }: { defaultValue: string; onSave: (v: string) => void }) {
+  const [value, setValue] = useState(defaultValue);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs text-muted-foreground">Description</label>
+      <RichTextToolbar textareaRef={ref} value={value} onChange={setValue} />
+      <Textarea
+        ref={ref}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => value !== defaultValue && onSave(value)}
+        rows={3}
+        className="text-sm font-mono"
+      />
     </div>
   );
 }
@@ -354,15 +374,10 @@ export const CmsExperienceEditor = () => {
                           </label>
                         </div>
 
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Description</label>
-                          <Textarea
-                            defaultValue={exp.description || ""}
-                            onBlur={(e) => handleUpdateField(exp, "description", e.target.value)}
-                            rows={2}
-                            className="text-sm"
-                          />
-                        </div>
+                        <RichTextDescription
+                          defaultValue={exp.description || ""}
+                          onSave={(val) => handleUpdateField(exp, "description", val)}
+                        />
 
                         {/* Featured image */}
                         <div className="space-y-2">

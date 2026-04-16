@@ -39,6 +39,10 @@ async function fetchSitemapXml(url: string): Promise<string | null> {
   }
 }
 
+function stripWww(hostname: string): string {
+  return hostname.replace(/^www\./, '');
+}
+
 async function parseSitemap(url: string, domain: string, visited: Set<string>): Promise<string[]> {
   if (visited.has(url)) return [];
   visited.add(url);
@@ -64,11 +68,13 @@ async function parseSitemap(url: string, domain: string, visited: Set<string>): 
   }
 
   // Regular sitemap - extract URLs
+  const baseDomain = stripWww(domain);
   const pageUrls = extractLocValues(xml, 'url');
   for (const loc of pageUrls) {
     try {
       const parsed = new URL(loc);
-      if (parsed.hostname === domain || parsed.hostname.endsWith('.' + domain)) {
+      const locDomain = stripWww(parsed.hostname);
+      if (locDomain === baseDomain || locDomain.endsWith('.' + baseDomain)) {
         urls.push(loc);
       }
     } catch { /* skip */ }

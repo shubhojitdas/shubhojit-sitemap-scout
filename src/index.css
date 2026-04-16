@@ -187,3 +187,9 @@
 .animate-doodle-circle {
   animation: doodle-circle 3s ease-in-out infinite;
 }
+
+/* Rich text underline spacing */
+u, .rich-text u {
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}

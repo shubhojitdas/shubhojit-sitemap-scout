@@ -148,16 +148,16 @@ const AboutShubhojit = () => {
                     <Card className="card-elevated border-border">
                       <CardContent className="p-5 space-y-3">
                         <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="font-semibold text-sm">{exp.role}</h3>
-                            <p className="text-xs text-muted-foreground">{exp.company}</p>
+                        <div className="space-y-1">
+                            <h3 className="font-semibold text-base">{exp.role}</h3>
+                            <p className="text-sm text-muted-foreground">{exp.company}</p>
                           </div>
-                          <Badge variant="outline" className="text-[10px] shrink-0">{exp.period}</Badge>
+                          <Badge variant="outline" className="text-xs px-3 py-1 shrink-0">{exp.period}</Badge>
                         </div>
                         {exp.image_url && (
                           <img src={exp.image_url} alt={`${exp.company} featured`} className="w-full max-h-48 rounded-lg object-cover border border-border" />
                         )}
-                        {exp.description && <p className="text-xs text-muted-foreground">{exp.description}</p>}
+                        {exp.description && <p className="text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: exp.description }} />}
                         {exp.achievements && exp.achievements.length > 0 && (
                           <ul className="space-y-1.5">
                             {exp.achievements.map((a) => (
@@ -193,14 +193,14 @@ const AboutShubhojit = () => {
                 {featuredPosts.map((post, i) => (
                   <motion.div key={post.id} custom={i + 1} variants={fadeUp}>
                     <a href={post.url} target="_blank" rel="noopener noreferrer" className="block h-full">
-                      <Card className="card-elevated border-border h-full hover:border-muted-foreground/30 transition-colors overflow-hidden">
+                       <Card className="card-elevated border-border h-full hover:border-muted-foreground/30 transition-colors overflow-hidden flex flex-col">
                         {post.image_url && (
                           <img src={post.image_url} alt={post.title} className="w-full h-32 object-cover" />
                         )}
-                        <CardContent className="p-5 space-y-2">
+                        <CardContent className="p-5 flex flex-col flex-1">
                           <h3 className="font-semibold text-sm leading-snug">{post.title}</h3>
-                          {post.description && <p className="text-xs text-muted-foreground leading-relaxed">{post.description}</p>}
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 pt-1">
+                          {post.description && <p className="text-xs text-muted-foreground leading-relaxed mt-2">{post.description}</p>}
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 mt-auto pt-3">
                             <ExternalLink className="h-2.5 w-2.5" />
                             View on {post.source_label || "Web"}
                           </div>

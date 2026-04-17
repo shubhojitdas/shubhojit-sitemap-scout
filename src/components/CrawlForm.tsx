@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2, Languages, LinkIcon, Zap } from "lucide-react";
+import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2, Languages, LinkIcon, Zap, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import * as XLSX from "xlsx";
 interface CrawlFormProps {
   onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
   onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
+  onSpiderSite: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
   isLoading: boolean;
   isPaused: boolean;
   onReset: () => void;
@@ -42,8 +43,9 @@ function extractUrlsFromRows(rows: unknown[][]): string[] {
   return urls;
 }
 
-export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, onPause, onResume }: CrawlFormProps) {
+export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPaused, onReset, onPause, onResume }: CrawlFormProps) {
   const [sitemapUrl, setSitemapUrl] = useState("");
+  const [siteUrl, setSiteUrl] = useState("");
   const [urlText, setUrlText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileUrls, setFileUrls] = useState<string[]>([]);

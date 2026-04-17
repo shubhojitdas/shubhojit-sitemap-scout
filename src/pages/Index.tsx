@@ -30,6 +30,7 @@ const Index = () => {
     error,
     crawl,
     crawlUrls,
+    spiderSite,
     pause,
     resume,
     reset,
@@ -90,6 +91,39 @@ const Index = () => {
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
     crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks);
+  };
+
+  const handleSpiderSite = (
+    url: string,
+    withTitle: boolean,
+    withDesc: boolean,
+    withH1: boolean,
+    withH2: boolean,
+    withH3: boolean,
+    withImages: boolean,
+    withSchemas: boolean,
+    withRobots: boolean,
+    withCanonical: boolean,
+    withHreflangs: boolean,
+    withInternalLinks: boolean,
+    withJsRenderedLinks: boolean,
+  ) => {
+    try {
+      const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
+      setDomain(parsed.hostname);
+    } catch {
+      setDomain("unknown");
+    }
+    setIncludeH1(withH1);
+    setIncludeImages(withImages);
+    setIncludeSchemas(withSchemas);
+    setIncludeRobots(withRobots);
+    setIncludeCanonical(withCanonical);
+    setIncludeHreflangs(withHreflangs);
+    setIncludeInternalLinks(withInternalLinks);
+    setLocalIncludeTitle(withTitle);
+    setLocalIncludeDesc(withDesc);
+    spiderSite(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks);
   };
 
   const handleCrawlUrls = (

@@ -258,8 +258,9 @@ function stripByClassId(html: string): string {
 
 function extractMainContent(html: string): string {
   // Simple approach: get the body, strip header/footer/nav and known non-content blocks
-  let body = stripHtmlComments(html);
-  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  const cleanHtml = stripHtmlComments(html);
+  let body = cleanHtml;
+  const bodyMatch = cleanHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   if (bodyMatch) body = bodyMatch[1];
 
   // Strip semantic non-content tags

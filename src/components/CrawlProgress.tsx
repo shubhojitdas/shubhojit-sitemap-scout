@@ -4,14 +4,25 @@ import { Progress } from "@/components/ui/progress";
 
 interface CrawlProgressProps {
   phase: "idle" | "parsing" | "crawling" | "paused" | "done" | "error";
+  source?: "sitemap" | "site" | "urls" | null;
   processed: number;
   total: number;
 }
 
-export function CrawlProgress({ phase, processed, total }: CrawlProgressProps) {
+export function CrawlProgress({ phase, source, processed, total }: CrawlProgressProps) {
   if (phase === "idle" || phase === "done") return null;
 
   const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+  const statusLabel =
+    phase === "parsing"
+      ? source === "site"
+        ? "Crawling website…"
+        : source === "sitemap"
+          ? "Parsing sitemap…"
+          : "Preparing crawl…"
+      : phase === "paused"
+        ? `Paused — ${processed} of ${total} URLs`
+        : `${processed} of ${total} URLs`;
 
   return (
     <motion.div
@@ -26,7 +37,7 @@ export function CrawlProgress({ phase, processed, total }: CrawlProgressProps) {
           ) : (
             <Loader2 className="h-3 w-3 animate-spin" />
           )}
-          {phase === "parsing" ? "Parsing sitemap…" : phase === "paused" ? `Paused — ${processed} of ${total} URLs` : `${processed} of ${total} URLs`}
+          {statusLabel}
         </div>
         {(phase === "crawling" || phase === "paused") && (
           <span className="font-mono text-[11px] text-muted-foreground">{percentage}%</span>

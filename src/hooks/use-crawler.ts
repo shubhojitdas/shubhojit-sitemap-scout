@@ -3,6 +3,7 @@ import { CrawlResult, parseSitemapUrls, spiderSiteUrls, fetchMetaBatch } from "@
 
 interface CrawlState {
   phase: "idle" | "parsing" | "crawling" | "paused" | "done" | "error";
+  crawlSource: "sitemap" | "site" | "urls" | null;
   results: CrawlResult[];
   totalUrls: number;
   processedUrls: number;
@@ -16,6 +17,7 @@ interface CrawlState {
 
 const INITIAL_STATE: CrawlState = {
   phase: "idle",
+  crawlSource: null,
   results: [],
   totalUrls: 0,
   processedUrls: 0,
@@ -37,6 +39,7 @@ function loadPersistedState(): CrawlState | null {
     if (!raw) return null;
     const data = JSON.parse(raw) as CrawlState;
     if (data.results && data.results.length > 0) {
+      data.crawlSource = data.crawlSource ?? null;
       if (data.phase === "crawling" || data.phase === "parsing") {
         data.phase = "done";
       }
@@ -174,7 +177,7 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: [] });
+    setState({ phase: "parsing", crawlSource: "sitemap", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: [] });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
@@ -221,7 +224,7 @@ export function useCrawler() {
     pendingUrlsRef.current = urls;
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ phase: "crawling", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: urls });
+    setState({ phase: "crawling", crawlSource: "urls", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: urls });
 
     try {
       await runBatches(urls, signal, opts);
@@ -258,7 +261,7 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: [] });
+    setState({ phase: "parsing", crawlSource: "site", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: [] });
 
     try {
       const urls = await spiderSiteUrls(siteUrl);

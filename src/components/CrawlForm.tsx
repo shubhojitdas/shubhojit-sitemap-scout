@@ -331,7 +331,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
               ) : (
                 <Button type="submit" className="h-9 px-4 text-xs font-medium gap-1.5 shrink-0">
                   <Search className="h-3 w-3" />
-                  Spider Site
+                  Crawl
                 </Button>
               )}
             </div>

@@ -24,6 +24,7 @@ import {
 const Index = () => {
   const {
     phase,
+    crawlSource,
     results,
     totalUrls,
     processedUrls,
@@ -278,7 +279,7 @@ const Index = () => {
 
       {/* ── Progress ── */}
       <section className="container max-w-5xl mx-auto pb-4 px-4">
-        <CrawlProgress phase={phase} processed={processedUrls} total={totalUrls} />
+        <CrawlProgress phase={phase} source={crawlSource} processed={processedUrls} total={totalUrls} />
       </section>
 
       {/* ── Error ── */}

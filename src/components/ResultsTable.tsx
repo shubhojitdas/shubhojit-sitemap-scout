@@ -52,6 +52,8 @@ interface ResultsTableProps {
   includeInternalLinks: boolean;
 }
 
+type SearchField = { key: string; label: string };
+
 // ─── Search bar with gear icon ────────────────────────────────────────────────
 function SearchBarWithGear({
   search,
@@ -64,12 +66,13 @@ function SearchBarWithGear({
   search: string;
   setSearch: (v: string) => void;
   placeholder: string;
-  fields: { key: string; label: string }[];
+  fields: SearchField[];
   advancedFilter: AdvancedFilter;
   setAdvancedFilter: (f: AdvancedFilter) => void;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const active = isFilterActive(advancedFilter);
+  const scopedAdvancedFilter = useMemo(() => getScopedAdvancedFilter(advancedFilter, fields), [advancedFilter, fields]);
+  const active = isFilterActive(scopedAdvancedFilter);
 
   return (
     <>
@@ -94,12 +97,34 @@ function SearchBarWithGear({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         fields={fields}
-        filter={advancedFilter}
+        filter={scopedAdvancedFilter}
         onApply={setAdvancedFilter}
         onReset={() => setAdvancedFilter(createEmptyFilter(fields[0].key))}
       />
     </>
   );
+}
+
+function getScopedAdvancedFilter(filter: AdvancedFilter, fields: SearchField[]): AdvancedFilter {
+  const allowedFields = new Set(fields.map((field) => field.key));
+  const groups = filter.groups
+    .map((group) => ({
+      ...group,
+      conditions: group.conditions.filter((condition) => allowedFields.has(condition.field)),
+    }))
+    .filter((group) => group.conditions.length > 0);
+
+  return groups.length > 0 ? { ...filter, groups } : createEmptyFilter(fields[0]?.key ?? "url");
+}
+
+function matchesFieldSearch<T>(
+  item: T,
+  fields: SearchField[],
+  getFieldValue: (item: T, field: string) => string,
+  query: string,
+) {
+  const normalizedQuery = query.toLowerCase();
+  return fields.some((field) => getFieldValue(item, field.key).toLowerCase().includes(normalizedQuery));
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -250,16 +275,26 @@ function MetaTable({
   const parentRef = useRef<HTMLDivElement>(null);
 
   const metaFields = useMemo(() => {
-    const f: { key: string; label: string }[] = [{ key: "url", label: "URL" }];
+    const f: SearchField[] = [{ key: "url", label: "URL" }];
     if (includeTitle) f.push({ key: "title", label: "Meta Title" });
     if (includeDesc) f.push({ key: "description", label: "Meta Description" });
     if (includeH1) f.push({ key: "h1s", label: "H1 Tags" });
     if (includeH2) f.push({ key: "h2s", label: "H2 Tags" });
     if (includeH3) f.push({ key: "h3s", label: "H3 Tags" });
     if (includeRobots) f.push({ key: "robots", label: "Meta Robots" });
-    f.push({ key: "status", label: "Status" });
+    f.push(
+      { key: "status", label: "Crawl Status" },
+      { key: "statusCode", label: "Status Code" },
+      { key: "redirectedUrl", label: "Redirected URL" },
+      { key: "fetchTime", label: "Fetch Time" },
+    );
     return f;
   }, [includeTitle, includeDesc, includeH1, includeH2, includeH3, includeRobots]);
+
+  const scopedAdvancedFilter = useMemo(
+    () => getScopedAdvancedFilter(advancedFilter, metaFields),
+    [advancedFilter, metaFields],
+  );
 
 
   const getMetaFieldValue = (r: CrawlResult, field: string): string => {
@@ -272,6 +307,9 @@ function MetaTable({
       case "h3s": return (r.h3s ?? []).join(" | ");
       case "robots": return r.robots ?? "";
       case "status": return r.status;
+      case "statusCode": return String(r.statusCode ?? "");
+      case "redirectedUrl": return r.redirectedUrl ?? "";
+      case "fetchTime": return r.fetchTime;
       default: return "";
     }
   };
@@ -294,16 +332,10 @@ function MetaTable({
     else if (filter === "5xx") data = data.filter((r) => r.statusCode >= 500 && r.statusCode < 600);
 
     // Advanced filter
-    if (isFilterActive(advancedFilter)) {
-      data = applyAdvancedFilter(data, advancedFilter, getMetaFieldValue);
+    if (isFilterActive(scopedAdvancedFilter)) {
+      data = applyAdvancedFilter(data, scopedAdvancedFilter, getMetaFieldValue);
     } else if (search) {
-      const q = search.toLowerCase();
-      data = data.filter((r) =>
-        r.url.toLowerCase().includes(q) ||
-        r.title.toLowerCase().includes(q) ||
-        r.description.toLowerCase().includes(q) ||
-        (r.h1s ?? []).some((h) => h.toLowerCase().includes(q))
-      );
+      data = data.filter((r) => matchesFieldSearch(r, metaFields, getMetaFieldValue, search));
     }
 
     data.sort((a, b) => {
@@ -311,7 +343,7 @@ function MetaTable({
       return sortDir === "asc" ? cmp : -cmp;
     });
     return data;
-  }, [results, search, advancedFilter, sortKey, sortDir, filter]);
+  }, [results, search, scopedAdvancedFilter, sortKey, sortDir, filter, metaFields]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -578,6 +610,11 @@ function ImagesTable({ results, domain, imgFilter, setImgFilter, search, setSear
     { key: "img_alt", label: "Alt Text" },
   ];
 
+  const scopedAdvancedFilter = useMemo(
+    () => getScopedAdvancedFilter(advancedFilter, imgFields),
+    [advancedFilter, imgFields],
+  );
+
   const getImgFieldValue = (r: CrawlResult, field: string): string => {
     switch (field) {
       case "url": return r.url;
@@ -593,17 +630,13 @@ function ImagesTable({ results, domain, imgFilter, setImgFilter, search, setSear
     else if (imgFilter === "no-images") data = data.filter((r) => (r.images ?? []).length === 0);
     else if (imgFilter === "has-images") data = data.filter((r) => (r.images ?? []).length > 0);
 
-    if (isFilterActive(advancedFilter)) {
-      data = applyAdvancedFilter(data, advancedFilter, getImgFieldValue);
+    if (isFilterActive(scopedAdvancedFilter)) {
+      data = applyAdvancedFilter(data, scopedAdvancedFilter, getImgFieldValue);
     } else if (search) {
-      const q = search.toLowerCase();
-      data = data.filter((r) =>
-        r.url.toLowerCase().includes(q) ||
-        (r.images ?? []).some((img) => img.src.toLowerCase().includes(q) || (img.alt ?? "").toLowerCase().includes(q))
-      );
+      data = data.filter((r) => matchesFieldSearch(r, imgFields, getImgFieldValue, search));
     }
     return data;
-  }, [results, imgFilter, search, advancedFilter]);
+  }, [results, imgFilter, search, scopedAdvancedFilter, imgFields]);
 
   const toggleRow = (i: number) => {
     setExpandedRows((prev) => {
@@ -752,6 +785,11 @@ function SchemasTable({ results, domain, schemaFilter, setSchemaFilter, search, 
     { key: "schema_type", label: "Schema Type" },
   ];
 
+  const scopedAdvancedFilter = useMemo(
+    () => getScopedAdvancedFilter(advancedFilter, schemaFields),
+    [advancedFilter, schemaFields],
+  );
+
   const getSchemaFieldValue = (r: CrawlResult, field: string): string => {
     switch (field) {
       case "url": return r.url;
@@ -769,17 +807,13 @@ function SchemasTable({ results, domain, schemaFilter, setSchemaFilter, search, 
     if (schemaFilter === "has-schema") data = data.filter((r) => (r.schemas ?? []).length > 0);
     else if (schemaFilter === "no-schema") data = data.filter((r) => (r.schemas ?? []).length === 0);
 
-    if (isFilterActive(advancedFilter)) {
-      data = applyAdvancedFilter(data, advancedFilter, getSchemaFieldValue);
+    if (isFilterActive(scopedAdvancedFilter)) {
+      data = applyAdvancedFilter(data, scopedAdvancedFilter, getSchemaFieldValue);
     } else if (search) {
-      const q = search.toLowerCase();
-      data = data.filter((r) =>
-        r.url.toLowerCase().includes(q) ||
-        (r.schemas ?? []).some((s) => s.toLowerCase().includes(q))
-      );
+      data = data.filter((r) => matchesFieldSearch(r, schemaFields, getSchemaFieldValue, search));
     }
     return data;
-  }, [results, schemaFilter, search, advancedFilter]);
+  }, [results, schemaFilter, search, scopedAdvancedFilter, schemaFields]);
 
   const toggleRow = (i: number) => {
     setExpandedRows((prev) => {
@@ -941,6 +975,11 @@ function CanonicalTable({ results, domain, canonicalFilter, setCanonicalFilter, 
     { key: "canonicalStatus", label: "Status" },
   ];
 
+  const scopedAdvancedFilter = useMemo(
+    () => getScopedAdvancedFilter(advancedFilter, canonicalFields),
+    [advancedFilter, canonicalFields],
+  );
+
   const getCanonicalFieldValue = (r: CrawlResult, field: string): string => {
     switch (field) {
       case "url": return r.url;
@@ -956,17 +995,13 @@ function CanonicalTable({ results, domain, canonicalFilter, setCanonicalFilter, 
     else if (canonicalFilter === "canonicalised") data = data.filter((r) => r.canonicalStatus === "Canonicalised");
     else if (canonicalFilter === "missing") data = data.filter((r) => r.canonicalStatus === "Missing" || !r.canonical);
 
-    if (isFilterActive(advancedFilter)) {
-      data = applyAdvancedFilter(data, advancedFilter, getCanonicalFieldValue);
+    if (isFilterActive(scopedAdvancedFilter)) {
+      data = applyAdvancedFilter(data, scopedAdvancedFilter, getCanonicalFieldValue);
     } else if (search) {
-      const q = search.toLowerCase();
-      data = data.filter((r) =>
-        r.url.toLowerCase().includes(q) ||
-        (r.canonical ?? "").toLowerCase().includes(q)
-      );
+      data = data.filter((r) => matchesFieldSearch(r, canonicalFields, getCanonicalFieldValue, search));
     }
     return data;
-  }, [results, canonicalFilter, search, advancedFilter]);
+  }, [results, canonicalFilter, search, scopedAdvancedFilter, canonicalFields]);
 
   const handleCopy = () => {
     const rows = ["Page URL,Canonical URL,Status"];
@@ -1084,6 +1119,11 @@ function HreflangTable({ results, domain, hreflangFilter, setHreflangFilter, sea
     { key: "languages", label: "Languages" },
   ];
 
+  const scopedAdvancedFilter = useMemo(
+    () => getScopedAdvancedFilter(advancedFilter, hreflangFields),
+    [advancedFilter, hreflangFields],
+  );
+
   const getHreflangFieldValue = (r: CrawlResult, field: string): string => {
     switch (field) {
       case "url": return r.url;
@@ -1099,17 +1139,13 @@ function HreflangTable({ results, domain, hreflangFilter, setHreflangFilter, sea
     else if (hreflangFilter === "no-hreflang") data = data.filter((r) => (r.hreflangs ?? []).length === 0);
     else if (hreflangFilter === "has-x-default") data = data.filter((r) => (r.hreflangs ?? []).some(h => h.hreflang === "x-default"));
 
-    if (isFilterActive(advancedFilter)) {
-      data = applyAdvancedFilter(data, advancedFilter, getHreflangFieldValue);
+    if (isFilterActive(scopedAdvancedFilter)) {
+      data = applyAdvancedFilter(data, scopedAdvancedFilter, getHreflangFieldValue);
     } else if (search) {
-      const q = search.toLowerCase();
-      data = data.filter((r) =>
-        r.url.toLowerCase().includes(q) ||
-        (r.hreflangs ?? []).some((h) => h.href.toLowerCase().includes(q) || h.hreflang.toLowerCase().includes(q))
-      );
+      data = data.filter((r) => matchesFieldSearch(r, hreflangFields, getHreflangFieldValue, search));
     }
     return data;
-  }, [results, hreflangFilter, search, advancedFilter]);
+  }, [results, hreflangFilter, search, scopedAdvancedFilter, hreflangFields]);
 
   const toggleRow = (i: number) => {
     setExpandedRows((prev) => {
@@ -1293,6 +1329,11 @@ function InternalLinksTable({ results, domain, linkFilter, setLinkFilter, search
     { key: "link_href", label: "Link URL" },
   ];
 
+  const scopedAdvancedFilter = useMemo(
+    () => getScopedAdvancedFilter(advancedFilter, linkFields),
+    [advancedFilter, linkFields],
+  );
+
   const getLinkFieldValue = (r: CrawlResult, field: string): string => {
     switch (field) {
       case "url": return r.url;
@@ -1310,17 +1351,13 @@ function InternalLinksTable({ results, domain, linkFilter, setLinkFilter, search
     else if (linkFilter === "has-external") data = data.filter((r) => getLinks(r).some((l) => !l.isInternal));
     else if (linkFilter === "no-links") data = data.filter((r) => getLinks(r).length === 0);
 
-    if (isFilterActive(advancedFilter)) {
-      data = applyAdvancedFilter(data, advancedFilter, getLinkFieldValue);
+    if (isFilterActive(scopedAdvancedFilter)) {
+      data = applyAdvancedFilter(data, scopedAdvancedFilter, getLinkFieldValue);
     } else if (search) {
-      const q = search.toLowerCase();
-      data = data.filter((r) =>
-        r.url.toLowerCase().includes(q) ||
-        getLinks(r).some((l) => l.anchorText.toLowerCase().includes(q) || l.href.toLowerCase().includes(q))
-      );
+      data = data.filter((r) => matchesFieldSearch(r, linkFields, getLinkFieldValue, search));
     }
     return data;
-  }, [results, linkFilter, search, advancedFilter]);
+  }, [results, linkFilter, search, scopedAdvancedFilter, linkFields]);
 
   const toggleRow = (i: number) => {
     setExpandedRows((prev) => {

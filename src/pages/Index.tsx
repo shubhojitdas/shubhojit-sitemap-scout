@@ -255,6 +255,7 @@ const Index = () => {
               <CrawlForm
                 onCrawl={handleCrawl}
                 onCrawlUrls={handleCrawlUrls}
+                onSpiderSite={handleSpiderSite}
                 isLoading={isLoading}
                 isPaused={phase === "paused"}
                 onReset={reset}

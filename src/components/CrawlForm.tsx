@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2, Languages, LinkIcon, Zap } from "lucide-react";
+import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2, Languages, LinkIcon, Zap, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import * as XLSX from "xlsx";
 interface CrawlFormProps {
   onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
   onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
+  onSpiderSite: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean) => void;
   isLoading: boolean;
   isPaused: boolean;
   onReset: () => void;
@@ -42,8 +43,9 @@ function extractUrlsFromRows(rows: unknown[][]): string[] {
   return urls;
 }
 
-export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, onPause, onResume }: CrawlFormProps) {
+export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPaused, onReset, onPause, onResume }: CrawlFormProps) {
   const [sitemapUrl, setSitemapUrl] = useState("");
+  const [siteUrl, setSiteUrl] = useState("");
   const [urlText, setUrlText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileUrls, setFileUrls] = useState<string[]>([]);
@@ -74,6 +76,12 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
     onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
+  };
+
+  const handleSiteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!siteUrl.trim()) return;
+    onSpiderSite(siteUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
   };
 
   const handleFileSubmit = (e: React.FormEvent) => {
@@ -136,6 +144,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
   const handleCancelOrReset = () => {
     onReset();
     setSitemapUrl("");
+    setSiteUrl("");
     setUrlText("");
     setFileName(null);
     setFileUrls([]);
@@ -229,10 +238,14 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
   return (
     <div className="w-full">
       <Tabs value={activeTab} onValueChange={(v) => {if (!isLoading) setActiveTab(v);}}>
-        <TabsList className="w-full mb-3 grid grid-cols-3 h-9 bg-muted/50">
+        <TabsList className="w-full mb-3 grid grid-cols-4 h-9 bg-muted/50">
           <TabsTrigger value="sitemap" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Globe className="h-3 w-3" />
             Sitemap
+          </TabsTrigger>
+          <TabsTrigger value="site" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <Network className="h-3 w-3" />
+            Site
           </TabsTrigger>
           <TabsTrigger value="urls" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <List className="h-3 w-3" />
@@ -281,6 +294,50 @@ export function CrawlForm({ onCrawl, onCrawlUrls, isLoading, isPaused, onReset, 
                 </Button>
               )}
             </div>
+            {Toggles}
+          </form>
+        </TabsContent>
+
+        {/* ── Spider Site tab ── */}
+        <TabsContent value="site" className="mt-0">
+          <form onSubmit={handleSiteSubmit}>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Network className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={siteUrl}
+                  onChange={(e) => setSiteUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="pl-8 h-9 bg-background border-border font-mono text-xs"
+                  disabled={isLoading}
+                />
+              </div>
+              {isLoading ? (
+                <div className="flex gap-1.5">
+                  {isPaused ? (
+                    <Button type="button" onClick={onResume} className="h-9 px-3 text-xs gap-1.5 shrink-0">
+                      <Play className="h-3 w-3" /> Resume
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="secondary" onClick={onPause} className="h-9 px-3 text-xs gap-1.5 shrink-0">
+                      <Pause className="h-3 w-3" /> Pause
+                    </Button>
+                  )}
+                  <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-9 px-3 text-xs shrink-0">
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button type="submit" className="h-9 px-4 text-xs font-medium gap-1.5 shrink-0">
+                  <Search className="h-3 w-3" />
+                  Spider Site
+                </Button>
+              )}
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground/70">
+              Discovers all internal URLs by following <code className="font-mono">&lt;a href&gt;</code> links from the homepage — no sitemap needed.
+            </p>
             {Toggles}
           </form>
         </TabsContent>

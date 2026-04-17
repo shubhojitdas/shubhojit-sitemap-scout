@@ -47,6 +47,16 @@ export async function parseSitemapUrls(sitemapUrl: string): Promise<string[]> {
   return data.urls || [];
 }
 
+export async function spiderSiteUrls(siteUrl: string): Promise<string[]> {
+  const { data, error } = await supabase.functions.invoke("crawl-site", {
+    body: { siteUrl },
+  });
+
+  if (error) throw new Error(error.message);
+  if (data.error) throw new Error(data.error);
+  return data.urls || [];
+}
+
 export async function fetchMetaBatch(
   urls: string[],
   includeTitle = true,

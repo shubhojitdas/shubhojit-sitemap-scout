@@ -41,6 +41,24 @@ const GROUP_COLORS = [
 
 let groupColorMap: Record<string, string> = {};
 
+function stripWww(hostname: string): string {
+  return hostname.replace(/^www\./i, "");
+}
+
+function normalizeGraphUrl(rawUrl: string): URL | null {
+  try {
+    const parsed = new URL(rawUrl);
+    parsed.hostname = stripWww(parsed.hostname);
+    parsed.hash = "";
+    if (parsed.pathname.length > 1 && parsed.pathname.endsWith("/")) {
+      parsed.pathname = parsed.pathname.slice(0, -1);
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export function getGroupColor(group: string): string {
   if (!groupColorMap[group]) {
     const idx = Object.keys(groupColorMap).length % GROUP_COLORS.length;
@@ -73,10 +91,8 @@ export function buildGraphFromUrls(
   // Group URLs by origin
   const urlsByOrigin = new Map<string, URL[]>();
   for (const rawUrl of urls) {
-    let parsed: URL;
-    try {
-      parsed = new URL(rawUrl);
-    } catch {
+    const parsed = normalizeGraphUrl(rawUrl);
+    if (!parsed) {
       continue;
     }
     const origin = parsed.origin;

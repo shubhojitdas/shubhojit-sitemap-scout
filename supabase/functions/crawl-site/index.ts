@@ -34,11 +34,16 @@ function normalizeUrl(raw: string, base: URL): string | null {
   }
 }
 
+function stripHtmlComments(html: string): string {
+  return html.replace(/<!--[\s\S]*?-->/g, '');
+}
+
 function extractHrefs(html: string): string[] {
   const hrefs: string[] = [];
+  const cleanedHtml = stripHtmlComments(html);
   const re = /<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
+  while ((m = re.exec(cleanedHtml)) !== null) {
     const href = (m[1] ?? m[2] ?? m[3] ?? '').trim();
     if (!href) continue;
     if (href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) continue;

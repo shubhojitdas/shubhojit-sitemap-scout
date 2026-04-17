@@ -213,6 +213,10 @@ function extractImages(html: string, baseUrl: string): ImageData[] {
 
 // ─── Main content extraction for internal links ───────────────────────────────
 
+function stripHtmlComments(html: string): string {
+  return html.replace(/<!--[\s\S]*?-->/g, '');
+}
+
 function stripTagBlocks(html: string, tag: string): string {
   const regex = new RegExp(`<${tag}[\\s>][\\s\\S]*?<\\/${tag}>`, 'gi');
   return html.replace(regex, '');
@@ -254,7 +258,7 @@ function stripByClassId(html: string): string {
 
 function extractMainContent(html: string): string {
   // Simple approach: get the body, strip header/footer/nav and known non-content blocks
-  let body = html;
+  let body = stripHtmlComments(html);
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   if (bodyMatch) body = bodyMatch[1];
 

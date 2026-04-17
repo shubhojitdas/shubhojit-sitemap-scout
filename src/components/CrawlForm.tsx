@@ -78,6 +78,12 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
     onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
   };
 
+  const handleSiteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!siteUrl.trim()) return;
+    onSpiderSite(siteUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks);
+  };
+
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
@@ -138,6 +144,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
   const handleCancelOrReset = () => {
     onReset();
     setSitemapUrl("");
+    setSiteUrl("");
     setUrlText("");
     setFileName(null);
     setFileUrls([]);
@@ -231,10 +238,14 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
   return (
     <div className="w-full">
       <Tabs value={activeTab} onValueChange={(v) => {if (!isLoading) setActiveTab(v);}}>
-        <TabsList className="w-full mb-3 grid grid-cols-3 h-9 bg-muted/50">
+        <TabsList className="w-full mb-3 grid grid-cols-4 h-9 bg-muted/50">
           <TabsTrigger value="sitemap" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <Globe className="h-3 w-3" />
             Sitemap
+          </TabsTrigger>
+          <TabsTrigger value="site" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <Network className="h-3 w-3" />
+            Site
           </TabsTrigger>
           <TabsTrigger value="urls" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
             <List className="h-3 w-3" />

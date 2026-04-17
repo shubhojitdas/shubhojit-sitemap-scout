@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { CrawlResult, parseSitemapUrls, fetchMetaBatch } from "@/lib/crawl-api";
+import { CrawlResult, parseSitemapUrls, spiderSiteUrls, fetchMetaBatch } from "@/lib/crawl-api";
 
 interface CrawlState {
   phase: "idle" | "parsing" | "crawling" | "paused" | "done" | "error";
@@ -237,6 +237,53 @@ export function useCrawler() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const spiderSite = useCallback(async (
+    siteUrl: string,
+    includeTitle = true,
+    includeDesc = true,
+    includeH1 = false,
+    includeH2 = false,
+    includeH3 = false,
+    includeImages = false,
+    includeSchemas = false,
+    includeRobots = false,
+    includeCanonical = false,
+    includeHreflangs = false,
+    includeInternalLinks = false,
+    jsRenderedLinks = false,
+  ) => {
+    const signal = startController();
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks };
+    crawlOptionsRef.current = opts;
+    pendingUrlsRef.current = [];
+    pendingIndexRef.current = 0;
+    accumulatedResultsRef.current = [];
+    setState({ phase: "parsing", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: [] });
+
+    try {
+      const urls = await spiderSiteUrls(siteUrl);
+      if (signal.aborted) return;
+
+      if (urls.length === 0) {
+        if (!signal.aborted) setState((s) => ({ ...s, phase: "error", error: "No internal URLs discovered. The site may block crawlers or have no internal links." }));
+        return;
+      }
+
+      pendingUrlsRef.current = urls;
+      setState((s) => ({ ...s, phase: "crawling", totalUrls: urls.length, parsedUrls: urls }));
+      await runBatches(urls, signal, opts);
+    } catch (err) {
+      if (!signal.aborted) {
+        setState((s) => ({
+          ...s,
+          phase: "error",
+          error: err instanceof Error ? err.message : "An error occurred",
+        }));
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const pause = useCallback(() => {
     pausedRef.current = true;
   }, []);
@@ -282,5 +329,5 @@ export function useCrawler() {
     setState(INITIAL_STATE);
   }, []);
 
-  return { ...state, crawl, crawlUrls, pause, resume, reset, clearCrawl };
+  return { ...state, crawl, crawlUrls, spiderSite, pause, resume, reset, clearCrawl };
 }

@@ -298,6 +298,50 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
           </form>
         </TabsContent>
 
+        {/* ── Spider Site tab ── */}
+        <TabsContent value="site" className="mt-0">
+          <form onSubmit={handleSiteSubmit}>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Network className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={siteUrl}
+                  onChange={(e) => setSiteUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="pl-8 h-9 bg-background border-border font-mono text-xs"
+                  disabled={isLoading}
+                />
+              </div>
+              {isLoading ? (
+                <div className="flex gap-1.5">
+                  {isPaused ? (
+                    <Button type="button" onClick={onResume} className="h-9 px-3 text-xs gap-1.5 shrink-0">
+                      <Play className="h-3 w-3" /> Resume
+                    </Button>
+                  ) : (
+                    <Button type="button" variant="secondary" onClick={onPause} className="h-9 px-3 text-xs gap-1.5 shrink-0">
+                      <Pause className="h-3 w-3" /> Pause
+                    </Button>
+                  )}
+                  <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-9 px-3 text-xs shrink-0">
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button type="submit" className="h-9 px-4 text-xs font-medium gap-1.5 shrink-0">
+                  <Search className="h-3 w-3" />
+                  Spider Site
+                </Button>
+              )}
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground/70">
+              Discovers all internal URLs by following <code className="font-mono">&lt;a href&gt;</code> links from the homepage — no sitemap needed.
+            </p>
+            {Toggles}
+          </form>
+        </TabsContent>
+
         {/* ── Enter URLs tab ── */}
         <TabsContent value="urls" className="mt-0">
           <form onSubmit={handleUrlsSubmit}>

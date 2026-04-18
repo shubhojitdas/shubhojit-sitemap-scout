@@ -98,10 +98,17 @@ function extractDescription(html: string): string {
 }
 
 function extractHeadings(html: string, tag: string): string[] {
+  // Skip commented-out markup and inline SVG/script blocks so we don't
+  // surface dummy headings or icon labels.
+  const cleaned = html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<svg\b[\s\S]*?<\/svg>/gi, '')
+    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+    .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, '');
   const headings: string[] = [];
-  const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'gi');
+  const regex = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'gi');
   let match;
-  while ((match = regex.exec(html)) !== null) {
+  while ((match = regex.exec(cleaned)) !== null) {
     const text = decodeHtmlEntities(match[1].replace(/<[^>]+>/g, ''))
       .replace(/\s+/g, ' ')
       .trim();

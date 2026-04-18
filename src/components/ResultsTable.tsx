@@ -331,7 +331,7 @@ function MetaTable({
     else if (filter === "noindex") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('noindex'));
     else if (filter === "nofollow") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('nofollow'));
     else if (filter === "2xx") data = data.filter((r) => r.statusCode >= 200 && r.statusCode < 300);
-    else if (filter === "3xx") data = data.filter((r) => (r.statusCode >= 300 && r.statusCode < 400) || !!r.redirectStatusCode);
+    else if (filter === "3xx") data = data.filter((r) => (r.statusCode >= 300 && r.statusCode < 400) || !!r.redirectStatusCode || r.redirectType === 'meta-refresh');
     else if (filter === "4xx") data = data.filter((r) => r.statusCode >= 400 && r.statusCode < 500);
     else if (filter === "5xx") data = data.filter((r) => r.statusCode >= 500 && r.statusCode < 600);
 

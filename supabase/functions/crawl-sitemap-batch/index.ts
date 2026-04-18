@@ -53,14 +53,29 @@ function decodeHtmlEntities(str: string): string {
 }
 
 function extractTitle(html: string): string {
-  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  // Strip blocks that can contain misleading <title> tags (SVG icons, scripts,
+  // commented-out markup) before searching for the document <title>.
+  const cleaned = html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<svg\b[\s\S]*?<\/svg>/gi, '')
+    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+    .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, '');
+
+  // Prefer the title inside <head> when available
+  const headMatch = cleaned.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i);
+  const scope = headMatch ? headMatch[1] : cleaned;
+
+  const match = scope.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
+    ?? cleaned.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   if (!match) return '';
   return decodeHtmlEntities(match[1]).replace(/\s+/g, ' ').trim();
 }
 
 function extractDescription(html: string): string {
+  // Strip comments so commented-out meta tags are ignored
+  html = html.replace(/<!--[\s\S]*?-->/g, '');
   // Strategy: find all <meta> tags, check for name="description", extract content robustly
-  const metaTagRegex = /<meta\s([^>]+?)\/?>/gi;
+  const metaTagRegex = /<meta\b([^>]*)>/gi;
   let metaMatch;
   while ((metaMatch = metaTagRegex.exec(html)) !== null) {
     const attrs = metaMatch[1];
@@ -96,7 +111,8 @@ function extractHeadings(html: string, tag: string): string[] {
 }
 
 function extractMetaRobots(html: string): string {
-  const metaTagRegex = /<meta\s([^>]+?)\/?>/gi;
+  html = html.replace(/<!--[\s\S]*?-->/g, '');
+  const metaTagRegex = /<meta\b([^>]*)>/gi;
   let metaMatch;
   while ((metaMatch = metaTagRegex.exec(html)) !== null) {
     const attrs = metaMatch[1];

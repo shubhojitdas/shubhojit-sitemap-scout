@@ -19,6 +19,8 @@ interface InternalLinkData {
   isInternal: boolean;
 }
 
+type RedirectType = 'none' | 'http' | 'meta-refresh';
+
 interface CrawlResult {
   url: string;
   title: string;
@@ -37,6 +39,9 @@ interface CrawlResult {
   statusCode: number;
   redirectStatusCode?: number;
   redirectedUrl?: string;
+  redirectType?: RedirectType;
+  /** Full chain including the original URL as index 0 and each hop after. Single entry = no redirect. */
+  redirectChain?: string[];
   fetchTime: string;
 }
 
@@ -468,13 +473,57 @@ async function fetchJsRenderedHtml(url: string): Promise<string | null> {
   }
 }
 
+/**
+ * Detects a `<meta http-equiv="refresh" content="0; url=...">` redirect in the
+ * raw HTML <head>. Returns the absolute target URL when present, else null.
+ * Only treats it as a redirect when the delay is 0–5 seconds (matching what
+ * search engines treat as a redirect).
+ */
+function extractMetaRefresh(html: string, baseUrl: string): { target: string; delay: number } | null {
+  const cleaned = html.replace(/<!--[\s\S]*?-->/g, '');
+  const headMatch = cleaned.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i);
+  const scope = headMatch ? headMatch[1] : cleaned;
+
+  const metaRegex = /<meta\b([^>]*)>/gi;
+  let m;
+  while ((m = metaRegex.exec(scope)) !== null) {
+    const attrs = m[1];
+    if (!/\bhttp-equiv\s*=\s*["']?refresh["']?/i.test(attrs)) continue;
+    const contentMatch = attrs.match(/\bcontent\s*=\s*"([^"]*)"/i)
+      ?? attrs.match(/\bcontent\s*=\s*'([^']*)'/i);
+    if (!contentMatch) continue;
+
+    const content = decodeHtmlEntities(contentMatch[1]).trim();
+    const parts = content.split(';');
+    const delay = parseFloat(parts[0]) || 0;
+    if (delay > 5) continue;
+
+    const urlPart = parts.slice(1).join(';').trim();
+    const urlMatch = urlPart.match(/url\s*=\s*["']?([^"'\s]+)["']?/i);
+    if (!urlMatch) continue;
+
+    let target = urlMatch[1].trim();
+    try { target = new URL(target, baseUrl).href; } catch { /* leave as-is */ }
+    return { target, delay };
+  }
+  return null;
+}
+
 async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> {
   const html = await fetchJsRenderedHtml(url);
   if (!html) return [];
   return extractInternalLinks(html, url);
 }
 
-async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Response; redirectedUrl?: string; redirectStatusCode?: number }> {
+interface FetchResult {
+  resp: Response;
+  redirectedUrl?: string;
+  redirectStatusCode?: number;
+  /** Full hop chain. Index 0 is the original URL; subsequent entries are each follow-up. */
+  chain: string[];
+}
+
+async function fetchWithRetry(url: string, retries = 3): Promise<FetchResult> {
   const retryableStatuses = new Set([408, 425, 429, 500, 502, 503, 504]);
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -498,6 +547,7 @@ async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Respons
           } catch {
             finalUrl = location;
           }
+          const chain: string[] = [url, finalUrl];
           let currentUrl = finalUrl;
           let finalResp: Response | null = null;
           for (let hop = 0; hop < 5; hop++) {
@@ -513,6 +563,7 @@ async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Respons
               const nextLoc = hopResp.headers.get('location');
               if (nextLoc) {
                 try { currentUrl = new URL(nextLoc, currentUrl).href; } catch { currentUrl = nextLoc; }
+                chain.push(currentUrl);
                 continue;
               }
             }
@@ -520,14 +571,14 @@ async function fetchWithRetry(url: string, retries = 3): Promise<{ resp: Respons
             break;
           }
           if (!finalResp) {
-            return { resp, redirectedUrl: currentUrl, redirectStatusCode: originalRedirectStatus };
+            return { resp, redirectedUrl: currentUrl, redirectStatusCode: originalRedirectStatus, chain };
           }
-          return { resp: finalResp, redirectedUrl: currentUrl, redirectStatusCode: originalRedirectStatus };
+          return { resp: finalResp, redirectedUrl: currentUrl, redirectStatusCode: originalRedirectStatus, chain };
         }
       }
 
       if (resp.ok || !retryableStatuses.has(resp.status)) {
-        return { resp };
+        return { resp, chain: [url] };
       }
       await resp.text();
     } catch (e) {
@@ -554,16 +605,32 @@ async function fetchMeta(
   jsRenderedLinks: boolean = false,
 ): Promise<CrawlResult> {
   const start = Date.now();
-  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], internalLinks: [], status: 'Error', statusCode: 0, fetchTime: '0s' };
+  const empty: CrawlResult = { url, title: '', description: '', h1s: [], h2s: [], h3s: [], images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing', hreflangs: [], internalLinks: [], status: 'Error', statusCode: 0, redirectType: 'none', redirectChain: [url], fetchTime: '0s' };
   try {
-    const { resp, redirectedUrl, redirectStatusCode } = await fetchWithRetry(url);
+    const { resp, redirectedUrl, redirectStatusCode, chain } = await fetchWithRetry(url);
     const elapsed = ((Date.now() - start) / 1000).toFixed(1) + 's';
 
     if (!resp.ok) {
-      return { ...empty, statusCode: resp.status, redirectedUrl, redirectStatusCode, fetchTime: elapsed };
+      const httpType: RedirectType = redirectStatusCode ? 'http' : 'none';
+      return { ...empty, statusCode: resp.status, redirectedUrl, redirectStatusCode, redirectType: httpType, redirectChain: chain, fetchTime: elapsed };
     }
 
     const html = await resp.text();
+
+    // Detect meta-refresh on the final landed page. HTTP redirect (if any)
+    // takes precedence; meta-refresh is only assigned when there was no HTTP
+    // redirect and the refresh target differs from the current URL.
+    const finalUrl = redirectedUrl ?? url;
+    const metaRefresh = extractMetaRefresh(html, finalUrl);
+    let redirectType: RedirectType = redirectStatusCode ? 'http' : 'none';
+    let finalChain = [...chain];
+    let finalRedirectedUrl = redirectedUrl;
+    if (!redirectStatusCode && metaRefresh && metaRefresh.target !== finalUrl) {
+      redirectType = 'meta-refresh';
+      finalChain = [url, metaRefresh.target];
+      finalRedirectedUrl = metaRefresh.target;
+    }
+
     const canonical = includeCanonical ? extractCanonical(html) : '';
     const canonicalStatus = includeCanonical ? getCanonicalStatus(url, canonical) : undefined;
     return {
@@ -585,7 +652,9 @@ async function fetchMeta(
       status: 'OK',
       statusCode: resp.status,
       redirectStatusCode,
-      redirectedUrl,
+      redirectedUrl: finalRedirectedUrl,
+      redirectType,
+      redirectChain: finalChain,
       fetchTime: elapsed,
     };
   } catch {

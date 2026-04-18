@@ -286,6 +286,8 @@ function MetaTable({
       { key: "status", label: "Crawl Status" },
       { key: "statusCode", label: "Status Code" },
       { key: "redirectedUrl", label: "Redirected URL" },
+      { key: "redirectType", label: "Redirect Type" },
+      { key: "redirectChain", label: "Redirect Chain" },
       { key: "fetchTime", label: "Fetch Time" },
     );
     return f;
@@ -309,6 +311,8 @@ function MetaTable({
       case "status": return r.status;
       case "statusCode": return String(r.statusCode ?? "");
       case "redirectedUrl": return r.redirectedUrl ?? "";
+      case "redirectType": return r.redirectType ?? "none";
+      case "redirectChain": return (r.redirectChain ?? []).join(" → ");
       case "fetchTime": return r.fetchTime;
       default: return "";
     }
@@ -327,7 +331,7 @@ function MetaTable({
     else if (filter === "noindex") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('noindex'));
     else if (filter === "nofollow") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('nofollow'));
     else if (filter === "2xx") data = data.filter((r) => r.statusCode >= 200 && r.statusCode < 300);
-    else if (filter === "3xx") data = data.filter((r) => (r.statusCode >= 300 && r.statusCode < 400) || !!r.redirectStatusCode);
+    else if (filter === "3xx") data = data.filter((r) => (r.statusCode >= 300 && r.statusCode < 400) || !!r.redirectStatusCode || r.redirectType === 'meta-refresh');
     else if (filter === "4xx") data = data.filter((r) => r.statusCode >= 400 && r.statusCode < 500);
     else if (filter === "5xx") data = data.filter((r) => r.statusCode >= 500 && r.statusCode < 600);
 
@@ -553,22 +557,39 @@ function MetaTable({
                     </div>
                   )}
                   <div className="px-3 py-2 flex flex-col gap-0.5 text-[11px]">
-                    {row.redirectedUrl && row.redirectStatusCode ? (
+                    {row.redirectedUrl && (row.redirectStatusCode || row.redirectType === 'meta-refresh') ? (
                       <>
-                        <span className="font-medium text-warning">
-                          {row.redirectStatusCode}
-                          <span className="text-[9px] ml-1 opacity-75">
-                            {row.redirectStatusCode === 301 ? 'Permanent' :
-                             row.redirectStatusCode === 302 ? 'Found' :
-                             row.redirectStatusCode === 307 ? 'Temp' :
-                             row.redirectStatusCode === 308 ? 'Perm' : 'Redirect'}
+                        {row.redirectStatusCode ? (
+                          <span className="font-medium text-warning">
+                            {row.redirectStatusCode}
+                            <span className="text-[9px] ml-1 opacity-75">
+                              {row.redirectStatusCode === 301 ? 'Permanent' :
+                               row.redirectStatusCode === 302 ? 'Found' :
+                               row.redirectStatusCode === 307 ? 'Temp' :
+                               row.redirectStatusCode === 308 ? 'Perm' : 'Redirect'}
+                            </span>
                           </span>
-                        </span>
+                        ) : (
+                          <span className="font-medium text-warning">
+                            Meta
+                            <span className="text-[9px] ml-1 opacity-75">Refresh</span>
+                          </span>
+                        )}
                         <span className="text-[9px] text-muted-foreground">
                           Final: <span className={`font-medium ${row.statusCode >= 200 && row.statusCode < 300 ? 'text-success' : row.statusCode >= 400 ? 'text-destructive' : 'text-warning'}`}>{row.statusCode}</span>
                         </span>
-                        <span className="text-[9px] text-warning break-all leading-tight" title={`Redirected to: ${row.redirectedUrl}`}>
+                        <span
+                          className="text-[9px] text-warning break-all leading-tight"
+                          title={(row.redirectChain && row.redirectChain.length > 1)
+                            ? `Redirect chain (${row.redirectType ?? 'http'}):\n${row.redirectChain.join('\n→ ')}`
+                            : `Redirected to: ${row.redirectedUrl}`}
+                        >
                           → {row.redirectedUrl.length > 40 ? row.redirectedUrl.slice(0, 40) + '…' : row.redirectedUrl}
+                          {row.redirectChain && row.redirectChain.length > 2 && (
+                            <span className="ml-1 px-1 rounded bg-warning/20 text-[9px]">
+                              {row.redirectChain.length - 1} hops
+                            </span>
+                          )}
                         </span>
                       </>
                     ) : (

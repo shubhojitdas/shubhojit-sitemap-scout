@@ -16,6 +16,8 @@ export interface InternalLinkData {
   isInternal: boolean;
 }
 
+export type RedirectType = 'none' | 'http' | 'meta-refresh';
+
 export interface CrawlResult {
   url: string;
   title: string;
@@ -34,6 +36,10 @@ export interface CrawlResult {
   statusCode: number;
   redirectStatusCode?: number;
   redirectedUrl?: string;
+  /** none | http (301/302/307/308) | meta-refresh */
+  redirectType?: RedirectType;
+  /** Full URL hop chain. Index 0 is the original URL. Single entry = no redirect. */
+  redirectChain?: string[];
   fetchTime: string;
 }
 

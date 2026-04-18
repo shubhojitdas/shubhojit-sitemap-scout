@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-import { CrawlResult, generateCSV, downloadCSV } from "@/lib/crawl-api";
+import { CrawlResult, generateCSV, generateTSV, rowsToTSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Heading2, Heading3, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages, LinkIcon, ExternalLink } from "lucide-react";
@@ -351,10 +351,11 @@ function MetaTable({
   };
 
   const handleCopy = () => {
-    const csv = generateCSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false, includeRobots);
-    navigator.clipboard.writeText(csv);
+    // TSV pastes cleanly into Excel/Sheets (one column per cell).
+    const tsv = generateTSV(filtered, includeTitle, includeDesc, includeH1, includeH2, includeH3, false, includeRobots);
+    navigator.clipboard.writeText(tsv);
     setCopied(true);
-    toast({ title: "Copied!", description: `${filtered.length} rows copied as CSV` });
+    toast({ title: "Copied!", description: `${filtered.length} rows copied — paste into Excel or Sheets` });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -647,10 +648,10 @@ function ImagesTable({ results, domain, imgFilter, setImgFilter, search, setSear
   };
 
   const handleCopy = () => {
-    const csv = generateCSV(results, false, false, false, false, false, true);
-    navigator.clipboard.writeText(csv);
+    const tsv = generateTSV(results, false, false, false, false, false, true);
+    navigator.clipboard.writeText(tsv);
     setCopied(true);
-    toast({ title: "Copied!", description: "Image alt text data copied as CSV" });
+    toast({ title: "Copied!", description: "Image alt text data copied — paste into Excel or Sheets" });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -1004,14 +1005,10 @@ function CanonicalTable({ results, domain, canonicalFilter, setCanonicalFilter, 
   }, [results, canonicalFilter, search, scopedAdvancedFilter, canonicalFields]);
 
   const handleCopy = () => {
-    const rows = ["Page URL,Canonical URL,Status"];
-    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
-    filteredResults.forEach((r) => {
-      rows.push(`${escape(r.url)},${escape(r.canonical ?? "")},${escape(r.canonicalStatus ?? "Missing")}`);
-    });
-    navigator.clipboard.writeText(rows.join("\n"));
+    const rows = filteredResults.map((r) => [r.url, r.canonical ?? "", r.canonicalStatus ?? "Missing"]);
+    navigator.clipboard.writeText(rowsToTSV(["Page URL", "Canonical URL", "Status"], rows));
     setCopied(true);
-    toast({ title: "Copied!", description: `${filteredResults.length} rows copied as CSV` });
+    toast({ title: "Copied!", description: `${filteredResults.length} rows copied — paste into Excel or Sheets` });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -1156,21 +1153,18 @@ function HreflangTable({ results, domain, hreflangFilter, setHreflangFilter, sea
   };
 
   const handleCopy = () => {
-    const rows = ["Page URL,Hreflang,Alternate URL"];
-    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    const rows: string[][] = [];
     filteredResults.forEach((r) => {
       const hreflangs = r.hreflangs ?? [];
       if (hreflangs.length === 0) {
-        rows.push(`${escape(r.url)},,No hreflang tags`);
+        rows.push([r.url, "", "No hreflang tags"]);
       } else {
-        hreflangs.forEach((h) => {
-          rows.push(`${escape(r.url)},${escape(h.hreflang)},${escape(h.href)}`);
-        });
+        hreflangs.forEach((h) => rows.push([r.url, h.hreflang, h.href]));
       }
     });
-    navigator.clipboard.writeText(rows.join("\n"));
+    navigator.clipboard.writeText(rowsToTSV(["Page URL", "Hreflang", "Alternate URL"], rows));
     setCopied(true);
-    toast({ title: "Copied!", description: `${filteredResults.length} pages copied as CSV` });
+    toast({ title: "Copied!", description: `${filteredResults.length} pages copied — paste into Excel or Sheets` });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -1368,21 +1362,18 @@ function InternalLinksTable({ results, domain, linkFilter, setLinkFilter, search
   };
 
   const handleCopy = () => {
-    const rows = ["Page URL,Anchor Text,Link URL,Type"];
-    const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    const rows: string[][] = [];
     filteredResults.forEach((r) => {
       const links = r.internalLinks ?? [];
       if (links.length === 0) {
-        rows.push(`${escape(r.url)},,,"No links found"`);
+        rows.push([r.url, "", "", "No links found"]);
       } else {
-        links.forEach((l) => {
-          rows.push(`${escape(r.url)},${escape(l.anchorText)},${escape(l.href)},${l.isInternal ? "Internal" : "External"}`);
-        });
+        links.forEach((l) => rows.push([r.url, l.anchorText, l.href, l.isInternal ? "Internal" : "External"]));
       }
     });
-    navigator.clipboard.writeText(rows.join("\n"));
+    navigator.clipboard.writeText(rowsToTSV(["Page URL", "Anchor Text", "Link URL", "Type"], rows));
     setCopied(true);
-    toast({ title: "Copied!", description: `${filteredResults.length} pages copied as CSV` });
+    toast({ title: "Copied!", description: `${filteredResults.length} pages copied — paste into Excel or Sheets` });
     setTimeout(() => setCopied(false), 2000);
   };
 

@@ -81,29 +81,49 @@ export async function fetchMetaBatch(
   return data.results || [];
 }
 
-export function generateCSV(
+// ─── Output formatting helpers ────────────────────────────────────────────────
+// We support two output flavours:
+//   • CSV  — for downloadable .csv files (comma-separated, RFC 4180 quoting)
+//   • TSV  — for clipboard copies. Excel/Google Sheets auto-split tab-separated
+//            text into individual cells when pasted, so this makes the "Copy"
+//            button paste cleanly into spreadsheets instead of dumping
+//            everything into a single cell.
+
+type Sep = "," | "\t";
+
+function buildTable(
   results: CrawlResult[],
-  includeTitle = true,
-  includeDesc = true,
-  includeH1 = false,
-  includeH2 = false,
-  includeH3 = false,
-  includeImages = false,
-  includeRobots = false,
-  includeCanonical = false,
+  sep: Sep,
+  includeTitle: boolean,
+  includeDesc: boolean,
+  includeH1: boolean,
+  includeH2: boolean,
+  includeH3: boolean,
+  includeImages: boolean,
+  includeRobots: boolean,
+  includeCanonical: boolean,
 ): string {
-  const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
+  // CSV needs RFC-4180 quoting; TSV cells must avoid raw tabs/newlines so
+  // Excel keeps them in a single cell. Multi-value fields (H1/H2/H3) are
+  // joined with " | " (a delimiter that's safe in both formats) so each row
+  // remains exactly one row in the spreadsheet.
+  const sanitizeForTsv = (s: string) =>
+    s.replace(/\r?\n|\r|\t/g, " ").replace(/\s+/g, " ").trim();
+  const escape = (s: string) =>
+    sep === ","
+      ? `"${s.replace(/"/g, '""')}"`
+      : sanitizeForTsv(s);
 
   if (includeImages) {
-    const header = "Page URL,Image URL,Alt Text,Image Count";
+    const header = ["Page URL", "Image URL", "Alt Text", "Image Count"].join(sep);
     const rows: string[] = [];
     results.forEach((r) => {
       const images = r.images ?? [];
       if (images.length === 0) {
-        rows.push(`${escape(r.url)},${escape("")},${escape("No images found")},0`);
+        rows.push([escape(r.url), escape(""), escape("No images found"), "0"].join(sep));
       } else {
         images.forEach((img) => {
-          rows.push(`${escape(r.url)},${escape(img.src)},${escape(img.alt ?? "No alt text")},${images.length}`);
+          rows.push([escape(r.url), escape(img.src), escape(img.alt ?? "No alt text"), String(images.length)].join(sep));
         });
       }
     });
@@ -119,7 +139,7 @@ export function generateCSV(
   if (includeRobots) headerParts.push("Meta Robots");
   if (includeCanonical) headerParts.push("Canonical URL", "Canonical Status");
   headerParts.push("Status", "Response Code", "Fetch Time");
-  const header = headerParts.join(",");
+  const header = headerParts.join(sep);
 
   const rows = results.map((r) => {
     const parts = [escape(r.url)];
@@ -130,10 +150,49 @@ export function generateCSV(
     if (includeH3) { parts.push(escape((r.h3s ?? []).join(" | ")), String((r.h3s ?? []).length)); }
     if (includeRobots) { parts.push(escape(r.robots ?? '')); }
     if (includeCanonical) { parts.push(escape(r.canonical ?? ''), escape(r.canonicalStatus ?? 'Missing')); }
-    parts.push(r.status, String(r.statusCode), r.fetchTime);
-    return parts.join(",");
+    parts.push(escape(r.status), String(r.statusCode), escape(r.fetchTime));
+    return parts.join(sep);
   });
   return [header, ...rows].join("\n");
+}
+
+export function generateCSV(
+  results: CrawlResult[],
+  includeTitle = true,
+  includeDesc = true,
+  includeH1 = false,
+  includeH2 = false,
+  includeH3 = false,
+  includeImages = false,
+  includeRobots = false,
+  includeCanonical = false,
+): string {
+  return buildTable(results, ",", includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeRobots, includeCanonical);
+}
+
+/**
+ * TSV (tab-separated) for clipboard. Pasting this into Excel/Google Sheets
+ * automatically distributes columns into separate cells.
+ */
+export function generateTSV(
+  results: CrawlResult[],
+  includeTitle = true,
+  includeDesc = true,
+  includeH1 = false,
+  includeH2 = false,
+  includeH3 = false,
+  includeImages = false,
+  includeRobots = false,
+  includeCanonical = false,
+): string {
+  return buildTable(results, "\t", includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeRobots, includeCanonical);
+}
+
+/** Build a TSV table from arbitrary rows for ad-hoc copy actions. */
+export function rowsToTSV(header: string[], rows: string[][]): string {
+  const sanitize = (s: string) =>
+    (s ?? "").replace(/\r?\n|\r|\t/g, " ").replace(/\s+/g, " ").trim();
+  return [header.map(sanitize).join("\t"), ...rows.map((r) => r.map(sanitize).join("\t"))].join("\n");
 }
 
 export function downloadCSV(csv: string, domain: string) {

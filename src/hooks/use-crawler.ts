@@ -144,7 +144,7 @@ export function useCrawler() {
       } catch {
         if (signal.aborted) return;
         batch.forEach((url) => {
-          allResults.push({ url, title: "", description: "", h1s: [], ...EMPTY_RESULT_FIELDS, status: "Error", statusCode: 0, fetchTime: "0s" });
+          allResults.push({ url, title: "", description: "", h1s: [], ...EMPTY_RESULT_FIELDS, status: "Error", statusCode: 0, redirectType: 'none', redirectChain: [], hopCount: 0, initialUrl: url, finalUrl: url, fetchTime: "0s" });
         });
       }
       if (signal.aborted) return;

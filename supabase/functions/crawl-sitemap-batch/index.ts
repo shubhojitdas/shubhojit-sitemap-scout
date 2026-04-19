@@ -638,6 +638,32 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     finalStatus = resp.status;
     try { finalHtml = await resp.text(); } catch { finalHtml = ''; }
 
+    // Some servers send an HTTP `Refresh` response header instead of a meta tag.
+    // Browsers honor it identically, so we follow it as a meta-refresh hop.
+    if (resp.status >= 200 && resp.status < 300) {
+      const refreshHeader = resp.headers.get('refresh');
+      if (refreshHeader) {
+        const parts = refreshHeader.split(';');
+        const delay = parseFloat(parts[0]) || 0;
+        const urlPart = parts.slice(1).join(';').trim();
+        const m = urlPart.match(/url\s*=\s*["']?([^"'\s]+)["']?/i);
+        if (delay <= 5 && m) {
+          let target = m[1].trim();
+          try { target = new URL(target, current).href; } catch { /* keep */ }
+          if (target !== current && !visited.has(target)) {
+            chain.push({ url: current, status: resp.status, type: 'meta-refresh' });
+            current = target;
+            finalHtml = '';
+            finalStatus = 0;
+            if (i === MAX_HOPS - 1) {
+              chain.push({ url: current, status: -1, type: 'http', statusText: 'Max redirects exceeded' });
+            }
+            continue;
+          }
+        }
+      }
+    }
+
     if (resp.status >= 200 && resp.status < 300 && finalHtml) {
       // 1) Meta-refresh first.
       const meta = extractMetaRefresh(finalHtml, current);

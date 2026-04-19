@@ -464,8 +464,9 @@ function MetaTable({
 
       <div className="border border-border rounded-lg overflow-hidden bg-card">
         <div style={gridStyle} className="grid gap-0 border-b border-border bg-muted/30 text-[11px] font-medium text-muted-foreground">
+          <div className="px-1 py-2" />
           <button onClick={() => handleSort("url")} className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left">
-            URL <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
+            Initial URL <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
           </button>
           {includeTitle && (
             <button onClick={() => handleSort("title")} className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left">
@@ -489,6 +490,8 @@ function MetaTable({
           {includeRobots && (
             <div className="flex items-center gap-1 px-3 py-2 text-left"><Bot className="h-3 w-3" /> Meta Robots</div>
           )}
+          <div className="flex items-center gap-1 px-3 py-2 text-left">Final URL</div>
+          <div className="flex items-center gap-1 px-3 py-2 text-left">Redirect</div>
           <button onClick={() => handleSort("status")} className="flex items-center gap-1 px-3 py-2 hover:text-foreground transition-colors text-left">
             Status <ArrowUpDown className="h-2.5 w-2.5 opacity-50" />
           </button>

@@ -503,127 +503,163 @@ function MetaTable({
               const h1s = row.h1s ?? [];
               const h2s = row.h2s ?? [];
               const h3s = row.h3s ?? [];
+              const initial = row.initialUrl ?? row.url;
+              const final = row.finalUrl ?? row.redirectedUrl ?? initial;
+              const chain = row.redirectChain ?? [];
+              const rType = row.redirectType ?? 'none';
+              const hasRedirect = rType !== 'none' && chain.length > 0;
+              const isOpen = expandedRows.has(index);
+
+              const typeBadgeClass =
+                rType === 'http' ? 'bg-info/15 text-info border-info/30' :
+                rType === 'meta-refresh' ? 'bg-warning/15 text-warning border-warning/30' :
+                rType === 'mixed' ? 'bg-accent/15 text-accent-foreground border-border' :
+                'bg-muted text-muted-foreground border-border';
+
               return (
-                <div key={index} style={gridStyle} className="grid gap-0 hover:bg-muted/20 transition-colors text-xs">
-                  <div className="px-3 py-2 break-all font-mono text-[11px] text-muted-foreground">{row.url}</div>
-                  {includeTitle && (
-                    <div className="px-3 py-2 break-words text-[11px]">
-                      {row.title || <span className="text-muted-foreground italic">(empty)</span>}
-                    </div>
-                  )}
-                  {includeDesc && (
-                    <div className="px-3 py-2 break-words text-[11px] text-muted-foreground">
-                      {row.description || <span className="italic">(empty)</span>}
-                    </div>
-                  )}
-                  {includeH1 && (
-                    <div className="px-3 py-2 space-y-0.5">
-                      {h1s.length === 0 ? (
-                        <span className="text-muted-foreground italic text-[11px]">(none)</span>
-                      ) : (
-                        h1s.map((h, i) => (
-                          <div key={i} className="flex items-start gap-1 text-[11px]">
-                            {h1s.length > 1 && (
-                              <span className={`text-[9px] font-semibold px-1 rounded shrink-0 mt-0.5 ${i === 0 ? "bg-warning/15 text-warning" : "bg-destructive/15 text-destructive"}`}>H1</span>
-                            )}
-                            <span className="break-words leading-snug">{h}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                  {includeH2 && (
-                    <div className="px-3 py-2 space-y-0.5">
-                      {h2s.length === 0 ? (
-                        <span className="text-muted-foreground italic text-[11px]">(none)</span>
-                      ) : (
-                        h2s.map((h, i) => (
-                          <div key={i} className="flex items-start gap-1 text-[11px]">
-                            <span className="text-[9px] font-semibold px-1 rounded shrink-0 mt-0.5 bg-muted text-muted-foreground">H2</span>
-                            <span className="break-words leading-snug">{h}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                  {includeH3 && (
-                    <div className="px-3 py-2 space-y-0.5">
-                      {h3s.length === 0 ? (
-                        <span className="text-muted-foreground italic text-[11px]">(none)</span>
-                      ) : (
-                        h3s.map((h, i) => (
-                          <div key={i} className="flex items-start gap-1 text-[11px]">
-                            <span className="text-[9px] font-semibold px-1 rounded shrink-0 mt-0.5 bg-muted text-muted-foreground">H3</span>
-                            <span className="break-words leading-snug">{h}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                  {includeRobots && (
-                    <div className="px-3 py-2 text-[11px]">
-                      {row.robots ? (
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                          row.robots.toLowerCase().includes('noindex') ? 'bg-destructive/15 text-destructive' :
-                          row.robots.toLowerCase().includes('nofollow') ? 'bg-warning/15 text-warning' :
-                          'bg-muted text-muted-foreground'
-                        }`}>
-                          {row.robots}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground italic">(none)</span>
-                      )}
-                    </div>
-                  )}
-                  <div className="px-3 py-2 flex flex-col gap-0.5 text-[11px]">
-                    {row.redirectedUrl && (row.redirectStatusCode || row.redirectType === 'meta-refresh') ? (
-                      <>
-                        {row.redirectStatusCode ? (
-                          <span className="font-medium text-warning">
-                            {row.redirectStatusCode}
-                            <span className="text-[9px] ml-1 opacity-75">
-                              {row.redirectStatusCode === 301 ? 'Permanent' :
-                               row.redirectStatusCode === 302 ? 'Found' :
-                               row.redirectStatusCode === 307 ? 'Temp' :
-                               row.redirectStatusCode === 308 ? 'Perm' : 'Redirect'}
-                            </span>
+                <div key={index} className="contents">
+                  <div style={gridStyle} className="grid gap-0 hover:bg-muted/20 transition-colors text-xs">
+                    <button
+                      type="button"
+                      onClick={() => hasRedirect && toggleExpanded(index)}
+                      disabled={!hasRedirect}
+                      className={`flex items-center justify-center py-2 ${hasRedirect ? 'text-muted-foreground hover:text-foreground cursor-pointer' : 'text-transparent cursor-default'}`}
+                      aria-label={hasRedirect ? (isOpen ? 'Collapse redirect chain' : 'Expand redirect chain') : undefined}
+                    >
+                      <ChevronRight className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                    </button>
+                    <div className="px-3 py-2 break-all font-mono text-[11px] text-muted-foreground">{initial}</div>
+                    {includeTitle && (
+                      <div className="px-3 py-2 break-words text-[11px]">
+                        {row.title || <span className="text-muted-foreground italic">(empty)</span>}
+                      </div>
+                    )}
+                    {includeDesc && (
+                      <div className="px-3 py-2 break-words text-[11px] text-muted-foreground">
+                        {row.description || <span className="italic">(empty)</span>}
+                      </div>
+                    )}
+                    {includeH1 && (
+                      <div className="px-3 py-2 space-y-0.5">
+                        {h1s.length === 0 ? (
+                          <span className="text-muted-foreground italic text-[11px]">(none)</span>
+                        ) : (
+                          h1s.map((h, i) => (
+                            <div key={i} className="flex items-start gap-1 text-[11px]">
+                              {h1s.length > 1 && (
+                                <span className={`text-[9px] font-semibold px-1 rounded shrink-0 mt-0.5 ${i === 0 ? "bg-warning/15 text-warning" : "bg-destructive/15 text-destructive"}`}>H1</span>
+                              )}
+                              <span className="break-words leading-snug">{h}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                    {includeH2 && (
+                      <div className="px-3 py-2 space-y-0.5">
+                        {h2s.length === 0 ? (
+                          <span className="text-muted-foreground italic text-[11px]">(none)</span>
+                        ) : (
+                          h2s.map((h, i) => (
+                            <div key={i} className="flex items-start gap-1 text-[11px]">
+                              <span className="text-[9px] font-semibold px-1 rounded shrink-0 mt-0.5 bg-muted text-muted-foreground">H2</span>
+                              <span className="break-words leading-snug">{h}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                    {includeH3 && (
+                      <div className="px-3 py-2 space-y-0.5">
+                        {h3s.length === 0 ? (
+                          <span className="text-muted-foreground italic text-[11px]">(none)</span>
+                        ) : (
+                          h3s.map((h, i) => (
+                            <div key={i} className="flex items-start gap-1 text-[11px]">
+                              <span className="text-[9px] font-semibold px-1 rounded shrink-0 mt-0.5 bg-muted text-muted-foreground">H3</span>
+                              <span className="break-words leading-snug">{h}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                    {includeRobots && (
+                      <div className="px-3 py-2 text-[11px]">
+                        {row.robots ? (
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            row.robots.toLowerCase().includes('noindex') ? 'bg-destructive/15 text-destructive' :
+                            row.robots.toLowerCase().includes('nofollow') ? 'bg-warning/15 text-warning' :
+                            'bg-muted text-muted-foreground'
+                          }`}>
+                            {row.robots}
                           </span>
                         ) : (
-                          <span className="font-medium text-warning">
-                            Meta
-                            <span className="text-[9px] ml-1 opacity-75">Refresh</span>
-                          </span>
+                          <span className="text-muted-foreground italic">(none)</span>
                         )}
-                        <span className="text-[9px] text-muted-foreground">
-                          Final: <span className={`font-medium ${row.statusCode >= 200 && row.statusCode < 300 ? 'text-success' : row.statusCode >= 400 ? 'text-destructive' : 'text-warning'}`}>{row.statusCode}</span>
-                        </span>
-                        <span
-                          className="text-[9px] text-warning break-all leading-tight"
-                          title={(row.redirectChain && row.redirectChain.length > 1)
-                            ? `Redirect chain (${row.redirectType ?? 'http'}):\n${row.redirectChain.join('\n→ ')}`
-                            : `Redirected to: ${row.redirectedUrl}`}
-                        >
-                          → {row.redirectedUrl.length > 40 ? row.redirectedUrl.slice(0, 40) + '…' : row.redirectedUrl}
-                          {row.redirectChain && row.redirectChain.length > 2 && (
-                            <span className="ml-1 px-1 rounded bg-warning/20 text-[9px]">
-                              {row.redirectChain.length - 1} hops
-                            </span>
-                          )}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className={`font-medium ${
-                          row.statusCode >= 200 && row.statusCode < 300 ? 'text-success' :
-                          row.statusCode >= 300 && row.statusCode < 400 ? 'text-warning' :
-                          row.statusCode >= 400 ? 'text-destructive' :
-                          row.status === 'Error' ? 'text-destructive' : 'text-muted-foreground'
-                        }`}>
-                          {row.statusCode > 0 ? row.statusCode : 'Err'}
-                        </span>
-                      </>
+                      </div>
                     )}
+                    {/* Final URL */}
+                    <div className="px-3 py-2 break-all font-mono text-[11px]">
+                      {hasRedirect ? (
+                        <span className="text-warning">{final}</span>
+                      ) : (
+                        <span className="text-muted-foreground/60 italic">—</span>
+                      )}
+                    </div>
+                    {/* Redirect Type badge */}
+                    <div className="px-3 py-2 flex items-start">
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-medium ${typeBadgeClass}`}>
+                        {rType}
+                        {chain.length > 1 && (
+                          <span className="opacity-70">· {chain.length}</span>
+                        )}
+                      </span>
+                    </div>
+                    {/* Status */}
+                    <div className="px-3 py-2 text-[11px]">
+                      <span className={`font-medium ${
+                        row.statusCode >= 200 && row.statusCode < 300 ? 'text-success' :
+                        row.statusCode >= 300 && row.statusCode < 400 ? 'text-warning' :
+                        row.statusCode >= 400 ? 'text-destructive' :
+                        row.status === 'Error' ? 'text-destructive' : 'text-muted-foreground'
+                      }`}>
+                        {row.statusCode > 0 ? row.statusCode : 'Err'}
+                      </span>
+                    </div>
                   </div>
+                  {hasRedirect && isOpen && (
+                    <div className="bg-muted/30 border-t border-border px-4 py-3 text-[11px] space-y-1.5">
+                      <div className="font-medium text-foreground/80 mb-1">Redirect chain ({chain.length} hop{chain.length === 1 ? '' : 's'})</div>
+                      <ol className="space-y-1">
+                        {chain.map((hop, hi) => (
+                          <li key={hi} className="flex items-start gap-2 font-mono">
+                            <span className="text-muted-foreground shrink-0 w-5 text-right">{hi + 1}.</span>
+                            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                              hop.status === -1 ? 'bg-destructive/15 text-destructive' :
+                              hop.type === 'meta-refresh' ? 'bg-warning/15 text-warning' :
+                              hop.status >= 300 && hop.status < 400 ? 'bg-info/15 text-info' :
+                              hop.status >= 400 ? 'bg-destructive/15 text-destructive' :
+                              'bg-success/15 text-success'
+                            }`}>
+                              {hop.status === -1 ? '!' : hop.status}
+                            </span>
+                            <span className="shrink-0 text-[10px] text-muted-foreground uppercase tracking-wide">
+                              {hop.type === 'meta-refresh' ? 'meta' : 'http'}
+                            </span>
+                            <span className="break-all text-foreground/90">{hop.url}</span>
+                            {hop.statusText && (
+                              <span className="text-destructive text-[10px] italic ml-1">({hop.statusText})</span>
+                            )}
+                          </li>
+                        ))}
+                        <li className="flex items-start gap-2 font-mono pt-1 border-t border-border/50">
+                          <span className="text-muted-foreground shrink-0 w-5 text-right">→</span>
+                          <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-success/15 text-success">final</span>
+                          <span className="break-all text-foreground">{final}</span>
+                        </li>
+                      </ol>
+                    </div>
+                  )}
                 </div>
               );
             })}

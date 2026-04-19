@@ -344,7 +344,7 @@ function MetaTable({
     else if (filter === "noindex") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('noindex'));
     else if (filter === "nofollow") data = data.filter((r) => (r.robots ?? '').toLowerCase().includes('nofollow'));
     else if (filter === "2xx") data = data.filter((r) => r.statusCode >= 200 && r.statusCode < 300);
-    else if (filter === "3xx") data = data.filter((r) => (r.statusCode >= 300 && r.statusCode < 400) || !!r.redirectStatusCode || r.redirectType === 'meta-refresh');
+    else if (filter === "3xx") data = data.filter((r) => (r.statusCode >= 300 && r.statusCode < 400) || !!r.redirectStatusCode || r.redirectType === 'meta-refresh' || r.redirectType === 'javascript' || r.redirectType === 'mixed');
     else if (filter === "4xx") data = data.filter((r) => r.statusCode >= 400 && r.statusCode < 500);
     else if (filter === "5xx") data = data.filter((r) => r.statusCode >= 500 && r.statusCode < 600);
 
@@ -513,6 +513,7 @@ function MetaTable({
               const typeBadgeClass =
                 rType === 'http' ? 'bg-primary/15 text-primary border-primary/30' :
                 rType === 'meta-refresh' ? 'bg-warning/15 text-warning border-warning/30' :
+                rType === 'javascript' ? 'bg-destructive/15 text-destructive border-destructive/30' :
                 rType === 'mixed' ? 'bg-accent/30 text-accent-foreground border-border' :
                 'bg-muted text-muted-foreground border-border';
 
@@ -637,6 +638,7 @@ function MetaTable({
                             <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
                               hop.status === -1 ? 'bg-destructive/15 text-destructive' :
                               hop.type === 'meta-refresh' ? 'bg-warning/15 text-warning' :
+                              hop.type === 'javascript' ? 'bg-destructive/15 text-destructive' :
                               hop.status >= 300 && hop.status < 400 ? 'bg-primary/15 text-primary' :
                               hop.status >= 400 ? 'bg-destructive/15 text-destructive' :
                               'bg-success/15 text-success'
@@ -644,7 +646,7 @@ function MetaTable({
                               {hop.status === -1 ? '!' : hop.status}
                             </span>
                             <span className="shrink-0 text-[10px] text-muted-foreground uppercase tracking-wide">
-                              {hop.type === 'meta-refresh' ? 'meta' : 'http'}
+                              {hop.type === 'meta-refresh' ? 'meta' : hop.type === 'javascript' ? 'js' : 'http'}
                             </span>
                             <span className="break-all text-foreground/90">{hop.url}</span>
                             {hop.statusText && (
@@ -658,6 +660,11 @@ function MetaTable({
                           <span className="break-all text-foreground">{final}</span>
                         </li>
                       </ol>
+                      {chain.some((h) => h.type === 'javascript') && (
+                        <p className="text-[10px] text-muted-foreground italic pt-2 border-t border-border/50 mt-2">
+                          JS hops detected via inline script pattern matching. May not catch redirects from external JS files or SPA routing.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

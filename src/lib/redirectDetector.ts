@@ -1,16 +1,18 @@
 /**
- * Phase 1 — Redirect detection (HTTP + meta-refresh, no headless browser).
+ * Phase 1 — Redirect detection (HTTP + meta-refresh + inline JS, no headless browser).
  *
  * Follows the redirect chain manually so each hop can be inspected. Meta-refresh
  * tags with a delay of 0–5s are treated as redirect hops, matching how search
- * engines interpret them.
+ * engines interpret them. Inline `<script>` blocks are scanned for common
+ * `window.location` / `document.location` redirect patterns and treated as
+ * additional hops.
  *
- * Phase 2 will extend this with headless rendering for JS / SPA redirects.
+ * Phase 2 will extend this with headless rendering for SPA / async JS redirects.
  */
 
-export type RedirectHopType = "http" | "meta-refresh";
+export type RedirectHopType = "http" | "meta-refresh" | "javascript";
 
-export type RedirectKind = "none" | "http" | "meta-refresh" | "mixed";
+export type RedirectKind = "none" | "http" | "meta-refresh" | "javascript" | "mixed";
 
 export interface RedirectHop {
   url: string;
@@ -72,6 +74,64 @@ export function extractMetaRefreshTarget(html: string, baseUrl: string): string 
     let target = urlMatch[1].trim();
     try { target = new URL(target, baseUrl).href; } catch { /* keep as-is */ }
     return target;
+  }
+  return null;
+}
+
+/**
+ * Detect inline JavaScript redirects via pattern matching on `<script>` blocks.
+ *
+ * Catches common assignments like:
+ *   window.location.href = "..."
+ *   window.location.replace("...")
+ *   document.location = "..."
+ *   location.href = "..."
+ *
+ * Only scans inside <script>…</script> (skipping HTML comments) to keep false
+ * positives low. Does not execute JS — pattern match only.
+ *
+ * Returns the resolved absolute URL of the first valid match, or null.
+ */
+export function extractJsRedirectTarget(html: string, baseUrl: string): string | null {
+  // Strip HTML comments first so commented-out scripts are ignored.
+  const noComments = html.replace(/<!--[\s\S]*?-->/g, "");
+
+  const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  // Combined pattern for window/document/top/self/parent.location[.href|.replace|.assign] = / ( "url"
+  const JS_REDIRECT_REGEX =
+    /(?:window\.|document\.|top\.|self\.|parent\.)?location(?:\.href|\.replace|\.assign)?\s*(?:=|\()\s*['"`]([^'"`]+)['"`]/gi;
+
+  let scriptMatch: RegExpExecArray | null;
+  while ((scriptMatch = scriptRegex.exec(noComments)) !== null) {
+    const body = scriptMatch[1];
+    // Skip empty / external scripts.
+    if (!body || !body.trim()) continue;
+
+    // Strip JS line comments and block comments to avoid commented-out redirects.
+    // Conservative: do not try to be JS-aware about strings; this is best-effort.
+    const cleanedBody = body
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n\r]*/g, "$1");
+
+    JS_REDIRECT_REGEX.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = JS_REDIRECT_REGEX.exec(cleanedBody)) !== null) {
+      const raw = m[1].trim();
+      if (!raw || raw === "#" || raw.startsWith("#")) continue;
+      if (raw.startsWith("javascript:")) continue;
+
+      let resolved: string;
+      try {
+        resolved = new URL(raw, baseUrl).href;
+      } catch {
+        continue;
+      }
+
+      // Skip self-redirects.
+      if (resolved === baseUrl) continue;
+
+      return resolved;
+    }
   }
   return null;
 }
@@ -139,7 +199,7 @@ export async function detectRedirects(url: string): Promise<RedirectDetectionRes
       continue;
     }
 
-    // Non-3xx → potentially terminal. Read body to check for meta-refresh.
+    // Non-3xx → potentially terminal. Read body to check for meta-refresh / JS redirect.
     finalStatus = resp.status;
     try {
       finalHtml = await resp.text();
@@ -149,10 +209,25 @@ export async function detectRedirects(url: string): Promise<RedirectDetectionRes
 
     // Only meaningful when we successfully got HTML (status 200 typically).
     if (resp.status >= 200 && resp.status < 300 && finalHtml) {
+      // 1) Meta-refresh first (it semantically wins over inline JS when present).
       const metaTarget = extractMetaRefreshTarget(finalHtml, current);
       if (metaTarget && metaTarget !== current && !visited.has(metaTarget)) {
         chain.push({ url: current, status: resp.status, type: "meta-refresh" });
         current = metaTarget;
+        finalHtml = "";
+        finalStatus = 0;
+
+        if (i === MAX_HOPS - 1) {
+          chain.push({ url: current, status: -1, type: "http", statusText: "Max redirects exceeded" });
+        }
+        continue;
+      }
+
+      // 2) Inline JS redirect (window.location / document.location patterns).
+      const jsTarget = extractJsRedirectTarget(finalHtml, current);
+      if (jsTarget && jsTarget !== current && !visited.has(jsTarget)) {
+        chain.push({ url: current, status: resp.status, type: "javascript" });
+        current = jsTarget;
         finalHtml = "";
         finalStatus = 0;
 
@@ -169,11 +244,15 @@ export async function detectRedirects(url: string): Promise<RedirectDetectionRes
 
   const httpHops = chain.filter((h) => h.type === "http" && h.status >= 300 && h.status < 400).length;
   const metaHops = chain.filter((h) => h.type === "meta-refresh").length;
+  const jsHops = chain.filter((h) => h.type === "javascript").length;
+
+  const distinctTypes = [httpHops > 0, metaHops > 0, jsHops > 0].filter(Boolean).length;
 
   let redirectType: RedirectKind = "none";
-  if (httpHops > 0 && metaHops > 0) redirectType = "mixed";
+  if (distinctTypes > 1) redirectType = "mixed";
   else if (httpHops > 0) redirectType = "http";
   else if (metaHops > 0) redirectType = "meta-refresh";
+  else if (jsHops > 0) redirectType = "javascript";
 
   return {
     initialUrl: url,

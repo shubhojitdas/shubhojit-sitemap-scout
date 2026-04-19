@@ -19,8 +19,8 @@ interface InternalLinkData {
   isInternal: boolean;
 }
 
-type RedirectType = 'none' | 'http' | 'meta-refresh' | 'mixed';
-type RedirectHopType = 'http' | 'meta-refresh';
+type RedirectType = 'none' | 'http' | 'meta-refresh' | 'javascript' | 'mixed';
+type RedirectHopType = 'http' | 'meta-refresh' | 'javascript';
 
 interface RedirectHop {
   url: string;
@@ -520,6 +520,43 @@ function extractMetaRefresh(html: string, baseUrl: string): { target: string; de
   return null;
 }
 
+/**
+ * Inline JS redirect detection — pattern matches inside <script> blocks for
+ * common window.location / document.location assignments. No JS execution.
+ * Returns the resolved absolute URL of the first valid match, or null.
+ */
+function extractJsRedirect(html: string, baseUrl: string): string | null {
+  const noComments = html.replace(/<!--[\s\S]*?-->/g, '');
+  const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  const JS_REDIRECT_REGEX =
+    /(?:window\.|document\.|top\.|self\.|parent\.)?location(?:\.href|\.replace|\.assign)?\s*(?:=|\()\s*['"`]([^'"`]+)['"`]/gi;
+
+  let scriptMatch: RegExpExecArray | null;
+  while ((scriptMatch = scriptRegex.exec(noComments)) !== null) {
+    const body = scriptMatch[1];
+    if (!body || !body.trim()) continue;
+
+    // Strip JS comments to skip commented-out redirects (best-effort).
+    const cleanedBody = body
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n\r]*/g, '$1');
+
+    JS_REDIRECT_REGEX.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = JS_REDIRECT_REGEX.exec(cleanedBody)) !== null) {
+      const raw = m[1].trim();
+      if (!raw || raw === '#' || raw.startsWith('#')) continue;
+      if (raw.startsWith('javascript:')) continue;
+
+      let resolved: string;
+      try { resolved = new URL(raw, baseUrl).href; } catch { continue; }
+      if (resolved === baseUrl) continue;
+      return resolved;
+    }
+  }
+  return null;
+}
+
 async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> {
   const html = await fetchJsRenderedHtml(url);
   if (!html) return [];
@@ -601,11 +638,51 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     finalStatus = resp.status;
     try { finalHtml = await resp.text(); } catch { finalHtml = ''; }
 
+    // Some servers send an HTTP `Refresh` response header instead of a meta tag.
+    // Browsers honor it identically, so we follow it as a meta-refresh hop.
+    if (resp.status >= 200 && resp.status < 300) {
+      const refreshHeader = resp.headers.get('refresh');
+      if (refreshHeader) {
+        const parts = refreshHeader.split(';');
+        const delay = parseFloat(parts[0]) || 0;
+        const urlPart = parts.slice(1).join(';').trim();
+        const m = urlPart.match(/url\s*=\s*["']?([^"'\s]+)["']?/i);
+        if (delay <= 5 && m) {
+          let target = m[1].trim();
+          try { target = new URL(target, current).href; } catch { /* keep */ }
+          if (target !== current && !visited.has(target)) {
+            chain.push({ url: current, status: resp.status, type: 'meta-refresh' });
+            current = target;
+            finalHtml = '';
+            finalStatus = 0;
+            if (i === MAX_HOPS - 1) {
+              chain.push({ url: current, status: -1, type: 'http', statusText: 'Max redirects exceeded' });
+            }
+            continue;
+          }
+        }
+      }
+    }
+
     if (resp.status >= 200 && resp.status < 300 && finalHtml) {
+      // 1) Meta-refresh first.
       const meta = extractMetaRefresh(finalHtml, current);
       if (meta && meta.target !== current && !visited.has(meta.target)) {
         chain.push({ url: current, status: resp.status, type: 'meta-refresh' });
         current = meta.target;
+        finalHtml = '';
+        finalStatus = 0;
+        if (i === MAX_HOPS - 1) {
+          chain.push({ url: current, status: -1, type: 'http', statusText: 'Max redirects exceeded' });
+        }
+        continue;
+      }
+
+      // 2) Inline JS redirect (window.location / document.location patterns).
+      const jsTarget = extractJsRedirect(finalHtml, current);
+      if (jsTarget && jsTarget !== current && !visited.has(jsTarget)) {
+        chain.push({ url: current, status: resp.status, type: 'javascript' });
+        current = jsTarget;
         finalHtml = '';
         finalStatus = 0;
         if (i === MAX_HOPS - 1) {
@@ -619,10 +696,13 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
 
   const httpHops = chain.filter((h) => h.type === 'http' && h.status >= 300 && h.status < 400).length;
   const metaHops = chain.filter((h) => h.type === 'meta-refresh').length;
+  const jsHops = chain.filter((h) => h.type === 'javascript').length;
+  const distinctTypes = [httpHops > 0, metaHops > 0, jsHops > 0].filter(Boolean).length;
   let redirectType: RedirectType = 'none';
-  if (httpHops > 0 && metaHops > 0) redirectType = 'mixed';
+  if (distinctTypes > 1) redirectType = 'mixed';
   else if (httpHops > 0) redirectType = 'http';
   else if (metaHops > 0) redirectType = 'meta-refresh';
+  else if (jsHops > 0) redirectType = 'javascript';
 
   return {
     initialUrl: url,

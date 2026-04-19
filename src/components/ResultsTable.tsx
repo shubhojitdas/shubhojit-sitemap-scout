@@ -498,7 +498,7 @@ function MetaTable({
         </div>
 
         <div ref={parentRef} className="overflow-auto max-h-[600px]">
-          <div className="divide-y divide-border">
+          <div>
             {filtered.map((row, index) => {
               const h1s = row.h1s ?? [];
               const h2s = row.h2s ?? [];

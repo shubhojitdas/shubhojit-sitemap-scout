@@ -272,7 +272,16 @@ function MetaTable({
 }) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const toggleExpanded = (i: number) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+  };
 
   const metaFields = useMemo(() => {
     const f: SearchField[] = [{ key: "url", label: "URL" }];

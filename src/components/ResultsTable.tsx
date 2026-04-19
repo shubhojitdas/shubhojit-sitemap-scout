@@ -285,9 +285,11 @@ function MetaTable({
     f.push(
       { key: "status", label: "Crawl Status" },
       { key: "statusCode", label: "Status Code" },
+      { key: "finalUrl", label: "Final URL" },
       { key: "redirectedUrl", label: "Redirected URL" },
       { key: "redirectType", label: "Redirect Type" },
       { key: "redirectChain", label: "Redirect Chain" },
+      { key: "hopCount", label: "Hop Count" },
       { key: "fetchTime", label: "Fetch Time" },
     );
     return f;

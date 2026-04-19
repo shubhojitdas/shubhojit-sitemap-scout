@@ -310,9 +310,11 @@ function MetaTable({
       case "robots": return r.robots ?? "";
       case "status": return r.status;
       case "statusCode": return String(r.statusCode ?? "");
-      case "redirectedUrl": return r.redirectedUrl ?? "";
+      case "redirectedUrl": return r.redirectedUrl ?? r.finalUrl ?? "";
+      case "finalUrl": return r.finalUrl ?? r.redirectedUrl ?? r.url;
       case "redirectType": return r.redirectType ?? "none";
-      case "redirectChain": return (r.redirectChain ?? []).join(" → ");
+      case "redirectChain": return (r.redirectChain ?? []).map((h) => `${h.url} (${h.status} ${h.type})`).join(" → ");
+      case "hopCount": return String(r.hopCount ?? (r.redirectChain?.length ?? 0));
       case "fetchTime": return r.fetchTime;
       default: return "";
     }

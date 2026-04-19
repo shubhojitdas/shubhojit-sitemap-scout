@@ -517,7 +517,7 @@ function MetaTable({
                 'bg-muted text-muted-foreground border-border';
 
               return (
-                <div key={index} className="contents">
+                <div key={index} className="border-b border-border last:border-b-0">
                   <div style={gridStyle} className="grid gap-0 hover:bg-muted/20 transition-colors text-xs">
                     <button
                       type="button"

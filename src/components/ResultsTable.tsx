@@ -511,9 +511,9 @@ function MetaTable({
               const isOpen = expandedRows.has(index);
 
               const typeBadgeClass =
-                rType === 'http' ? 'bg-info/15 text-info border-info/30' :
+                rType === 'http' ? 'bg-primary/15 text-primary border-primary/30' :
                 rType === 'meta-refresh' ? 'bg-warning/15 text-warning border-warning/30' :
-                rType === 'mixed' ? 'bg-accent/15 text-accent-foreground border-border' :
+                rType === 'mixed' ? 'bg-accent/30 text-accent-foreground border-border' :
                 'bg-muted text-muted-foreground border-border';
 
               return (

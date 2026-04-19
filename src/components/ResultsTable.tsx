@@ -401,14 +401,17 @@ function MetaTable({
   ];
 
   const colTemplate = [
-    '1fr',
+    '24px', // expand toggle
+    '1.2fr', // Initial URL
     ...(includeTitle ? ['1fr'] : []),
     ...(includeDesc ? ['1.4fr'] : []),
     ...(includeH1 ? ['1fr'] : []),
     ...(includeH2 ? ['1fr'] : []),
     ...(includeH3 ? ['1fr'] : []),
     ...(includeRobots ? ['0.8fr'] : []),
-    '100px',
+    '1fr', // Final URL
+    '110px', // Redirect Type badge
+    '90px', // Status
   ].join(' ');
   const gridStyle = { gridTemplateColumns: colTemplate };
 

@@ -520,6 +520,43 @@ function extractMetaRefresh(html: string, baseUrl: string): { target: string; de
   return null;
 }
 
+/**
+ * Inline JS redirect detection — pattern matches inside <script> blocks for
+ * common window.location / document.location assignments. No JS execution.
+ * Returns the resolved absolute URL of the first valid match, or null.
+ */
+function extractJsRedirect(html: string, baseUrl: string): string | null {
+  const noComments = html.replace(/<!--[\s\S]*?-->/g, '');
+  const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  const JS_REDIRECT_REGEX =
+    /(?:window\.|document\.|top\.|self\.|parent\.)?location(?:\.href|\.replace|\.assign)?\s*(?:=|\()\s*['"`]([^'"`]+)['"`]/gi;
+
+  let scriptMatch: RegExpExecArray | null;
+  while ((scriptMatch = scriptRegex.exec(noComments)) !== null) {
+    const body = scriptMatch[1];
+    if (!body || !body.trim()) continue;
+
+    // Strip JS comments to skip commented-out redirects (best-effort).
+    const cleanedBody = body
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n\r]*/g, '$1');
+
+    JS_REDIRECT_REGEX.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = JS_REDIRECT_REGEX.exec(cleanedBody)) !== null) {
+      const raw = m[1].trim();
+      if (!raw || raw === '#' || raw.startsWith('#')) continue;
+      if (raw.startsWith('javascript:')) continue;
+
+      let resolved: string;
+      try { resolved = new URL(raw, baseUrl).href; } catch { continue; }
+      if (resolved === baseUrl) continue;
+      return resolved;
+    }
+  }
+  return null;
+}
+
 async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> {
   const html = await fetchJsRenderedHtml(url);
   if (!html) return [];

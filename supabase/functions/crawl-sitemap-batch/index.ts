@@ -19,7 +19,15 @@ interface InternalLinkData {
   isInternal: boolean;
 }
 
-type RedirectType = 'none' | 'http' | 'meta-refresh';
+type RedirectType = 'none' | 'http' | 'meta-refresh' | 'mixed';
+type RedirectHopType = 'http' | 'meta-refresh';
+
+interface RedirectHop {
+  url: string;
+  status: number;
+  type: RedirectHopType;
+  statusText?: string;
+}
 
 interface CrawlResult {
   url: string;
@@ -40,8 +48,11 @@ interface CrawlResult {
   redirectStatusCode?: number;
   redirectedUrl?: string;
   redirectType?: RedirectType;
-  /** Full chain including the original URL as index 0 and each hop after. Single entry = no redirect. */
-  redirectChain?: string[];
+  /** Phase 1: structured chain — each hop carries URL, status, type. */
+  redirectChain?: RedirectHop[];
+  initialUrl?: string;
+  finalUrl?: string;
+  hopCount?: number;
   fetchTime: string;
 }
 

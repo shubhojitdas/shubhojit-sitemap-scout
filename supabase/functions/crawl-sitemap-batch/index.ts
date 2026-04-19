@@ -639,10 +639,24 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     try { finalHtml = await resp.text(); } catch { finalHtml = ''; }
 
     if (resp.status >= 200 && resp.status < 300 && finalHtml) {
+      // 1) Meta-refresh first.
       const meta = extractMetaRefresh(finalHtml, current);
       if (meta && meta.target !== current && !visited.has(meta.target)) {
         chain.push({ url: current, status: resp.status, type: 'meta-refresh' });
         current = meta.target;
+        finalHtml = '';
+        finalStatus = 0;
+        if (i === MAX_HOPS - 1) {
+          chain.push({ url: current, status: -1, type: 'http', statusText: 'Max redirects exceeded' });
+        }
+        continue;
+      }
+
+      // 2) Inline JS redirect (window.location / document.location patterns).
+      const jsTarget = extractJsRedirect(finalHtml, current);
+      if (jsTarget && jsTarget !== current && !visited.has(jsTarget)) {
+        chain.push({ url: current, status: resp.status, type: 'javascript' });
+        current = jsTarget;
         finalHtml = '';
         finalStatus = 0;
         if (i === MAX_HOPS - 1) {
@@ -656,10 +670,13 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
 
   const httpHops = chain.filter((h) => h.type === 'http' && h.status >= 300 && h.status < 400).length;
   const metaHops = chain.filter((h) => h.type === 'meta-refresh').length;
+  const jsHops = chain.filter((h) => h.type === 'javascript').length;
+  const distinctTypes = [httpHops > 0, metaHops > 0, jsHops > 0].filter(Boolean).length;
   let redirectType: RedirectType = 'none';
-  if (httpHops > 0 && metaHops > 0) redirectType = 'mixed';
+  if (distinctTypes > 1) redirectType = 'mixed';
   else if (httpHops > 0) redirectType = 'http';
   else if (metaHops > 0) redirectType = 'meta-refresh';
+  else if (jsHops > 0) redirectType = 'javascript';
 
   return {
     initialUrl: url,

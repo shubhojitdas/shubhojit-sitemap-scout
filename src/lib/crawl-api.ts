@@ -16,12 +16,12 @@ export interface InternalLinkData {
   isInternal: boolean;
 }
 
-export type RedirectType = 'none' | 'http' | 'meta-refresh' | 'mixed';
+export type RedirectType = 'none' | 'http' | 'meta-refresh' | 'javascript' | 'mixed';
 
 export interface RedirectHop {
   url: string;
   status: number;
-  type: 'http' | 'meta-refresh';
+  type: 'http' | 'meta-refresh' | 'javascript';
   statusText?: string;
 }
 

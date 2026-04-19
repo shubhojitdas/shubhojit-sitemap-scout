@@ -19,8 +19,8 @@ interface InternalLinkData {
   isInternal: boolean;
 }
 
-type RedirectType = 'none' | 'http' | 'meta-refresh' | 'mixed';
-type RedirectHopType = 'http' | 'meta-refresh';
+type RedirectType = 'none' | 'http' | 'meta-refresh' | 'javascript' | 'mixed';
+type RedirectHopType = 'http' | 'meta-refresh' | 'javascript';
 
 interface RedirectHop {
   url: string;

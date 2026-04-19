@@ -637,7 +637,7 @@ function MetaTable({
                             <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
                               hop.status === -1 ? 'bg-destructive/15 text-destructive' :
                               hop.type === 'meta-refresh' ? 'bg-warning/15 text-warning' :
-                              hop.status >= 300 && hop.status < 400 ? 'bg-info/15 text-info' :
+                              hop.status >= 300 && hop.status < 400 ? 'bg-primary/15 text-primary' :
                               hop.status >= 400 ? 'bg-destructive/15 text-destructive' :
                               'bg-success/15 text-success'
                             }`}>

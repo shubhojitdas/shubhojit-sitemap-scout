@@ -232,14 +232,6 @@ function extractHreflangs(html: string): HreflangEntry[] {
   return entries;
 }
 
-function extractImages(html: string, baseUrl: string): ImageData[] {
-  const images: ImageData[] = [];
-  const imgRegex = /<img\s([^>]+)>/gi;
-  let match;
-  while ((match = imgRegex.exec(html)) !== null) {
-    const attrs = match[1];
-    const srcMatch = attrs.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
-
 // ─── OG / Twitter tag extraction ──────────────────────────────────────────────
 // Captures every <meta> whose `property` starts with "og:" or whose
 // `name` starts with "twitter:" (case-insensitive). Some CMS platforms swap
@@ -259,7 +251,6 @@ function extractSocialTags(html: string, baseUrl: string): SocialTag[] {
 
   while ((m = metaRegex.exec(scope)) !== null) {
     const attrs = m[1];
-    // property="..." or name="..." — quoted or unquoted
     const propMatch = attrs.match(/\bproperty\s*=\s*["']([^"']+)["']/i);
     const nameMatch = attrs.match(/\bname\s*=\s*["']([^"']+)["']/i);
     const key = (propMatch?.[1] ?? nameMatch?.[1] ?? '').trim().toLowerCase();
@@ -289,7 +280,6 @@ function extractSocialTags(html: string, baseUrl: string): SocialTag[] {
       } catch { /* keep original */ }
     }
 
-    // De-dupe identical property+content pairs (some sites repeat tags).
     const dedupeKey = `${key}::${content}`;
     if (seen.has(dedupeKey)) continue;
     seen.add(dedupeKey);
@@ -300,8 +290,7 @@ function extractSocialTags(html: string, baseUrl: string): SocialTag[] {
   return tags;
 }
 
-function _extractImagesPlaceholder() {}
-function extractImagesReal(html: string, baseUrl: string): ImageData[] {
+function extractImages(html: string, baseUrl: string): ImageData[] {
   const images: ImageData[] = [];
   const imgRegex = /<img\s([^>]+)>/gi;
   let match;

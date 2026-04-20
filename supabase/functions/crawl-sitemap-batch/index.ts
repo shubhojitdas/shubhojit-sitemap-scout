@@ -807,12 +807,13 @@ async function fetchMeta(
   includeHreflangs: boolean,
   includeInternalLinks: boolean,
   jsRenderedLinks: boolean = false,
+  includeSocialTags: boolean = false,
 ): Promise<CrawlResult> {
   const start = Date.now();
   const empty: CrawlResult = {
     url, title: '', description: '', h1s: [], h2s: [], h3s: [],
     images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing',
-    hreflangs: [], internalLinks: [],
+    hreflangs: [], internalLinks: [], socialTags: [],
     status: 'Error', statusCode: 0,
     redirectType: 'none', redirectChain: [], hopCount: 0,
     initialUrl: url, finalUrl: url,
@@ -871,6 +872,7 @@ async function fetchMeta(
       internalLinks: includeInternalLinks
         ? (jsRenderedLinks ? await extractJsRenderedLinks(finalUrl) : extractInternalLinks(html, finalUrl))
         : [],
+      socialTags: includeSocialTags ? extractSocialTags(html, finalUrl) : [],
       status: 'OK',
       statusCode: detection.finalStatus,
       ...baseFields,
@@ -902,6 +904,7 @@ Deno.serve(async (req) => {
       includeHreflangs = false,
       includeInternalLinks = false,
       jsRenderedLinks = false,
+      includeSocialTags = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -917,7 +920,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks))
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags))
       );
       results.push(...batchResults);
     }

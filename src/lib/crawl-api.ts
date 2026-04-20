@@ -56,6 +56,8 @@ export interface CrawlResult {
   finalUrl?: string;
   /** Length of redirectChain. */
   hopCount?: number;
+  /** ISO-8601 Last-Modified header from the final HTTP response, when present. */
+  lastModified?: string;
   fetchTime: string;
 }
 

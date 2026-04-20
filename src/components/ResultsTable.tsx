@@ -2,11 +2,12 @@ import { useState, useMemo, useRef } from "react";
 import { CrawlResult, generateCSV, generateTSV, rowsToTSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Heading2, Heading3, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages, LinkIcon, ExternalLink, ChevronRight } from "lucide-react";
+import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Heading2, Heading3, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages, LinkIcon, ExternalLink, ChevronRight, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AdvancedSearchDialog, AdvancedFilter, createEmptyFilter, isFilterActive, applyAdvancedFilter } from "@/components/AdvancedSearchDialog";
+import { SocialTagsTable } from "@/components/SocialTagsTable";
 
 // Helper to extract @type from parsed JSON-LD, handling @graph, arrays, and nested structures
 function extractSchemaTypes(obj: unknown): string {
@@ -50,6 +51,7 @@ interface ResultsTableProps {
   includeCanonical: boolean;
   includeHreflangs: boolean;
   includeInternalLinks: boolean;
+  includeSocialTags: boolean;
 }
 
 type SearchField = { key: string; label: string };
@@ -128,8 +130,8 @@ function matchesFieldSearch<T>(
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks }: ResultsTableProps) {
-  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks">("meta");
+export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, includeSocialTags }: ResultsTableProps) {
+  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks" | "social">("meta");
 
   // Universal filter state shared across all tabs
   const [metaFilter, setMetaFilter] = useState<Filter>("all");

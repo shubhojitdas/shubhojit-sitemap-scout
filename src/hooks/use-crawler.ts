@@ -70,9 +70,10 @@ interface CrawlOptions {
   includeHreflangs: boolean;
   includeInternalLinks: boolean;
   jsRenderedLinks: boolean;
+  includeSocialTags: boolean;
 }
 
-const DEFAULT_OPTS: CrawlOptions = { includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false };
+const DEFAULT_OPTS: CrawlOptions = { includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false };
 
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(() => loadPersistedState() || INITIAL_STATE);
@@ -131,7 +132,7 @@ export function useCrawler() {
       }
       const batch = urls.slice(i, i + BATCH_SIZE);
       try {
-        const batchResults = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks);
+        const batchResults = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags);
         if (signal.aborted) return;
         if (pausedRef.current) {
           allResults.push(...batchResults);
@@ -170,9 +171,10 @@ export function useCrawler() {
     includeHreflangs = false,
     includeInternalLinks = false,
     jsRenderedLinks = false,
+    includeSocialTags = false,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
@@ -217,9 +219,10 @@ export function useCrawler() {
     includeHreflangs = false,
     includeInternalLinks = false,
     jsRenderedLinks = false,
+    includeSocialTags = false,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = urls;
     pendingIndexRef.current = 0;
@@ -254,9 +257,10 @@ export function useCrawler() {
     includeHreflangs = false,
     includeInternalLinks = false,
     jsRenderedLinks = false,
+    includeSocialTags = false,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;

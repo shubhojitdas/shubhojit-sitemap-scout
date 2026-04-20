@@ -2,11 +2,12 @@ import { useState, useMemo, useRef } from "react";
 import { CrawlResult, generateCSV, generateTSV, rowsToTSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Heading2, Heading3, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages, LinkIcon, ExternalLink, ChevronRight } from "lucide-react";
+import { Download, Copy, Check, Search, ArrowUpDown, AlertTriangle, FileWarning, Heading1, Heading2, Heading3, Image, Code, ClipboardCopy, Bot, Settings2, Link2, Languages, LinkIcon, ExternalLink, ChevronRight, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AdvancedSearchDialog, AdvancedFilter, createEmptyFilter, isFilterActive, applyAdvancedFilter } from "@/components/AdvancedSearchDialog";
+import { SocialTagsTable } from "@/components/SocialTagsTable";
 
 // Helper to extract @type from parsed JSON-LD, handling @graph, arrays, and nested structures
 function extractSchemaTypes(obj: unknown): string {
@@ -50,6 +51,7 @@ interface ResultsTableProps {
   includeCanonical: boolean;
   includeHreflangs: boolean;
   includeInternalLinks: boolean;
+  includeSocialTags: boolean;
 }
 
 type SearchField = { key: string; label: string };
@@ -128,8 +130,8 @@ function matchesFieldSearch<T>(
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks }: ResultsTableProps) {
-  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks">("meta");
+export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, includeSocialTags }: ResultsTableProps) {
+  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks" | "social">("meta");
 
   // Universal filter state shared across all tabs
   const [metaFilter, setMetaFilter] = useState<Filter>("all");
@@ -147,12 +149,12 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
 
   if (results.length === 0) return null;
 
-  const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs || includeInternalLinks;
+  const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs || includeInternalLinks || includeSocialTags;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
       {hasTabs ? (
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks")}>
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks" | "social")}>
           <TabsList className="h-9 bg-muted p-1 rounded-lg border border-border">
             <TabsTrigger value="meta" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <Search className="h-3 w-3" />
@@ -186,6 +188,12 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
               <TabsTrigger value="internalLinks" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 <LinkIcon className="h-3 w-3" />
                 Internal Links
+              </TabsTrigger>
+            )}
+            {includeSocialTags && (
+              <TabsTrigger value="social" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                <Share2 className="h-3 w-3" />
+                OG &amp; Twitter
               </TabsTrigger>
             )}
           </TabsList>
@@ -241,6 +249,11 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
                 search={universalSearch} setSearch={setUniversalSearch}
                 advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
               />
+            </TabsContent>
+          )}
+          {includeSocialTags && (
+            <TabsContent value="social" className="mt-4">
+              <SocialTagsTable results={results} />
             </TabsContent>
           )}
         </Tabs>

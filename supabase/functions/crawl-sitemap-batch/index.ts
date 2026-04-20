@@ -19,6 +19,12 @@ interface InternalLinkData {
   isInternal: boolean;
 }
 
+interface SocialTag {
+  network: 'og' | 'twitter';
+  property: string;   // e.g. "og:title" or "twitter:card"
+  content: string;
+}
+
 type RedirectType = 'none' | 'http' | 'meta-refresh' | 'javascript' | 'mixed';
 type RedirectHopType = 'http' | 'meta-refresh' | 'javascript';
 
@@ -43,6 +49,7 @@ interface CrawlResult {
   canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
   hreflangs?: HreflangEntry[];
   internalLinks?: InternalLinkData[];
+  socialTags?: SocialTag[];
   status: 'OK' | 'Error';
   statusCode: number;
   redirectStatusCode?: number;
@@ -223,6 +230,64 @@ function extractHreflangs(html: string): HreflangEntry[] {
     }
   }
   return entries;
+}
+
+// ─── OG / Twitter tag extraction ──────────────────────────────────────────────
+// Captures every <meta> whose `property` starts with "og:" or whose
+// `name` starts with "twitter:" (case-insensitive). Some CMS platforms swap
+// the attributes (name="og:..." or property="twitter:..."), so we accept
+// both. Image-like content fields are resolved against the page URL so
+// previews work even when the source uses relative paths.
+function extractSocialTags(html: string, baseUrl: string): SocialTag[] {
+  const cleaned = html.replace(/<!--[\s\S]*?-->/g, '');
+  // Restrict to <head> when available — OG/Twitter tags belong there.
+  const headMatch = cleaned.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i);
+  const scope = headMatch ? headMatch[1] : cleaned;
+
+  const tags: SocialTag[] = [];
+  const seen = new Set<string>();
+  const metaRegex = /<meta\b([^>]*)>/gi;
+  let m: RegExpExecArray | null;
+
+  while ((m = metaRegex.exec(scope)) !== null) {
+    const attrs = m[1];
+    const propMatch = attrs.match(/\bproperty\s*=\s*["']([^"']+)["']/i);
+    const nameMatch = attrs.match(/\bname\s*=\s*["']([^"']+)["']/i);
+    const key = (propMatch?.[1] ?? nameMatch?.[1] ?? '').trim().toLowerCase();
+    if (!key) continue;
+
+    let network: 'og' | 'twitter';
+    if (key.startsWith('og:')) network = 'og';
+    else if (key.startsWith('twitter:')) network = 'twitter';
+    else continue;
+
+    let contentMatch = attrs.match(/\bcontent\s*=\s*"([^"]*)"/i);
+    if (!contentMatch) contentMatch = attrs.match(/\bcontent\s*=\s*'([^']*)'/i);
+    if (!contentMatch) continue;
+
+    let content = decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim();
+    if (!content) continue;
+
+    // Resolve image-like fields to absolute URLs so previews render.
+    if (/^(og:image|og:image:secure_url|og:video|og:audio|og:url|twitter:image|twitter:url|twitter:player)$/.test(key)) {
+      try {
+        if (content.startsWith('//')) {
+          const base = new URL(baseUrl);
+          content = base.protocol + content;
+        } else if (!/^https?:\/\//i.test(content) && !content.startsWith('data:')) {
+          content = new URL(content, baseUrl).href;
+        }
+      } catch { /* keep original */ }
+    }
+
+    const dedupeKey = `${key}::${content}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    tags.push({ network, property: key, content });
+  }
+
+  return tags;
 }
 
 function extractImages(html: string, baseUrl: string): ImageData[] {
@@ -742,12 +807,13 @@ async function fetchMeta(
   includeHreflangs: boolean,
   includeInternalLinks: boolean,
   jsRenderedLinks: boolean = false,
+  includeSocialTags: boolean = false,
 ): Promise<CrawlResult> {
   const start = Date.now();
   const empty: CrawlResult = {
     url, title: '', description: '', h1s: [], h2s: [], h3s: [],
     images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing',
-    hreflangs: [], internalLinks: [],
+    hreflangs: [], internalLinks: [], socialTags: [],
     status: 'Error', statusCode: 0,
     redirectType: 'none', redirectChain: [], hopCount: 0,
     initialUrl: url, finalUrl: url,
@@ -806,6 +872,7 @@ async function fetchMeta(
       internalLinks: includeInternalLinks
         ? (jsRenderedLinks ? await extractJsRenderedLinks(finalUrl) : extractInternalLinks(html, finalUrl))
         : [],
+      socialTags: includeSocialTags ? extractSocialTags(html, finalUrl) : [],
       status: 'OK',
       statusCode: detection.finalStatus,
       ...baseFields,
@@ -837,6 +904,7 @@ Deno.serve(async (req) => {
       includeHreflangs = false,
       includeInternalLinks = false,
       jsRenderedLinks = false,
+      includeSocialTags = false,
     } = await req.json();
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
@@ -852,7 +920,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize);
       const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks))
+        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags))
       );
       results.push(...batchResults);
     }

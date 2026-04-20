@@ -52,6 +52,7 @@ const Index = () => {
   const [includeCanonical, setIncludeCanonical] = useState(false);
   const [includeHreflangs, setIncludeHreflangs] = useState(false);
   const [includeInternalLinks, setIncludeInternalLinks] = useState(false);
+  const [includeSocialTags, setIncludeSocialTags] = useState(false);
   const [localIncludeTitle, setLocalIncludeTitle] = useState(true);
   const [localIncludeDesc, setLocalIncludeDesc] = useState(true);
   const [showLinkGraph, setShowLinkGraph] = useState(false);
@@ -76,6 +77,7 @@ const Index = () => {
     withHreflangs: boolean,
     withInternalLinks: boolean,
     withJsRenderedLinks: boolean,
+    withSocialTags: boolean,
   ) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
@@ -90,9 +92,10 @@ const Index = () => {
     setIncludeCanonical(withCanonical);
     setIncludeHreflangs(withHreflangs);
     setIncludeInternalLinks(withInternalLinks);
+    setIncludeSocialTags(withSocialTags);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks);
+    crawl(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks, withSocialTags);
   };
 
   const handleSpiderSite = (
@@ -109,6 +112,7 @@ const Index = () => {
     withHreflangs: boolean,
     withInternalLinks: boolean,
     withJsRenderedLinks: boolean,
+    withSocialTags: boolean,
   ) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
@@ -123,9 +127,10 @@ const Index = () => {
     setIncludeCanonical(withCanonical);
     setIncludeHreflangs(withHreflangs);
     setIncludeInternalLinks(withInternalLinks);
+    setIncludeSocialTags(withSocialTags);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    spiderSite(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks);
+    spiderSite(url, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks, withSocialTags);
   };
 
   const handleCrawlUrls = (
@@ -142,6 +147,7 @@ const Index = () => {
     withHreflangs: boolean,
     withInternalLinks: boolean,
     withJsRenderedLinks: boolean,
+    withSocialTags: boolean,
   ) => {
     setIncludeH1(withH1);
     setIncludeImages(withImages);
@@ -150,9 +156,10 @@ const Index = () => {
     setIncludeCanonical(withCanonical);
     setIncludeHreflangs(withHreflangs);
     setIncludeInternalLinks(withInternalLinks);
+    setIncludeSocialTags(withSocialTags);
     setLocalIncludeTitle(withTitle);
     setLocalIncludeDesc(withDesc);
-    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks);
+    crawlUrls(urls, withTitle, withDesc, withH1, withH2, withH3, withImages, withSchemas, withRobots, withCanonical, withHreflangs, withInternalLinks, withJsRenderedLinks, withSocialTags);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling" || phase === "paused";
@@ -389,6 +396,7 @@ const Index = () => {
             includeCanonical={includeCanonical}
             includeHreflangs={includeHreflangs}
             includeInternalLinks={includeInternalLinks}
+            includeSocialTags={includeSocialTags}
           />
         </section>
       )}

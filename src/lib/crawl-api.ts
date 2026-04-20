@@ -16,6 +16,12 @@ export interface InternalLinkData {
   isInternal: boolean;
 }
 
+export interface SocialTag {
+  network: 'og' | 'twitter';
+  property: string;
+  content: string;
+}
+
 export type RedirectType = 'none' | 'http' | 'meta-refresh' | 'javascript' | 'mixed';
 
 export interface RedirectHop {
@@ -39,6 +45,7 @@ export interface CrawlResult {
   canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
   hreflangs?: HreflangEntry[];
   internalLinks?: InternalLinkData[];
+  socialTags?: SocialTag[];
   status: "OK" | "Error";
   statusCode: number;
   redirectStatusCode?: number;
@@ -95,9 +102,10 @@ export async function fetchMetaBatch(
   includeHreflangs = false,
   includeInternalLinks = false,
   jsRenderedLinks = false,
+  includeSocialTags = false,
 ): Promise<CrawlResult[]> {
   const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks },
+    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags },
   });
 
   if (error) throw new Error(error.message);

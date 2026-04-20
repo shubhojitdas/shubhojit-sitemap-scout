@@ -19,6 +19,12 @@ interface InternalLinkData {
   isInternal: boolean;
 }
 
+interface SocialTag {
+  network: 'og' | 'twitter';
+  property: string;   // e.g. "og:title" or "twitter:card"
+  content: string;
+}
+
 type RedirectType = 'none' | 'http' | 'meta-refresh' | 'javascript' | 'mixed';
 type RedirectHopType = 'http' | 'meta-refresh' | 'javascript';
 
@@ -43,6 +49,7 @@ interface CrawlResult {
   canonicalStatus?: 'Self Referencing' | 'Canonicalised' | 'Missing';
   hreflangs?: HreflangEntry[];
   internalLinks?: InternalLinkData[];
+  socialTags?: SocialTag[];
   status: 'OK' | 'Error';
   statusCode: number;
   redirectStatusCode?: number;

@@ -53,6 +53,8 @@ interface CrawlResult {
   initialUrl?: string;
   finalUrl?: string;
   hopCount?: number;
+  /** ISO-8601 Last-Modified from the final HTTP response, when provided. */
+  lastModified?: string;
   fetchTime: string;
 }
 
@@ -581,6 +583,8 @@ interface DetectionResult {
   hopCount: number;
   finalHtml: string;
   finalStatus: number;
+  /** Last-Modified HTTP header from the final landed response, ISO-8601 if parseable. */
+  lastModified: string;
   /** True when the underlying network completely failed before any response. */
   networkError: boolean;
 }
@@ -591,6 +595,7 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
   let current = url;
   let finalHtml = '';
   let finalStatus = 0;
+  let lastModified = '';
   let networkError = false;
 
   for (let i = 0; i < MAX_HOPS; i++) {
@@ -636,6 +641,12 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     }
 
     finalStatus = resp.status;
+    // Capture Last-Modified header (RFC 1123) → ISO-8601 string for sitemap <lastmod>.
+    const lmHeader = resp.headers.get('last-modified');
+    if (lmHeader) {
+      const parsed = new Date(lmHeader);
+      if (!isNaN(parsed.getTime())) lastModified = parsed.toISOString();
+    }
     try { finalHtml = await resp.text(); } catch { finalHtml = ''; }
 
     // Some servers send an HTTP `Refresh` response header instead of a meta tag.
@@ -712,6 +723,7 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     hopCount: chain.length,
     finalHtml,
     finalStatus,
+    lastModified,
     networkError,
   };
 }
@@ -756,6 +768,7 @@ async function fetchMeta(
       redirectType: detection.redirectType,
       redirectChain: detection.redirectChain,
       hopCount: detection.hopCount,
+      lastModified: detection.lastModified || undefined,
       // Backward-compat scalar fields (used by older UI rendering paths).
       redirectStatusCode: firstHttpRedirect?.status,
       redirectedUrl: detection.redirectType === 'none' ? undefined : detection.finalUrl,

@@ -5,6 +5,7 @@ import { StatsCards } from "@/components/StatsCards";
 import { ResultsTable } from "@/components/ResultsTable";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LinkGraph } from "@/components/LinkGraph";
+import { SitemapGenerator } from "@/components/SitemapGenerator";
 import { motion } from "framer-motion";
 import { ArrowUp, Linkedin, Network, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -322,6 +323,9 @@ const Index = () => {
               <Network className="h-3.5 w-3.5" />
               {showLinkGraph ? "Hide Link Graph" : "Visual Link Graph"}
             </Button>
+            {crawlSource === "site" && phase === "done" && (
+              <SitemapGenerator results={results} domain={domain} />
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button

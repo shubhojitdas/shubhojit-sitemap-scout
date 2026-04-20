@@ -239,6 +239,75 @@ function extractImages(html: string, baseUrl: string): ImageData[] {
   while ((match = imgRegex.exec(html)) !== null) {
     const attrs = match[1];
     const srcMatch = attrs.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+
+// ─── OG / Twitter tag extraction ──────────────────────────────────────────────
+// Captures every <meta> whose `property` starts with "og:" or whose
+// `name` starts with "twitter:" (case-insensitive). Some CMS platforms swap
+// the attributes (name="og:..." or property="twitter:..."), so we accept
+// both. Image-like content fields are resolved against the page URL so
+// previews work even when the source uses relative paths.
+function extractSocialTags(html: string, baseUrl: string): SocialTag[] {
+  const cleaned = html.replace(/<!--[\s\S]*?-->/g, '');
+  // Restrict to <head> when available — OG/Twitter tags belong there.
+  const headMatch = cleaned.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i);
+  const scope = headMatch ? headMatch[1] : cleaned;
+
+  const tags: SocialTag[] = [];
+  const seen = new Set<string>();
+  const metaRegex = /<meta\b([^>]*)>/gi;
+  let m: RegExpExecArray | null;
+
+  while ((m = metaRegex.exec(scope)) !== null) {
+    const attrs = m[1];
+    // property="..." or name="..." — quoted or unquoted
+    const propMatch = attrs.match(/\bproperty\s*=\s*["']([^"']+)["']/i);
+    const nameMatch = attrs.match(/\bname\s*=\s*["']([^"']+)["']/i);
+    const key = (propMatch?.[1] ?? nameMatch?.[1] ?? '').trim().toLowerCase();
+    if (!key) continue;
+
+    let network: 'og' | 'twitter';
+    if (key.startsWith('og:')) network = 'og';
+    else if (key.startsWith('twitter:')) network = 'twitter';
+    else continue;
+
+    let contentMatch = attrs.match(/\bcontent\s*=\s*"([^"]*)"/i);
+    if (!contentMatch) contentMatch = attrs.match(/\bcontent\s*=\s*'([^']*)'/i);
+    if (!contentMatch) continue;
+
+    let content = decodeHtmlEntities(contentMatch[1]).replace(/\s+/g, ' ').trim();
+    if (!content) continue;
+
+    // Resolve image-like fields to absolute URLs so previews render.
+    if (/^(og:image|og:image:secure_url|og:video|og:audio|og:url|twitter:image|twitter:url|twitter:player)$/.test(key)) {
+      try {
+        if (content.startsWith('//')) {
+          const base = new URL(baseUrl);
+          content = base.protocol + content;
+        } else if (!/^https?:\/\//i.test(content) && !content.startsWith('data:')) {
+          content = new URL(content, baseUrl).href;
+        }
+      } catch { /* keep original */ }
+    }
+
+    // De-dupe identical property+content pairs (some sites repeat tags).
+    const dedupeKey = `${key}::${content}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    tags.push({ network, property: key, content });
+  }
+
+  return tags;
+}
+
+function _extractImagesPlaceholder() {}
+function extractImagesReal(html: string, baseUrl: string): ImageData[] {
+  const images: ImageData[] = [];
+  const imgRegex = /<img\s([^>]+)>/gi;
+  let match;
+  while ((match = imgRegex.exec(html)) !== null) {
+    const attrs = match[1];
+    const srcMatch = attrs.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
     if (!srcMatch) continue;
     let src = srcMatch[1].trim();
 

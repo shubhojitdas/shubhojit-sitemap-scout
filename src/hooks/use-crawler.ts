@@ -171,9 +171,10 @@ export function useCrawler() {
     includeHreflangs = false,
     includeInternalLinks = false,
     jsRenderedLinks = false,
+    includeSocialTags = false,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
@@ -218,9 +219,10 @@ export function useCrawler() {
     includeHreflangs = false,
     includeInternalLinks = false,
     jsRenderedLinks = false,
+    includeSocialTags = false,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = urls;
     pendingIndexRef.current = 0;
@@ -255,9 +257,10 @@ export function useCrawler() {
     includeHreflangs = false,
     includeInternalLinks = false,
     jsRenderedLinks = false,
+    includeSocialTags = false,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;

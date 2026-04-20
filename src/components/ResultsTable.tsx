@@ -149,12 +149,12 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
 
   if (results.length === 0) return null;
 
-  const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs || includeInternalLinks;
+  const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs || includeInternalLinks || includeSocialTags;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
       {hasTabs ? (
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks")}>
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as "meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks" | "social")}>
           <TabsList className="h-9 bg-muted p-1 rounded-lg border border-border">
             <TabsTrigger value="meta" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               <Search className="h-3 w-3" />
@@ -188,6 +188,12 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
               <TabsTrigger value="internalLinks" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 <LinkIcon className="h-3 w-3" />
                 Internal Links
+              </TabsTrigger>
+            )}
+            {includeSocialTags && (
+              <TabsTrigger value="social" className="text-xs gap-1.5 h-7 px-4 rounded-md font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                <Share2 className="h-3 w-3" />
+                OG &amp; Twitter
               </TabsTrigger>
             )}
           </TabsList>
@@ -243,6 +249,11 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
                 search={universalSearch} setSearch={setUniversalSearch}
                 advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
               />
+            </TabsContent>
+          )}
+          {includeSocialTags && (
+            <TabsContent value="social" className="mt-4">
+              <SocialTagsTable results={results} />
             </TabsContent>
           )}
         </Tabs>

@@ -1,17 +1,23 @@
 import { useState, useRef } from "react";
-import { Search, Globe, List, Upload, X, FileSpreadsheet, Heading1, Heading2, Heading3, Image, Code, Bot, Pause, Play, Link2, Languages, LinkIcon, Zap, Network, Share2 } from "lucide-react";
+import { Search, Globe, List, Upload, X, FileSpreadsheet, Pause, Play, Network, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import * as XLSX from "xlsx";
+import type { CrawlConfig } from "@/components/CrawlConfigDialog";
+
+type CrawlArgs = [
+  string | string[],
+  CrawlConfig,
+];
 
 interface CrawlFormProps {
-  onCrawl: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean, includeSocialTags: boolean) => void;
-  onCrawlUrls: (urls: string[], includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean, includeSocialTags: boolean) => void;
-  onSpiderSite: (url: string, includeTitle: boolean, includeDesc: boolean, includeH1: boolean, includeH2: boolean, includeH3: boolean, includeImages: boolean, includeSchemas: boolean, includeRobots: boolean, includeCanonical: boolean, includeHreflangs: boolean, includeInternalLinks: boolean, jsRenderedLinks: boolean, includeSocialTags: boolean) => void;
+  config: CrawlConfig;
+  onOpenConfig: () => void;
+  onCrawl: (url: string, c: CrawlConfig) => void;
+  onCrawlUrls: (urls: string[], c: CrawlConfig) => void;
+  onSpiderSite: (url: string, c: CrawlConfig) => void;
   isLoading: boolean;
   isPaused: boolean;
   onReset: () => void;
@@ -21,11 +27,11 @@ interface CrawlFormProps {
 
 function parseUrlsFromText(text: string): string[] {
   const seen = new Set<string>();
-  return text.
-  split(/\n/).
-  map((u) => u.trim()).
-  filter((u) => u.length > 0 && (u.startsWith("http://") || u.startsWith("https://"))).
-  filter((u) => {if (seen.has(u)) return false;seen.add(u);return true;});
+  return text
+    .split(/\n/)
+    .map((u) => u.trim())
+    .filter((u) => u.length > 0 && (u.startsWith("http://") || u.startsWith("https://")))
+    .filter((u) => { if (seen.has(u)) return false; seen.add(u); return true; });
 }
 
 function extractUrlsFromRows(rows: unknown[][]): string[] {
@@ -35,7 +41,7 @@ function extractUrlsFromRows(rows: unknown[][]): string[] {
     for (const cell of row) {
       const val = String(cell ?? "").trim();
       if (val.startsWith("http://") || val.startsWith("https://")) {
-        if (!seen.has(val)) {seen.add(val);urls.push(val);}
+        if (!seen.has(val)) { seen.add(val); urls.push(val); }
         break;
       }
     }
@@ -43,7 +49,10 @@ function extractUrlsFromRows(rows: unknown[][]): string[] {
   return urls;
 }
 
-export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPaused, onReset, onPause, onResume }: CrawlFormProps) {
+export function CrawlForm({
+  config, onOpenConfig, onCrawl, onCrawlUrls, onSpiderSite,
+  isLoading, isPaused, onReset, onPause, onResume,
+}: CrawlFormProps) {
   const [sitemapUrl, setSitemapUrl] = useState("");
   const [siteUrl, setSiteUrl] = useState("");
   const [urlText, setUrlText] = useState("");
@@ -51,44 +60,30 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
   const [fileUrls, setFileUrls] = useState<string[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("sitemap");
-  const [includeTitle, setIncludeTitle] = useState(true);
-  const [includeDesc, setIncludeDesc] = useState(true);
-  const [includeH1, setIncludeH1] = useState(false);
-  const [includeH2, setIncludeH2] = useState(false);
-  const [includeH3, setIncludeH3] = useState(false);
-  const [includeImages, setIncludeImages] = useState(false);
-  const [includeSchemas, setIncludeSchemas] = useState(false);
-  const [includeRobots, setIncludeRobots] = useState(false);
-  const [includeCanonical, setIncludeCanonical] = useState(false);
-  const [includeHreflangs, setIncludeHreflangs] = useState(false);
-  const [includeInternalLinks, setIncludeInternalLinks] = useState(false);
-  const [jsRenderedLinks, setJsRenderedLinks] = useState(false);
-  const [includeSocialTags, setIncludeSocialTags] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const enabledCount = Object.values(config).filter(Boolean).length;
 
   const handleSitemapSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sitemapUrl.trim()) return;
-    onCrawl(sitemapUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags);
+    onCrawl(sitemapUrl.trim(), config);
   };
-
   const handleUrlsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const urls = parseUrlsFromText(urlText);
     if (urls.length === 0) return;
-    onCrawlUrls(urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags);
+    onCrawlUrls(urls, config);
   };
-
   const handleSiteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!siteUrl.trim()) return;
-    onSpiderSite(siteUrl.trim(), includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags);
+    onSpiderSite(siteUrl.trim(), config);
   };
-
   const handleFileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (fileUrls.length === 0) return;
-    onCrawlUrls(fileUrls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags);
+    onCrawlUrls(fileUrls, config);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,7 +96,7 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
     const ext = file.name.split(".").pop()?.toLowerCase();
     setFileName(file.name);
 
-    if (ext === "csv") {
+    if (ext === "csv" || ext === "txt") {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
@@ -135,136 +130,83 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
       };
       reader.readAsArrayBuffer(file);
     } else {
-      setFileError("Unsupported file type. Please upload a .csv, .xlsx, or .xls file.");
+      setFileError("Unsupported file type. Please upload .csv, .txt, .xlsx, or .xls");
       setFileName(null);
     }
-
     e.target.value = "";
   };
 
   const handleCancelOrReset = () => {
     onReset();
-    setSitemapUrl("");
-    setSiteUrl("");
-    setUrlText("");
-    setFileName(null);
-    setFileUrls([]);
-    setFileError(null);
+    setSitemapUrl(""); setSiteUrl(""); setUrlText("");
+    setFileName(null); setFileUrls([]); setFileError(null);
   };
 
-  const pillClass = (active: boolean) =>
-    `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border cursor-pointer select-none text-xs font-medium transition-all duration-150
-    ${active ? "border-foreground bg-foreground text-background" : "border-border bg-transparent text-muted-foreground hover:border-foreground/50 hover:text-foreground"}
-    ${isLoading ? "opacity-50 pointer-events-none" : ""}`;
-
-  const Toggles = (
-    <div className="mt-3 pt-3 border-t border-border flex justify-center gap-2 flex-wrap">
-      <Label htmlFor="include-title" className={pillClass(includeTitle)}>
-        <Checkbox id="include-title" checked={includeTitle} onCheckedChange={(v) => setIncludeTitle(!!v)} disabled={isLoading} className="hidden" />
-        Meta Title
-      </Label>
-
-      <Label htmlFor="include-desc" className={pillClass(includeDesc)}>
-        <Checkbox id="include-desc" checked={includeDesc} onCheckedChange={(v) => setIncludeDesc(!!v)} disabled={isLoading} className="hidden" />
-        Meta Description
-      </Label>
-
-      <Label htmlFor="include-h1" className={pillClass(includeH1)}>
-        <Checkbox id="include-h1" checked={includeH1} onCheckedChange={(v) => setIncludeH1(!!v)} disabled={isLoading} className="hidden" />
-        <Heading1 className="h-3.5 w-3.5" />
-        &lt;H1&gt; tags
-      </Label>
-
-      <Label htmlFor="include-h2" className={pillClass(includeH2)}>
-        <Checkbox id="include-h2" checked={includeH2} onCheckedChange={(v) => setIncludeH2(!!v)} disabled={isLoading} className="hidden" />
-        <Heading2 className="h-3.5 w-3.5" />
-        &lt;H2&gt; tags
-      </Label>
-
-      <Label htmlFor="include-h3" className={pillClass(includeH3)}>
-        <Checkbox id="include-h3" checked={includeH3} onCheckedChange={(v) => setIncludeH3(!!v)} disabled={isLoading} className="hidden" />
-        <Heading3 className="h-3.5 w-3.5" />
-        &lt;H3&gt; tags
-      </Label>
-
-      <Label htmlFor="include-images" className={pillClass(includeImages)}>
-        <Checkbox id="include-images" checked={includeImages} onCheckedChange={(v) => setIncludeImages(!!v)} disabled={isLoading} className="hidden" />
-        <Image className="h-3.5 w-3.5" />
-        Image alt texts
-      </Label>
-
-      <Label htmlFor="include-schemas" className={pillClass(includeSchemas)}>
-        <Checkbox id="include-schemas" checked={includeSchemas} onCheckedChange={(v) => setIncludeSchemas(!!v)} disabled={isLoading} className="hidden" />
-        <Code className="h-3.5 w-3.5" />
-        Schema Markup
-      </Label>
-
-      <Label htmlFor="include-robots" className={pillClass(includeRobots)}>
-        <Checkbox id="include-robots" checked={includeRobots} onCheckedChange={(v) => setIncludeRobots(!!v)} disabled={isLoading} className="hidden" />
-        <Bot className="h-3.5 w-3.5" />
-        Meta Robots
-      </Label>
-
-      <Label htmlFor="include-canonical" className={pillClass(includeCanonical)}>
-        <Checkbox id="include-canonical" checked={includeCanonical} onCheckedChange={(v) => setIncludeCanonical(!!v)} disabled={isLoading} className="hidden" />
-        <Link2 className="h-3.5 w-3.5" />
-        Canonical
-      </Label>
-
-      <Label htmlFor="include-hreflangs" className={pillClass(includeHreflangs)}>
-        <Checkbox id="include-hreflangs" checked={includeHreflangs} onCheckedChange={(v) => setIncludeHreflangs(!!v)} disabled={isLoading} className="hidden" />
-        <Languages className="h-3.5 w-3.5" />
-        Hreflang
-      </Label>
-
-      <Label htmlFor="include-internal-links" className={pillClass(includeInternalLinks)}>
-        <Checkbox id="include-internal-links" checked={includeInternalLinks} onCheckedChange={(v) => { setIncludeInternalLinks(!!v); if (!v) setJsRenderedLinks(false); }} disabled={isLoading} className="hidden" />
-        <LinkIcon className="h-3.5 w-3.5" />
-        Internal Links
-      </Label>
-
-      {includeInternalLinks && (
-        <Label htmlFor="js-rendered-links" className={`${pillClass(jsRenderedLinks)} relative`}>
-          <Checkbox id="js-rendered-links" checked={jsRenderedLinks} onCheckedChange={(v) => setJsRenderedLinks(!!v)} disabled={isLoading} className="hidden" />
-          <Zap className="h-3.5 w-3.5" />
-          JS Rendered
-          {jsRenderedLinks && (
-            <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary animate-pulse" />
-          )}
-        </Label>
-      )}
-
-      <Label htmlFor="include-social-tags" className={pillClass(includeSocialTags)}>
-        <Checkbox id="include-social-tags" checked={includeSocialTags} onCheckedChange={(v) => setIncludeSocialTags(!!v)} disabled={isLoading} className="hidden" />
-        <Share2 className="h-3.5 w-3.5" />
-        OG &amp; Twitter Tags
-      </Label>
+  // Configuration button shown above the action button row
+  const ConfigBar = (
+    <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onOpenConfig}
+        disabled={isLoading}
+        className="h-8 text-xs gap-1.5"
+      >
+        <Settings2 className="h-3.5 w-3.5" />
+        Crawl Configuration
+        <span className="ml-1 text-[10px] tabular-nums px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+          {enabledCount}
+        </span>
+      </Button>
+      <span className="text-[11px] text-muted-foreground hidden sm:inline">
+        Choose what to extract during the crawl
+      </span>
     </div>
+  );
+
+  const ActionButtons = (submitDisabled = false, submitLabel = "Crawl") => (
+    isLoading ? (
+      <div className="flex gap-1.5">
+        {isPaused ? (
+          <Button type="button" onClick={onResume} className="h-9 px-3 text-xs gap-1.5 shrink-0">
+            <Play className="h-3 w-3" /> Resume
+          </Button>
+        ) : (
+          <Button type="button" variant="secondary" onClick={onPause} className="h-9 px-3 text-xs gap-1.5 shrink-0">
+            <Pause className="h-3 w-3" /> Pause
+          </Button>
+        )}
+        <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-9 px-3 text-xs shrink-0">
+          Cancel
+        </Button>
+      </div>
+    ) : (
+      <Button type="submit" disabled={submitDisabled} className="h-9 px-4 text-xs font-medium gap-1.5 shrink-0">
+        <Search className="h-3 w-3" />
+        {submitLabel}
+      </Button>
+    )
   );
 
   return (
     <div className="w-full">
-      <Tabs value={activeTab} onValueChange={(v) => {if (!isLoading) setActiveTab(v);}}>
+      <Tabs value={activeTab} onValueChange={(v) => { if (!isLoading) setActiveTab(v); }}>
         <TabsList className="w-full mb-3 grid grid-cols-4 h-9 bg-muted/50">
           <TabsTrigger value="sitemap" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Globe className="h-3 w-3" />
-            Sitemap
+            <Globe className="h-3 w-3" /> Sitemap
           </TabsTrigger>
           <TabsTrigger value="site" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Network className="h-3 w-3" />
-            Site
+            <Network className="h-3 w-3" /> Site
           </TabsTrigger>
           <TabsTrigger value="urls" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <List className="h-3 w-3" />
-            URLs
+            <List className="h-3 w-3" /> URLs
           </TabsTrigger>
           <TabsTrigger value="file" className="gap-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Upload className="h-3 w-3" />
-            Upload
+            <Upload className="h-3 w-3" /> Upload
           </TabsTrigger>
         </TabsList>
 
-        {/* ── Sitemap tab ── */}
         <TabsContent value="sitemap" className="mt-0">
           <form onSubmit={handleSitemapSubmit}>
             <div className="flex gap-2">
@@ -279,33 +221,12 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
                   disabled={isLoading}
                 />
               </div>
-              {isLoading ? (
-                <div className="flex gap-1.5">
-                  {isPaused ? (
-                    <Button type="button" onClick={onResume} className="h-9 px-3 text-xs gap-1.5 shrink-0">
-                      <Play className="h-3 w-3" /> Resume
-                    </Button>
-                  ) : (
-                    <Button type="button" variant="secondary" onClick={onPause} className="h-9 px-3 text-xs gap-1.5 shrink-0">
-                      <Pause className="h-3 w-3" /> Pause
-                    </Button>
-                  )}
-                  <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-9 px-3 text-xs shrink-0">
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Button type="submit" className="h-9 px-4 text-xs font-medium gap-1.5 shrink-0">
-                  <Search className="h-3 w-3" />
-                  Crawl
-                </Button>
-              )}
+              {ActionButtons(false, "Crawl")}
             </div>
-            {Toggles}
+            {ConfigBar}
           </form>
         </TabsContent>
 
-        {/* ── Spider Site tab ── */}
         <TabsContent value="site" className="mt-0">
           <form onSubmit={handleSiteSubmit}>
             <div className="flex gap-2">
@@ -320,36 +241,15 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
                   disabled={isLoading}
                 />
               </div>
-              {isLoading ? (
-                <div className="flex gap-1.5">
-                  {isPaused ? (
-                    <Button type="button" onClick={onResume} className="h-9 px-3 text-xs gap-1.5 shrink-0">
-                      <Play className="h-3 w-3" /> Resume
-                    </Button>
-                  ) : (
-                    <Button type="button" variant="secondary" onClick={onPause} className="h-9 px-3 text-xs gap-1.5 shrink-0">
-                      <Pause className="h-3 w-3" /> Pause
-                    </Button>
-                  )}
-                  <Button type="button" variant="outline" onClick={handleCancelOrReset} className="h-9 px-3 text-xs shrink-0">
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Button type="submit" className="h-9 px-4 text-xs font-medium gap-1.5 shrink-0">
-                  <Search className="h-3 w-3" />
-                  Crawl
-                </Button>
-              )}
+              {ActionButtons(false, "Crawl")}
             </div>
             <p className="mt-1.5 text-[11px] text-muted-foreground/70">
               Discovers all internal URLs by following <code className="font-mono">&lt;a href&gt;</code> links from the homepage — no sitemap needed.
             </p>
-            {Toggles}
+            {ConfigBar}
           </form>
         </TabsContent>
 
-        {/* ── Enter URLs tab ── */}
         <TabsContent value="urls" className="mt-0">
           <form onSubmit={handleUrlsSubmit}>
             <Textarea
@@ -361,52 +261,24 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
             />
             <div className="flex items-center justify-between mt-2">
               <p className="text-[11px] text-muted-foreground">
-                {urlText.trim()
-                  ? `${parseUrlsFromText(urlText).length} URL(s) detected`
-                  : "One URL per line"}
+                {urlText.trim() ? `${parseUrlsFromText(urlText).length} URL(s) detected` : "One URL per line"}
               </p>
-              {isLoading ? (
-                <div className="flex gap-1.5">
-                  {isPaused ? (
-                    <Button type="button" onClick={onResume} className="h-8 px-3 text-xs gap-1.5">
-                      <Play className="h-3 w-3" /> Resume
-                    </Button>
-                  ) : (
-                    <Button type="button" variant="secondary" onClick={onPause} className="h-8 px-3 text-xs gap-1.5">
-                      <Pause className="h-3 w-3" /> Pause
-                    </Button>
-                  )}
-                  <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-3 h-8 text-xs">
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  type="submit"
-                  className="font-medium gap-1.5 h-8 text-xs"
-                  disabled={parseUrlsFromText(urlText).length === 0}
-                >
-                  <Search className="h-3 w-3" />
-                  Crawl {parseUrlsFromText(urlText).length > 0 ? `${parseUrlsFromText(urlText).length} URLs` : ""}
-                </Button>
-              )}
+              {ActionButtons(parseUrlsFromText(urlText).length === 0, `Crawl${parseUrlsFromText(urlText).length > 0 ? ` ${parseUrlsFromText(urlText).length} URLs` : ""}`)}
             </div>
-            {Toggles}
+            {ConfigBar}
           </form>
         </TabsContent>
 
-        {/* ── Upload File tab ── */}
         <TabsContent value="file" className="mt-0">
           <form onSubmit={handleFileSubmit}>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,.xlsx,.xls"
+              accept=".csv,.txt,.xlsx,.xls"
               className="hidden"
               onChange={handleFileChange}
               disabled={isLoading}
             />
-
             {!fileName ? (
               <button
                 type="button"
@@ -415,8 +287,8 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
                 className="w-full border border-dashed border-border rounded-lg p-5 flex flex-col items-center gap-1.5 text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileSpreadsheet className="h-5 w-5 opacity-40" />
-                <span className="text-xs font-medium">Upload CSV or Excel</span>
-                <span className="text-[11px] opacity-60">.csv · .xlsx · .xls</span>
+                <span className="text-xs font-medium">Upload CSV, TXT or Excel</span>
+                <span className="text-[11px] opacity-60">.csv · .txt · .xlsx · .xls</span>
               </button>
             ) : (
               <div className="border border-border rounded-lg p-3 bg-background flex items-center gap-3">
@@ -434,45 +306,18 @@ export function CrawlForm({ onCrawl, onCrawlUrls, onSpiderSite, isLoading, isPau
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 shrink-0"
-                  onClick={() => {setFileName(null);setFileUrls([]);setFileError(null);}}
+                  onClick={() => { setFileName(null); setFileUrls([]); setFileError(null); }}
                   disabled={isLoading}
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
             )}
-
             <div className="flex items-center justify-between mt-2">
-              <p className="text-[11px] text-muted-foreground">
-                First column with URLs will be used
-              </p>
-              {isLoading ? (
-                <div className="flex gap-1.5">
-                  {isPaused ? (
-                    <Button type="button" onClick={onResume} className="h-8 px-3 text-xs gap-1.5">
-                      <Play className="h-3 w-3" /> Resume
-                    </Button>
-                  ) : (
-                    <Button type="button" variant="secondary" onClick={onPause} className="h-8 px-3 text-xs gap-1.5">
-                      <Pause className="h-3 w-3" /> Pause
-                    </Button>
-                  )}
-                  <Button type="button" variant="outline" onClick={handleCancelOrReset} className="px-3 h-8 text-xs">
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  type="submit"
-                  className="font-medium gap-1.5 h-8 text-xs"
-                  disabled={fileUrls.length === 0 || !!fileError}
-                >
-                  <Search className="h-3 w-3" />
-                  Crawl {fileUrls.length > 0 ? `${fileUrls.length} URLs` : ""}
-                </Button>
-              )}
+              <p className="text-[11px] text-muted-foreground">First column with URLs will be used</p>
+              {ActionButtons(fileUrls.length === 0 || !!fileError, `Crawl${fileUrls.length > 0 ? ` ${fileUrls.length} URLs` : ""}`)}
             </div>
-            {Toggles}
+            {ConfigBar}
           </form>
         </TabsContent>
       </Tabs>

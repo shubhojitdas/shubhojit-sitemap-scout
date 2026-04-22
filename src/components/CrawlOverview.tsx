@@ -1,0 +1,354 @@
+import { useMemo, useState } from "react";
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Legend,
+} from "recharts";
+import { motion } from "framer-motion";
+import { Sparkles, KeyRound, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import type { CrawlResult } from "@/lib/crawl-api";
+
+interface Props {
+  results: CrawlResult[];
+  domain: string;
+}
+
+// Tailwind-token-friendly chart colors using HSL design tokens.
+const COLORS = {
+  ok: "hsl(var(--success))",
+  redirect: "hsl(var(--warning))",
+  client: "hsl(var(--destructive))",
+  server: "hsl(var(--destructive) / 0.7)",
+  blocked: "hsl(var(--muted-foreground))",
+};
+
+type Provider = "openai" | "gemini" | "anthropic";
+
+const KEY_STORAGE = "sso-byo-llm-key";
+const PROVIDER_STORAGE = "sso-byo-llm-provider";
+
+function buildStaticSummary(results: CrawlResult[], domain: string): string {
+  const total = results.length;
+  if (total === 0) return "";
+  const ok = results.filter((r) => r.statusCode >= 200 && r.statusCode < 300).length;
+  const redirect = results.filter((r) => (r.redirectChain?.length ?? 0) > 0 || (r.statusCode >= 300 && r.statusCode < 400)).length;
+  const c4xx = results.filter((r) => r.statusCode >= 400 && r.statusCode < 500).length;
+  const c5xx = results.filter((r) => r.statusCode >= 500).length;
+  const errors = results.filter((r) => r.status === "Error").length;
+
+  const missingTitle = results.filter((r) => r.statusCode >= 200 && r.statusCode < 300 && !r.title).length;
+  const missingDesc = results.filter((r) => r.statusCode >= 200 && r.statusCode < 300 && !r.description).length;
+  const missingH1 = results.filter((r) => (r.h1s ?? []).length === 0 && r.statusCode >= 200 && r.statusCode < 300).length;
+  const multiH1 = results.filter((r) => (r.h1s ?? []).length > 1).length;
+  const altMissing = results.reduce((s, r) => s + (r.images ?? []).filter((i) => !i.alt).length, 0);
+
+  const avgTime =
+    results.reduce((s, r) => s + parseFloat(r.fetchTime || "0"), 0) / total;
+
+  const parts: string[] = [];
+  parts.push(`Crawled ${total.toLocaleString()} URL${total === 1 ? "" : "s"}${domain ? ` on ${domain}` : ""}.`);
+  parts.push(`${ok} returned 200 OK${redirect ? `, ${redirect} redirected` : ""}${c4xx ? `, ${c4xx} client error${c4xx === 1 ? "" : "s"}` : ""}${c5xx ? `, ${c5xx} server error${c5xx === 1 ? "" : "s"}` : ""}${errors ? `, ${errors} network failure${errors === 1 ? "" : "s"}` : ""}.`);
+
+  const issues: string[] = [];
+  if (missingTitle) issues.push(`${missingTitle} page${missingTitle === 1 ? "" : "s"} missing a meta title`);
+  if (missingDesc) issues.push(`${missingDesc} missing a meta description`);
+  if (missingH1) issues.push(`${missingH1} without an H1`);
+  if (multiH1) issues.push(`${multiH1} with multiple H1s`);
+  if (altMissing) issues.push(`${altMissing} image${altMissing === 1 ? "" : "s"} missing alt text`);
+  if (issues.length) parts.push(`Issues found: ${issues.join("; ")}.`);
+  parts.push(`Average fetch time per URL: ${avgTime.toFixed(2)}s.`);
+  return parts.join(" ");
+}
+
+function getStatusBucket(code: number): keyof typeof COLORS {
+  if (code === 0) return "blocked";
+  if (code >= 200 && code < 300) return "ok";
+  if (code >= 300 && code < 400) return "redirect";
+  if (code >= 400 && code < 500) return "client";
+  if (code >= 500) return "server";
+  return "blocked";
+}
+
+export function CrawlOverview({ results, domain }: Props) {
+  const { toast } = useToast();
+
+  // ── Pie data: status code distribution ────────────────────────────────────
+  const pieData = useMemo(() => {
+    const counts: Record<string, number> = {
+      "2xx Success": 0, "3xx Redirect": 0, "4xx Client": 0, "5xx Server": 0, "Network/Blocked": 0,
+    };
+    for (const r of results) {
+      const bucket = getStatusBucket(r.statusCode);
+      if (bucket === "ok") counts["2xx Success"]++;
+      else if (bucket === "redirect") counts["3xx Redirect"]++;
+      else if (bucket === "client") counts["4xx Client"]++;
+      else if (bucket === "server") counts["5xx Server"]++;
+      else counts["Network/Blocked"]++;
+    }
+    return Object.entries(counts).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
+  }, [results]);
+
+  const pieColors = ["hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--destructive))", "hsl(var(--destructive) / 0.65)", "hsl(var(--muted-foreground))"];
+
+  // ── Line data: smoothed response times across URLs (windowed avg if many) ──
+  const lineData = useMemo(() => {
+    const times = results.map((r, i) => ({ i, t: parseFloat(r.fetchTime || "0") }));
+    if (times.length <= 60) {
+      return times.map((p, idx) => ({ idx: idx + 1, time: Number(p.t.toFixed(2)) }));
+    }
+    // Bucket into ~50 windows for readability on large crawls.
+    const buckets = 50;
+    const size = Math.ceil(times.length / buckets);
+    const out: { idx: number; time: number }[] = [];
+    for (let i = 0; i < times.length; i += size) {
+      const slice = times.slice(i, i + size);
+      const avg = slice.reduce((s, p) => s + p.t, 0) / slice.length;
+      out.push({ idx: Math.floor(i / size) + 1, time: Number(avg.toFixed(2)) });
+    }
+    return out;
+  }, [results]);
+
+  const summary = useMemo(() => buildStaticSummary(results, domain), [results, domain]);
+
+  // ── BYO LLM key panel ──────────────────────────────────────────────────────
+  const [showKeyPanel, setShowKeyPanel] = useState(false);
+  const [provider, setProvider] = useState<Provider>(() => (localStorage.getItem(PROVIDER_STORAGE) as Provider) || "openai");
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem(KEY_STORAGE) || "");
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const generateAi = async () => {
+    if (!apiKey.trim()) {
+      toast({ title: "API key required", description: "Paste your personal LLM API key first." });
+      return;
+    }
+    setAiLoading(true);
+    setAiSummary(null);
+    localStorage.setItem(KEY_STORAGE, apiKey.trim());
+    localStorage.setItem(PROVIDER_STORAGE, provider);
+
+    const compact = {
+      domain,
+      total: results.length,
+      statusBuckets: pieData,
+      avgFetchSec: results.reduce((s, r) => s + parseFloat(r.fetchTime || "0"), 0) / Math.max(1, results.length),
+      sample: results.slice(0, 30).map((r) => ({
+        url: r.url, status: r.statusCode, title: r.title?.slice(0, 90),
+        descLen: r.description?.length ?? 0, h1Count: r.h1s?.length ?? 0,
+      })),
+    };
+
+    const prompt = `You are an SEO analyst. Write a concise, actionable insights summary (4-6 sentences) of this site crawl. Highlight the most important problems and quick wins. Data:\n${JSON.stringify(compact)}`;
+
+    try {
+      let text = "";
+      if (provider === "openai") {
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey.trim()}` },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.4,
+          }),
+        });
+        if (!res.ok) throw new Error(`OpenAI ${res.status}: ${(await res.text()).slice(0, 200)}`);
+        const j = await res.json();
+        text = j.choices?.[0]?.message?.content ?? "";
+      } else if (provider === "gemini") {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${encodeURIComponent(apiKey.trim())}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          },
+        );
+        if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
+        const j = await res.json();
+        text = j.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      } else {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey.trim(),
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true",
+          },
+          body: JSON.stringify({
+            model: "claude-3-5-haiku-latest",
+            max_tokens: 600,
+            messages: [{ role: "user", content: prompt }],
+          }),
+        });
+        if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 200)}`);
+        const j = await res.json();
+        text = j.content?.[0]?.text ?? "";
+      }
+      setAiSummary(text.trim() || "(empty response)");
+    } catch (err) {
+      toast({
+        title: "AI request failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      {/* ── Charts row ───────────────────────────────────────────────────── */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        {/* Pie */}
+        <div className="rounded-lg border border-border bg-card p-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold">Status code distribution</h3>
+            <span className="text-[10px] text-muted-foreground">{results.length.toLocaleString()} URLs</span>
+          </div>
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%" cy="50%"
+                  innerRadius={50} outerRadius={90}
+                  paddingAngle={2}
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
+                >
+                  {pieData.map((_, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    color: "hsl(var(--popover-foreground))",
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Line */}
+        <div className="rounded-lg border border-border bg-card p-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold">Response time (smoothed)</h3>
+            <span className="text-[10px] text-muted-foreground">seconds per URL</span>
+          </div>
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={lineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.6)" />
+                <XAxis dataKey="idx" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    color: "hsl(var(--popover-foreground))",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="time"
+                  stroke="hsl(var(--foreground))"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Text summary ──────────────────────────────────────────────────── */}
+      <div className="rounded-lg border border-border bg-card p-4">
+        <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+          <h3 className="text-xs font-semibold">Crawl summary</h3>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-[11px] gap-1.5"
+            onClick={() => setShowKeyPanel((v) => !v)}
+          >
+            <Sparkles className="h-3 w-3" />
+            {aiSummary ? "Regenerate AI insights" : "Generate AI insights (BYO key)"}
+          </Button>
+        </div>
+
+        <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
+          {summary}
+        </p>
+
+        {showKeyPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-4 pt-4 border-t border-border space-y-3"
+          >
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <KeyRound className="h-3 w-3" />
+              Your key never leaves your browser — it's sent directly to your chosen provider and stored only in localStorage.
+            </div>
+            <div className="grid sm:grid-cols-[160px_1fr_auto] gap-2 items-end">
+              <div>
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Provider</Label>
+                <Select value={provider} onValueChange={(v) => setProvider(v as Provider)}>
+                  <SelectTrigger className="h-9 text-xs mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="openai">OpenAI (gpt-4o-mini)</SelectItem>
+                    <SelectItem value="gemini">Google Gemini (1.5 Flash)</SelectItem>
+                    <SelectItem value="anthropic">Anthropic (Claude 3.5 Haiku)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">API key</Label>
+                <Input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-... / AI... / sk-ant-..."
+                  className="h-9 text-xs font-mono mt-1"
+                />
+              </div>
+              <Button onClick={generateAi} disabled={aiLoading} className="h-9 text-xs gap-1.5">
+                {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                Generate
+              </Button>
+            </div>
+
+            {aiSummary && (
+              <div className="rounded-md border border-border bg-muted/30 p-3">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">AI insights</div>
+                <p className="text-xs leading-relaxed whitespace-pre-line">{aiSummary}</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
+}

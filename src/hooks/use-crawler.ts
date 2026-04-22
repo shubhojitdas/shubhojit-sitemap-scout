@@ -1,6 +1,14 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { CrawlResult, parseSitemapUrls, spiderSiteUrls, fetchMetaBatch } from "@/lib/crawl-api";
 
+export interface LastCrawlInput {
+  source: "sitemap" | "site" | "urls";
+  /** The original input the user typed: a sitemap URL, a site root URL, or a textual list. */
+  display: string;
+  /** When the source is "urls", this stores the actual URL list. */
+  urls?: string[];
+}
+
 interface CrawlState {
   phase: "idle" | "parsing" | "crawling" | "paused" | "done" | "error";
   crawlSource: "sitemap" | "site" | "urls" | null;
@@ -13,6 +21,11 @@ interface CrawlState {
   includeH2: boolean;
   includeH3: boolean;
   parsedUrls: string[];
+  lastInput: LastCrawlInput | null;
+  /** Tracks every flag that has been crawled at least once on the current dataset. */
+  crawledFlags: CrawlOptions;
+  /** True when running an incremental extract (extendCrawl), so progress UI can label it. */
+  incremental: boolean;
 }
 
 const INITIAL_STATE: CrawlState = {
@@ -27,6 +40,13 @@ const INITIAL_STATE: CrawlState = {
   includeH2: false,
   includeH3: false,
   parsedUrls: [],
+  lastInput: null,
+  crawledFlags: {
+    includeTitle: false, includeDesc: false, includeH1: false, includeH2: false, includeH3: false,
+    includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false,
+    includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
+  },
+  incremental: false,
 };
 
 const STORAGE_KEY = "sitemap-scout-crawl-data";
@@ -40,6 +60,9 @@ function loadPersistedState(): CrawlState | null {
     const data = JSON.parse(raw) as CrawlState;
     if (data.results && data.results.length > 0) {
       data.crawlSource = data.crawlSource ?? null;
+      data.lastInput = data.lastInput ?? null;
+      data.crawledFlags = data.crawledFlags ?? INITIAL_STATE.crawledFlags;
+      data.incremental = false;
       if (data.phase === "crawling" || data.phase === "parsing") {
         data.phase = "done";
       }
@@ -57,7 +80,7 @@ function persistState(state: CrawlState) {
   } catch { /* storage full or unavailable */ }
 }
 
-interface CrawlOptions {
+export interface CrawlOptions {
   includeTitle: boolean;
   includeDesc: boolean;
   includeH1: boolean;
@@ -74,6 +97,30 @@ interface CrawlOptions {
 }
 
 const DEFAULT_OPTS: CrawlOptions = { includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false };
+
+/** Merge an incremental batch into existing results: keep existing fields, only overwrite the
+ *  ones the user requested in this incremental crawl. Uses URL as join key. */
+function mergeResults(existing: CrawlResult[], fresh: CrawlResult[], opts: CrawlOptions): CrawlResult[] {
+  const byUrl = new Map(fresh.map((r) => [r.url, r]));
+  return existing.map((old) => {
+    const f = byUrl.get(old.url);
+    if (!f) return old;
+    const merged: CrawlResult = { ...old };
+    if (opts.includeTitle) merged.title = f.title;
+    if (opts.includeDesc) merged.description = f.description;
+    if (opts.includeH1) merged.h1s = f.h1s;
+    if (opts.includeH2) merged.h2s = f.h2s;
+    if (opts.includeH3) merged.h3s = f.h3s;
+    if (opts.includeImages) merged.images = f.images;
+    if (opts.includeSchemas) merged.schemas = f.schemas;
+    if (opts.includeRobots) merged.robots = f.robots;
+    if (opts.includeCanonical) { merged.canonical = f.canonical; merged.canonicalStatus = f.canonicalStatus; }
+    if (opts.includeHreflangs) merged.hreflangs = f.hreflangs;
+    if (opts.includeInternalLinks) merged.internalLinks = f.internalLinks;
+    if (opts.includeSocialTags) merged.socialTags = f.socialTags;
+    return merged;
+  });
+}
 
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(() => loadPersistedState() || INITIAL_STATE);
@@ -153,7 +200,26 @@ export function useCrawler() {
     }
 
     if (!signal.aborted && !pausedRef.current) {
-      setState((s) => ({ ...s, phase: "done" }));
+      setState((s) => ({
+        ...s,
+        phase: "done",
+        crawledFlags: {
+          includeTitle: s.crawledFlags.includeTitle || opts.includeTitle,
+          includeDesc: s.crawledFlags.includeDesc || opts.includeDesc,
+          includeH1: s.crawledFlags.includeH1 || opts.includeH1,
+          includeH2: s.crawledFlags.includeH2 || opts.includeH2,
+          includeH3: s.crawledFlags.includeH3 || opts.includeH3,
+          includeImages: s.crawledFlags.includeImages || opts.includeImages,
+          includeSchemas: s.crawledFlags.includeSchemas || opts.includeSchemas,
+          includeRobots: s.crawledFlags.includeRobots || opts.includeRobots,
+          includeCanonical: s.crawledFlags.includeCanonical || opts.includeCanonical,
+          includeHreflangs: s.crawledFlags.includeHreflangs || opts.includeHreflangs,
+          includeInternalLinks: s.crawledFlags.includeInternalLinks || opts.includeInternalLinks,
+          jsRenderedLinks: s.crawledFlags.jsRenderedLinks || opts.jsRenderedLinks,
+          includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
+        },
+        incremental: false,
+      }));
     }
   };
 
@@ -179,7 +245,7 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ phase: "parsing", crawlSource: "sitemap", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: [] });
+    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "sitemap", lastInput: { source: "sitemap", display: sitemapUrl }, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
@@ -227,7 +293,8 @@ export function useCrawler() {
     pendingUrlsRef.current = urls;
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ phase: "crawling", crawlSource: "urls", results: [], totalUrls: urls.length, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: urls });
+    const display = urls.length === 1 ? urls[0] : `${urls.length} URLs`;
+    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: urls.length, parsedUrls: urls, lastInput: { source: "urls", display, urls }, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
       await runBatches(urls, signal, opts);
@@ -265,7 +332,7 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ phase: "parsing", crawlSource: "site", results: [], totalUrls: 0, processedUrls: 0, error: null, includeTitle, includeDesc, includeH2, includeH3, parsedUrls: [] });
+    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "site", lastInput: { source: "site", display: siteUrl }, includeTitle, includeDesc, includeH2, includeH3 });
 
     try {
       const urls = await spiderSiteUrls(siteUrl);
@@ -290,6 +357,73 @@ export function useCrawler() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * Re-crawl the existing dataset's URLs to extract additional (or refresh existing)
+   * fields without re-discovering URLs. Results are merged into the current dataset.
+   * Pass only the flags you want to (re)extract — other fields are preserved.
+   */
+  const extendCrawl = useCallback(async (extraOpts: Partial<CrawlOptions>) => {
+    const opts: CrawlOptions = { ...DEFAULT_OPTS, ...extraOpts };
+    // If nothing new requested, bail.
+    if (!Object.values(opts).some(Boolean)) return;
+
+    const targetUrls = state.results.map((r) => r.url);
+    if (targetUrls.length === 0) return;
+
+    const signal = startController();
+    crawlOptionsRef.current = opts;
+    accumulatedResultsRef.current = [];
+
+    setState((s) => ({
+      ...s,
+      phase: "crawling",
+      totalUrls: targetUrls.length,
+      processedUrls: 0,
+      error: null,
+      incremental: true,
+    }));
+
+    const BATCH_SIZE = 10;
+    let merged = state.results;
+    for (let i = 0; i < targetUrls.length; i += BATCH_SIZE) {
+      if (signal.aborted) return;
+      const batch = targetUrls.slice(i, i + BATCH_SIZE);
+      try {
+        const fresh = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags);
+        if (signal.aborted) return;
+        merged = mergeResults(merged, fresh, opts);
+        setState((s) => ({ ...s, results: merged, processedUrls: Math.min(i + BATCH_SIZE, targetUrls.length) }));
+      } catch {
+        if (signal.aborted) return;
+        // skip batch on error, continue
+      }
+    }
+
+    if (!signal.aborted) {
+      setState((s) => ({
+        ...s,
+        phase: "done",
+        incremental: false,
+        crawledFlags: {
+          includeTitle: s.crawledFlags.includeTitle || opts.includeTitle,
+          includeDesc: s.crawledFlags.includeDesc || opts.includeDesc,
+          includeH1: s.crawledFlags.includeH1 || opts.includeH1,
+          includeH2: s.crawledFlags.includeH2 || opts.includeH2,
+          includeH3: s.crawledFlags.includeH3 || opts.includeH3,
+          includeImages: s.crawledFlags.includeImages || opts.includeImages,
+          includeSchemas: s.crawledFlags.includeSchemas || opts.includeSchemas,
+          includeRobots: s.crawledFlags.includeRobots || opts.includeRobots,
+          includeCanonical: s.crawledFlags.includeCanonical || opts.includeCanonical,
+          includeHreflangs: s.crawledFlags.includeHreflangs || opts.includeHreflangs,
+          includeInternalLinks: s.crawledFlags.includeInternalLinks || opts.includeInternalLinks,
+          jsRenderedLinks: s.crawledFlags.jsRenderedLinks || opts.jsRenderedLinks,
+          includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
+        },
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.results]);
 
   const pause = useCallback(() => {
     pausedRef.current = true;
@@ -336,5 +470,5 @@ export function useCrawler() {
     setState(INITIAL_STATE);
   }, []);
 
-  return { ...state, crawl, crawlUrls, spiderSite, pause, resume, reset, clearCrawl };
+  return { ...state, crawl, crawlUrls, spiderSite, extendCrawl, pause, resume, reset, clearCrawl };
 }

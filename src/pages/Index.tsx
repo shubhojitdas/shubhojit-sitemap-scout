@@ -3,6 +3,7 @@ import { CrawlForm } from "@/components/CrawlForm";
 import { CrawlProgress } from "@/components/CrawlProgress";
 import { ResultsShell } from "@/components/ResultsShell";
 import { CrawlConfigDialog, DEFAULT_CRAWL_CONFIG, type CrawlConfig } from "@/components/CrawlConfigDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,8 @@ import { useState, useEffect } from "react";
 const Index = () => {
   const {
     phase, crawlSource, results, totalUrls, processedUrls, error,
-    crawl, crawlUrls, spiderSite, pause, resume, reset, clearCrawl,
-    parsedUrls,
+    crawl, crawlUrls, spiderSite, extendCrawl, pause, resume, reset, clearCrawl,
+    parsedUrls, lastInput, crawledFlags,
   } = useCrawler();
 
   const [showTop, setShowTop] = useState(false);
@@ -20,6 +21,7 @@ const Index = () => {
   const [config, setConfig] = useState<CrawlConfig>(DEFAULT_CRAWL_CONFIG);
   const [activeConfig, setActiveConfig] = useState<CrawlConfig>(DEFAULT_CRAWL_CONFIG);
   const [configOpen, setConfigOpen] = useState(false);
+  const [newCrawlOpen, setNewCrawlOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setShowTop(window.scrollY > 400);
@@ -39,19 +41,30 @@ const Index = () => {
   const handleCrawl = (url: string, c: CrawlConfig) => {
     setDomainFromUrl(url);
     setActiveConfig(c);
+    setNewCrawlOpen(false);
     crawl(url, c.includeTitle, c.includeDesc, c.includeH1, c.includeH2, c.includeH3, c.includeImages, c.includeSchemas, c.includeRobots, c.includeCanonical, c.includeHreflangs, c.includeInternalLinks, c.jsRenderedLinks, c.includeSocialTags);
   };
 
   const handleSpiderSite = (url: string, c: CrawlConfig) => {
     setDomainFromUrl(url);
     setActiveConfig(c);
+    setNewCrawlOpen(false);
     spiderSite(url, c.includeTitle, c.includeDesc, c.includeH1, c.includeH2, c.includeH3, c.includeImages, c.includeSchemas, c.includeRobots, c.includeCanonical, c.includeHreflangs, c.includeInternalLinks, c.jsRenderedLinks, c.includeSocialTags);
   };
 
   const handleCrawlUrls = (urls: string[], c: CrawlConfig) => {
     if (urls[0]) setDomainFromUrl(urls[0]);
     setActiveConfig(c);
+    setNewCrawlOpen(false);
     crawlUrls(urls, c.includeTitle, c.includeDesc, c.includeH1, c.includeH2, c.includeH3, c.includeImages, c.includeSchemas, c.includeRobots, c.includeCanonical, c.includeHreflangs, c.includeInternalLinks, c.jsRenderedLinks, c.includeSocialTags);
+  };
+
+  const handleExtend = (extra: Partial<CrawlConfig>) => {
+    setActiveConfig((prev) => ({
+      ...prev,
+      ...Object.fromEntries(Object.entries(extra).filter(([, v]) => v)) as Partial<CrawlConfig>,
+    }));
+    extendCrawl(extra);
   };
 
   const isLoading = phase === "parsing" || phase === "crawling" || phase === "paused";
@@ -128,7 +141,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.4 }}
             >
-              <div className="rounded-xl border border-border bg-card p-4 card-elevated">
+              <div className="rounded-xl border border-border bg-card p-3 sm:p-4 card-elevated">
                 <CrawlForm
                   config={config}
                   onOpenConfig={() => setConfigOpen(true)}
@@ -156,30 +169,12 @@ const Index = () => {
         </section>
       )}
 
-      {/* ── Compact crawl bar (when results exist) ── */}
-      {hasResults && (
-        <section className="border-b border-border bg-card/40">
-          <div className="container max-w-7xl mx-auto px-4 py-3">
-            <CrawlForm
-              config={config}
-              onOpenConfig={() => setConfigOpen(true)}
-              onCrawl={handleCrawl}
-              onCrawlUrls={handleCrawlUrls}
-              onSpiderSite={handleSpiderSite}
-              isLoading={isLoading}
-              isPaused={phase === "paused"}
-              onReset={reset}
-              onPause={pause}
-              onResume={resume}
-            />
-          </div>
+      {/* ── Progress (only on hero, results page has its own) ── */}
+      {!hasResults && (
+        <section className="container max-w-7xl mx-auto px-4">
+          <CrawlProgress phase={phase} source={crawlSource} processed={processedUrls} total={totalUrls} />
         </section>
       )}
-
-      {/* ── Progress ── */}
-      <section className="container max-w-7xl mx-auto px-4">
-        <CrawlProgress phase={phase} source={crawlSource} processed={processedUrls} total={totalUrls} />
-      </section>
 
       {/* ── Error ── */}
       {error && (
@@ -194,25 +189,68 @@ const Index = () => {
         </section>
       )}
 
-      {/* ── Results ── Screaming Frog-style sidebar layout */}
+      {/* ── Results — Screaming Frog-style sidebar layout ── */}
       {hasResults && (
-        <ResultsShell
-          results={results}
-          domain={domain}
-          parsedUrls={parsedUrls}
-          crawlSource={crawlSource}
-          flags={activeConfig}
-          onClearCrawl={clearCrawl}
-        />
+        <>
+          <ResultsShell
+            results={results}
+            domain={domain}
+            parsedUrls={parsedUrls}
+            crawlSource={crawlSource}
+            lastInput={lastInput}
+            isLoading={isLoading}
+            isPaused={phase === "paused"}
+            flags={activeConfig}
+            onClearCrawl={clearCrawl}
+            onOpenConfig={() => setConfigOpen(true)}
+            onOpenNewCrawl={() => setNewCrawlOpen(true)}
+            onPause={pause}
+            onResume={resume}
+          />
+
+          {/* Floating progress overlay during incremental crawls */}
+          {isLoading && (
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-2rem)] max-w-md rounded-lg border border-border bg-card shadow-lg p-3">
+              <CrawlProgress phase={phase} source={crawlSource} processed={processedUrls} total={totalUrls} />
+            </div>
+          )}
+        </>
       )}
 
-      {/* ── Config dialog ── */}
+      {/* ── Config dialog (incremental when results exist) ── */}
       <CrawlConfigDialog
         open={configOpen}
         onOpenChange={setConfigOpen}
         config={config}
         onChange={setConfig}
+        mode={hasResults ? "incremental" : "initial"}
+        crawledFlags={crawledFlags as CrawlConfig}
+        onExtend={handleExtend}
       />
+
+      {/* ── New crawl dialog (re-uses CrawlForm) ── */}
+      <Dialog open={newCrawlOpen} onOpenChange={setNewCrawlOpen}>
+        <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-xl p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base">Start a new crawl</DialogTitle>
+          </DialogHeader>
+          <p className="text-[11px] text-muted-foreground -mt-2">
+            Starting a new crawl will clear your current results.
+          </p>
+          <CrawlForm
+            config={config}
+            onOpenConfig={() => setConfigOpen(true)}
+            onCrawl={(url, c) => { clearCrawl(); handleCrawl(url, c); }}
+            onCrawlUrls={(urls, c) => { clearCrawl(); handleCrawlUrls(urls, c); }}
+            onSpiderSite={(url, c) => { clearCrawl(); handleSpiderSite(url, c); }}
+            isLoading={isLoading}
+            isPaused={phase === "paused"}
+            onReset={reset}
+            onPause={pause}
+            onResume={resume}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* ── Back to top ── */}
       {showTop && (

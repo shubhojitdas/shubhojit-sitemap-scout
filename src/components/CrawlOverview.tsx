@@ -17,7 +17,8 @@ interface Props {
   domain: string;
 }
 
-// Tailwind-token-friendly chart colors using HSL design tokens.
+// Chart palette: aesthetic monochrome + semantic accents that match the
+// dark/light Next.js-inspired design system.
 const COLORS = {
   ok: "hsl(var(--success))",
   redirect: "hsl(var(--warning))",
@@ -26,7 +27,7 @@ const COLORS = {
   blocked: "hsl(var(--muted-foreground))",
 };
 
-type Provider = "openai" | "gemini" | "anthropic";
+type Provider = "openai" | "gemini" | "anthropic" | "openrouter" | "groq" | "deepseek" | "mistral" | "together" | "cohere";
 
 const KEY_STORAGE = "sso-byo-llm-key";
 const PROVIDER_STORAGE = "sso-byo-llm-provider";

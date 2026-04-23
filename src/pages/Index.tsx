@@ -202,7 +202,7 @@ const Index = () => {
             isPaused={phase === "paused"}
             flags={activeConfig}
             onClearCrawl={clearCrawl}
-            onOpenConfig={() => setConfigOpen(true)}
+            onOpenConfig={handleOpenConfig}
             onOpenNewCrawl={() => setNewCrawlOpen(true)}
             onPause={pause}
             onResume={resume}

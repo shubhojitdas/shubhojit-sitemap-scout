@@ -244,8 +244,12 @@ export function RobotsTxtPanel({ results, domain }: Props) {
           </div>
         </TabsContent>
 
-        {/* ── Tester ── */}
-        <TabsContent value="tester" className="mt-4 space-y-3">
+        {/* ── Tester (rendered in same tab as Editor — single unified view) ── */}
+        <TabsContent value="editor" className="mt-6 space-y-3 border-t border-border pt-6">
+          <div className="flex items-center gap-2">
+            <Play className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Test URLs against your rules</h3>
+          </div>
           {/* Source picker */}
           <div className="rounded-lg border border-border bg-card p-3 space-y-2">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

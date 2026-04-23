@@ -85,7 +85,9 @@ function buildBuckets(view: SectionKey, rows: CrawlResult[]): Bucket[] {
         const imgs = r.images ?? [];
         if (imgs.length === 0) pagesWithoutImages++;
         else pagesWithImages++;
-        for (const i of imgs) (i.alt ? withAlt : missingAlt)++;
+        for (const i of imgs) {
+          if (i.alt) withAlt++; else missingAlt++;
+        }
       }
       return [
         { label: "Images with alt", value: withAlt, tone: "ok" },
@@ -127,7 +129,7 @@ function buildBuckets(view: SectionKey, rows: CrawlResult[]): Bucket[] {
     }
     case "hreflang": {
       const has = ok2xx.filter((r) => (r.hreflangs ?? []).length > 0).length;
-      const xDef = ok2xx.filter((r) => (r.hreflangs ?? []).some((h) => h.lang === "x-default")).length;
+      const xDef = ok2xx.filter((r) => (r.hreflangs ?? []).some((h) => h.hreflang === "x-default")).length;
       return [
         { label: "Has hreflang", value: has, tone: "ok" },
         { label: "Has x-default", value: xDef, tone: "accent" },
@@ -135,8 +137,8 @@ function buildBuckets(view: SectionKey, rows: CrawlResult[]): Bucket[] {
       ];
     }
     case "internal-links": {
-      const has = ok2xx.filter((r) => (r.internalLinks ?? []).some((l) => l.type === "internal")).length;
-      const ext = ok2xx.filter((r) => (r.internalLinks ?? []).some((l) => l.type === "external")).length;
+      const has = ok2xx.filter((r) => (r.internalLinks ?? []).some((l) => l.isInternal)).length;
+      const ext = ok2xx.filter((r) => (r.internalLinks ?? []).some((l) => !l.isInternal)).length;
       return [
         { label: "Has internal", value: has, tone: "ok" },
         { label: "Has external", value: ext, tone: "accent" },
@@ -144,20 +146,16 @@ function buildBuckets(view: SectionKey, rows: CrawlResult[]): Bucket[] {
       ];
     }
     case "social": {
-      const hasOg = ok2xx.filter((r) => Object.keys(r.socialTags?.og ?? {}).length > 0).length;
-      const hasTw = ok2xx.filter((r) => Object.keys(r.socialTags?.twitter ?? {}).length > 0).length;
-      const both = ok2xx.filter((r) =>
-        Object.keys(r.socialTags?.og ?? {}).length > 0 &&
-        Object.keys(r.socialTags?.twitter ?? {}).length > 0,
-      ).length;
-      const none = ok2xx.filter((r) =>
-        Object.keys(r.socialTags?.og ?? {}).length === 0 &&
-        Object.keys(r.socialTags?.twitter ?? {}).length === 0,
-      ).length;
+      const hasOg = (r: CrawlResult) => (r.socialTags ?? []).some((t) => t.network === "og");
+      const hasTw = (r: CrawlResult) => (r.socialTags ?? []).some((t) => t.network === "twitter");
+      const ogOnly = ok2xx.filter((r) => hasOg(r) && !hasTw(r)).length;
+      const twOnly = ok2xx.filter((r) => !hasOg(r) && hasTw(r)).length;
+      const both = ok2xx.filter((r) => hasOg(r) && hasTw(r)).length;
+      const none = ok2xx.filter((r) => !hasOg(r) && !hasTw(r)).length;
       return [
         { label: "Has OG + Twitter", value: both, tone: "ok" },
-        { label: "Has OG only", value: hasOg - both, tone: "accent" },
-        { label: "Has Twitter only", value: hasTw - both, tone: "warn" },
+        { label: "Has OG only", value: ogOnly, tone: "accent" },
+        { label: "Has Twitter only", value: twOnly, tone: "warn" },
         { label: "Missing both", value: none, tone: "bad" },
       ];
     }

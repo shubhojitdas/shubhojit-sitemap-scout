@@ -52,6 +52,9 @@ interface ResultsTableProps {
   includeHreflangs: boolean;
   includeInternalLinks: boolean;
   includeSocialTags: boolean;
+  /** When set, forces the table to ONLY show this single sub-view and hides
+   *  the tab switcher. Used by the sidebar to make each section self-contained. */
+  forceTab?: "meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks" | "social";
 }
 
 type SearchField = { key: string; label: string };

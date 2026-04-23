@@ -160,14 +160,12 @@ export function RobotsTxtPanel({ results, domain }: Props) {
         onStartBlank={() => { setEditorText(""); setTab("editor"); }}
       />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList className="h-9 bg-muted p-1 rounded-lg w-full sm:w-auto grid grid-cols-2 sm:inline-flex">
-          <TabsTrigger value="editor" className="text-xs gap-1.5 h-7 px-3">
-            <Pencil className="h-3 w-3" /> Editor
-          </TabsTrigger>
-          <TabsTrigger value="tester" className="text-xs gap-1.5 h-7 px-3">
-            <Play className="h-3 w-3" /> Tester
-          </TabsTrigger>
+      {/* Single unified view: editor on top, tester directly below — no tabs.
+          Mirrors technicalseo.com's UX so users don't have to switch tabs to test. */}
+      <Tabs value="editor" onValueChange={() => {}}>
+        <TabsList className="hidden">
+          <TabsTrigger value="editor">e</TabsTrigger>
+          <TabsTrigger value="tester">t</TabsTrigger>
         </TabsList>
 
         {/* ── Editor ── */}

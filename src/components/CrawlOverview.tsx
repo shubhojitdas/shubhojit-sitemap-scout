@@ -145,19 +145,30 @@ export function CrawlOverview({ results, domain }: Props) {
 
     const prompt = `You are an SEO analyst. Write a concise, actionable insights summary (4-6 sentences) of this site crawl. Highlight the most important problems and quick wins. Data:\n${JSON.stringify(compact)}`;
 
+    // OpenAI-compatible endpoints (all use the same chat-completions schema):
+    const OAI_COMPAT: Record<string, { url: string; model: string }> = {
+      openai:     { url: "https://api.openai.com/v1/chat/completions",          model: "gpt-4o-mini" },
+      openrouter: { url: "https://openrouter.ai/api/v1/chat/completions",       model: "meta-llama/llama-3.1-8b-instruct:free" },
+      groq:       { url: "https://api.groq.com/openai/v1/chat/completions",     model: "llama-3.1-8b-instant" },
+      deepseek:   { url: "https://api.deepseek.com/v1/chat/completions",        model: "deepseek-chat" },
+      mistral:    { url: "https://api.mistral.ai/v1/chat/completions",          model: "mistral-small-latest" },
+      together:   { url: "https://api.together.xyz/v1/chat/completions",        model: "meta-llama/Llama-3.1-8B-Instruct-Turbo" },
+    };
+
     try {
       let text = "";
-      if (provider === "openai") {
-        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      if (provider in OAI_COMPAT) {
+        const cfg = OAI_COMPAT[provider];
+        const res = await fetch(cfg.url, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey.trim()}` },
           body: JSON.stringify({
-            model: "gpt-4o-mini",
+            model: cfg.model,
             messages: [{ role: "user", content: prompt }],
             temperature: 0.4,
           }),
         });
-        if (!res.ok) throw new Error(`OpenAI ${res.status}: ${(await res.text()).slice(0, 200)}`);
+        if (!res.ok) throw new Error(`${provider} ${res.status}: ${(await res.text()).slice(0, 200)}`);
         const j = await res.json();
         text = j.choices?.[0]?.message?.content ?? "";
       } else if (provider === "gemini") {
@@ -172,7 +183,7 @@ export function CrawlOverview({ results, domain }: Props) {
         if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
         const j = await res.json();
         text = j.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-      } else {
+      } else if (provider === "anthropic") {
         const res = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: {
@@ -190,6 +201,15 @@ export function CrawlOverview({ results, domain }: Props) {
         if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 200)}`);
         const j = await res.json();
         text = j.content?.[0]?.text ?? "";
+      } else if (provider === "cohere") {
+        const res = await fetch("https://api.cohere.com/v1/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey.trim()}` },
+          body: JSON.stringify({ model: "command-r", message: prompt }),
+        });
+        if (!res.ok) throw new Error(`Cohere ${res.status}: ${(await res.text()).slice(0, 200)}`);
+        const j = await res.json();
+        text = j.text ?? "";
       }
       setAiSummary(text.trim() || "(empty response)");
     } catch (err) {

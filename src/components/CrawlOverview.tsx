@@ -320,8 +320,14 @@ export function CrawlOverview({ results, domain }: Props) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="openai">OpenAI (gpt-4o-mini)</SelectItem>
-                    <SelectItem value="gemini">Google Gemini (1.5 Flash)</SelectItem>
-                    <SelectItem value="anthropic">Anthropic (Claude 3.5 Haiku)</SelectItem>
+                    <SelectItem value="gemini">Google Gemini 1.5 Flash (free tier)</SelectItem>
+                    <SelectItem value="anthropic">Anthropic Claude 3.5 Haiku</SelectItem>
+                    <SelectItem value="openrouter">OpenRouter (free models)</SelectItem>
+                    <SelectItem value="groq">Groq Llama 3.1 (free tier)</SelectItem>
+                    <SelectItem value="deepseek">DeepSeek Chat</SelectItem>
+                    <SelectItem value="mistral">Mistral Small (free tier)</SelectItem>
+                    <SelectItem value="together">Together AI</SelectItem>
+                    <SelectItem value="cohere">Cohere Command-R (free tier)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

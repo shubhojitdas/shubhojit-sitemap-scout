@@ -70,21 +70,10 @@ const Index = () => {
   const isLoading = phase === "parsing" || phase === "crawling" || phase === "paused";
   const hasResults = results.length > 0;
 
-  // When user clicks "Configure" on results page, ask first whether they want
-  // to extend the existing crawl or start fresh. Default = extend (incremental).
-  const handleOpenConfig = () => {
-    if (hasResults) {
-      const extend = window.confirm(
-        "Add or refresh data on the EXISTING crawl?\n\n" +
-        "OK = Extend the current crawl (pick more fields to extract)\n" +
-        "Cancel = Clear results and start a brand-new crawl",
-      );
-      if (extend) setConfigOpen(true);
-      else { clearCrawl(); setNewCrawlOpen(true); }
-    } else {
-      setConfigOpen(true);
-    }
-  };
+  // Open the config dialog. When results already exist, the dialog itself
+  // renders in "incremental" mode and offers extend / re-crawl options.
+  // Cancelling the dialog must NEVER clear the crawl.
+  const handleOpenConfig = () => setConfigOpen(true);
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">

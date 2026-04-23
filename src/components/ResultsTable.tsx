@@ -133,8 +133,8 @@ function matchesFieldSearch<T>(
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, includeSocialTags }: ResultsTableProps) {
-  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks" | "social">("meta");
+export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, includeSocialTags, forceTab }: ResultsTableProps) {
+  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks" | "social">(forceTab ?? "meta");
 
   // Universal filter state shared across all tabs
   const [metaFilter, setMetaFilter] = useState<Filter>("all");
@@ -151,6 +151,78 @@ export function ResultsTable({ results, domain, includeTitle, includeDesc, inclu
   const [universalAdvancedFilter, setUniversalAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
 
   if (results.length === 0) return null;
+
+  // When the parent forces a single tab (sidebar-driven), render ONLY that
+  // sub-table and skip the tab switcher entirely — no more accidental "showing
+  // metadata under the OG tab".
+  if (forceTab) {
+    switch (forceTab) {
+      case "images":
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+            <ImagesTable results={results} domain={domain}
+              imgFilter={imgFilter} setImgFilter={setImgFilter}
+              search={universalSearch} setSearch={setUniversalSearch}
+              advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter} />
+          </motion.div>
+        );
+      case "schemas":
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+            <SchemasTable results={results} domain={domain}
+              schemaFilter={schemaFilter} setSchemaFilter={setSchemaFilter}
+              search={universalSearch} setSearch={setUniversalSearch}
+              advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter} />
+          </motion.div>
+        );
+      case "canonical":
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+            <CanonicalTable results={results} domain={domain}
+              canonicalFilter={canonicalFilter} setCanonicalFilter={setCanonicalFilter}
+              search={universalSearch} setSearch={setUniversalSearch}
+              advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter} />
+          </motion.div>
+        );
+      case "hreflangs":
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+            <HreflangTable results={results} domain={domain}
+              hreflangFilter={hreflangFilter} setHreflangFilter={setHreflangFilter}
+              search={universalSearch} setSearch={setUniversalSearch}
+              advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter} />
+          </motion.div>
+        );
+      case "internalLinks":
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+            <InternalLinksTable results={results} domain={domain}
+              linkFilter={internalLinksFilter} setLinkFilter={setInternalLinksFilter}
+              search={universalSearch} setSearch={setUniversalSearch}
+              advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter} />
+          </motion.div>
+        );
+      case "social":
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+            <SocialTagsTable results={results} />
+          </motion.div>
+        );
+      case "meta":
+      default:
+        return (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+            <MetaTable results={results} domain={domain} includeTitle={includeTitle} includeDesc={includeDesc} includeH1={includeH1} includeH2={includeH2} includeH3={includeH3} includeImages={false} includeRobots={includeRobots}
+              filter={metaFilter} setFilter={setMetaFilter}
+              search={universalSearch} setSearch={setUniversalSearch}
+              advancedFilter={universalAdvancedFilter} setAdvancedFilter={setUniversalAdvancedFilter}
+              sortKey={metaSortKey} setSortKey={setMetaSortKey}
+              sortDir={metaSortDir} setSortDir={setMetaSortDir}
+            />
+          </motion.div>
+        );
+    }
+  }
 
   const hasTabs = includeImages || includeSchemas || includeCanonical || includeHreflangs || includeInternalLinks || includeSocialTags;
 

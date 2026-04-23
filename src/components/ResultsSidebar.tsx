@@ -130,7 +130,9 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
 
   return (
     <Sidebar collapsible="icon" className="border-r">
-      <SidebarContent className="pt-2">
+      {/* Spacer matches the sticky header (h-14 = 56px) + CrawlBar (~52px) so the
+          first menu item is never hidden behind the fixed top bars. */}
+      <SidebarContent className="pt-[108px]">
         {renderGroup("Crawl", overviewItems)}
         {renderGroup("SEO Data", seoItems)}
         {renderGroup("Tools", toolItems)}

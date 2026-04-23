@@ -146,8 +146,8 @@ export function ResultsShell({
           />
 
           <div className="flex-1 flex flex-col min-w-0">
-            {/* Sub-toolbar: sticks under the crawl bar so it never gets buried */}
-            <div className="sticky top-[7.25rem] z-30 flex items-center gap-2 px-3 sm:px-4 py-2 border-b border-border bg-background/95 backdrop-blur">
+            {/* Sub-toolbar: scrolls with content (NOT sticky) so it never hides section content */}
+            <div className="flex items-center gap-2 px-3 sm:px-4 py-2 border-b border-border bg-background">
               <SidebarTrigger className="h-7 w-7" />
               <h2 className="text-sm font-semibold truncate">{VIEW_TITLES[view]}</h2>
               <span className="text-[11px] text-muted-foreground hidden sm:inline">

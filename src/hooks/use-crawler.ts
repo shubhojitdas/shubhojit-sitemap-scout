@@ -393,6 +393,7 @@ export function useCrawler() {
     crawlOptionsRef.current = opts;
     accumulatedResultsRef.current = [];
 
+    const startedAt = new Date().toISOString();
     setState((s) => ({
       ...s,
       phase: "crawling",
@@ -400,6 +401,9 @@ export function useCrawler() {
       processedUrls: 0,
       error: null,
       incremental: true,
+      crawlStartedAt: startedAt,
+      crawlCompletedAt: null,
+      lastCrawledAt: startedAt,
     }));
 
     const BATCH_SIZE = 10;

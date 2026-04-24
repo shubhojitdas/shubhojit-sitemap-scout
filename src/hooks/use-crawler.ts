@@ -419,6 +419,7 @@ export function useCrawler() {
     }
 
     if (!signal.aborted) {
+      const completedAt = new Date().toISOString();
       setState((s) => ({
         ...s,
         phase: "done",
@@ -438,6 +439,8 @@ export function useCrawler() {
           jsRenderedLinks: s.crawledFlags.jsRenderedLinks || opts.jsRenderedLinks,
           includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
         },
+        crawlCompletedAt: completedAt,
+        lastCrawledAt: completedAt,
       }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -555,20 +555,20 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
   }
 
   if (flags.includeCanonical) {
-    const ok2 = ok.filter((r) => r.canonicalStatus === "OK").length;
-    const mismatch = ok.filter((r) => r.canonicalStatus === "Mismatch").length;
+    const selfRef = ok.filter((r) => r.canonicalStatus === "Self Referencing").length;
+    const canonicalised = ok.filter((r) => r.canonicalStatus === "Canonicalised").length;
     const missing = ok.filter((r) => r.canonicalStatus === "Missing").length;
     out.push({
       key: "canonical", label: "Canonicals", total,
       segments: [
-        { name: "Self-canonical", value: ok2, tone: "ok" },
-        { name: "Mismatch", value: mismatch, tone: "warn" },
+        { name: "Self-referencing", value: selfRef, tone: "ok" },
+        { name: "Canonicalised away", value: canonicalised, tone: "warn" },
         { name: "Missing", value: missing, tone: "bad" },
       ],
       insight: missing
         ? `${missing} page${missing === 1 ? "" : "s"} have no canonical tag — duplicate-content risk.`
-        : mismatch
-          ? `${mismatch} page${mismatch === 1 ? "" : "s"} canonicalize away from themselves — verify intentional.`
+        : canonicalised
+          ? `${canonicalised} page${canonicalised === 1 ? "" : "s"} canonicalize away from themselves — verify intentional.`
           : "All pages self-canonicalize correctly.",
     });
   }

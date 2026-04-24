@@ -72,6 +72,9 @@ function loadPersistedState(): CrawlState | null {
       data.lastInput = data.lastInput ?? null;
       data.crawledFlags = data.crawledFlags ?? INITIAL_STATE.crawledFlags;
       data.incremental = false;
+      data.crawlStartedAt = data.crawlStartedAt ?? null;
+      data.crawlCompletedAt = data.crawlCompletedAt ?? null;
+      data.lastCrawledAt = data.lastCrawledAt ?? data.crawlCompletedAt ?? data.crawlStartedAt ?? null;
       if (data.phase === "crawling" || data.phase === "parsing") {
         data.phase = "done";
       }

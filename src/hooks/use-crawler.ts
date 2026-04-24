@@ -212,6 +212,7 @@ export function useCrawler() {
     }
 
     if (!signal.aborted && !pausedRef.current) {
+      const completedAt = new Date().toISOString();
       setState((s) => ({
         ...s,
         phase: "done",
@@ -231,6 +232,8 @@ export function useCrawler() {
           includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
         },
         incremental: false,
+        crawlCompletedAt: completedAt,
+        lastCrawledAt: completedAt,
       }));
     }
   };

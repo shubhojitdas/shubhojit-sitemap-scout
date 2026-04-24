@@ -619,7 +619,7 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
   }
 
   if (flags.includeSocialTags) {
-    const hasOg = ok.filter((r) => !!(r.socialTags?.ogTitle || r.socialTags?.ogDescription || r.socialTags?.ogImage)).length;
+    const hasOg = ok.filter((r) => Array.isArray(r.socialTags) && r.socialTags.length > 0).length;
     const noOg = total - hasOg;
     out.push({
       key: "social", label: "Open Graph & Twitter", total,

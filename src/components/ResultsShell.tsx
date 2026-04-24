@@ -177,7 +177,7 @@ export function ResultsShell({
                     includeRobots={flags.includeRobots}
                     includeHreflangs={flags.includeHreflangs}
                   />
-                  <CrawlOverview results={results} domain={domain} />
+                  <CrawlOverview results={results} domain={domain} flags={flags} />
                   {(crawlSource === "site" || crawlSource === "sitemap") && (
                     <SitemapGenerator results={results} domain={domain} />
                   )}

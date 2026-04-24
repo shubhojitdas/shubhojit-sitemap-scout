@@ -39,6 +39,9 @@ interface Props {
   onOpenNewCrawl: () => void;
   onPause: () => void;
   onResume: () => void;
+  crawlStartedAt: string | null;
+  crawlCompletedAt: string | null;
+  lastCrawledAt: string | null;
 }
 
 /**
@@ -112,6 +115,7 @@ export function ResultsShell({
   results, domain, parsedUrls, crawlSource, lastInput, flags,
   isLoading, isPaused,
   onClearCrawl, onOpenConfig, onOpenNewCrawl, onPause, onResume,
+  crawlStartedAt, crawlCompletedAt, lastCrawledAt,
 }: Props) {
   const [view, setView] = useState<ResultsView>("overview");
   const cfg = viewConfig(view, flags);
@@ -131,6 +135,9 @@ export function ResultsShell({
               onPause={onPause}
               onResume={onResume}
               onClearCrawl={onClearCrawl}
+              crawlStartedAt={crawlStartedAt}
+              crawlCompletedAt={crawlCompletedAt}
+              lastCrawledAt={lastCrawledAt}
             />
           </div>
         </div>

@@ -14,6 +14,7 @@ const Index = () => {
     phase, crawlSource, results, totalUrls, processedUrls, error,
     crawl, crawlUrls, spiderSite, extendCrawl, pause, resume, reset, clearCrawl,
     parsedUrls, lastInput, crawledFlags,
+    crawlStartedAt, crawlCompletedAt, lastCrawledAt,
   } = useCrawler();
 
   const [showTop, setShowTop] = useState(false);
@@ -211,6 +212,9 @@ const Index = () => {
             onOpenNewCrawl={() => setNewCrawlOpen(true)}
             onPause={pause}
             onResume={resume}
+            crawlStartedAt={crawlStartedAt}
+            crawlCompletedAt={crawlCompletedAt}
+            lastCrawledAt={lastCrawledAt}
           />
 
           {/* Floating progress overlay during incremental crawls */}

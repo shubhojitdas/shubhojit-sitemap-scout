@@ -318,7 +318,10 @@ export function CrawlOverview({ results, domain, flags }: Props) {
         </div>
       </div>
 
-      {/* ── Text summary ──────────────────────────────────────────────────── */}
+      {/* ── Per-field health donuts (one card per crawled flag) ─────────── */}
+      {flags && <PerFieldDonuts results={results} flags={flags} />}
+
+
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <h3 className="text-xs font-semibold">Crawl summary</h3>

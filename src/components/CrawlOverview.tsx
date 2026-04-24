@@ -12,9 +12,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import type { CrawlResult } from "@/lib/crawl-api";
 
+interface FieldFlags {
+  includeTitle: boolean;
+  includeDesc: boolean;
+  includeH1: boolean;
+  includeH2: boolean;
+  includeH3: boolean;
+  includeImages: boolean;
+  includeSchemas: boolean;
+  includeRobots: boolean;
+  includeCanonical: boolean;
+  includeHreflangs: boolean;
+  includeInternalLinks: boolean;
+  includeSocialTags: boolean;
+}
+
 interface Props {
   results: CrawlResult[];
   domain: string;
+  flags?: FieldFlags;
 }
 
 // Chart palette: aesthetic monochrome + semantic accents that match the
@@ -74,7 +90,7 @@ function getStatusBucket(code: number): keyof typeof COLORS {
   return "blocked";
 }
 
-export function CrawlOverview({ results, domain }: Props) {
+export function CrawlOverview({ results, domain, flags }: Props) {
   const { toast } = useToast();
 
   // ── Pie data: status code distribution ────────────────────────────────────

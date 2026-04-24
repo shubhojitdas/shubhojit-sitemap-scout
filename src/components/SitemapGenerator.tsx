@@ -79,9 +79,9 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
         </motion.div>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl border-border/60 bg-background/95 backdrop-blur-xl p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-3 border-b border-border/60">
-          <DialogTitle className="flex items-center gap-2 text-lg">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto border-border/60 bg-background/95 backdrop-blur-xl p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-5 pb-3 border-b border-border/60">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <FileCode2 className="h-5 w-5 text-primary" />
             Your sitemap.xml is ready
           </DialogTitle>
@@ -92,7 +92,7 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
         </DialogHeader>
 
         {/* Stats strip */}
-        <div className="grid grid-cols-4 gap-2 px-6 py-3 border-b border-border/60 bg-muted/30">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-4 sm:px-6 py-3 border-b border-border/60 bg-muted/30">
           <Stat label="Included" value={stats.included} accent />
           <Stat label="4xx / 5xx" value={stats.droppedNon2xx} />
           <Stat label="Temp redirects" value={stats.droppedTemporaryRedirect} />
@@ -100,7 +100,7 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
         </div>
 
         <Tabs defaultValue="preview" className="w-full">
-          <div className="px-6 pt-3">
+          <div className="px-4 sm:px-6 pt-3">
             <TabsList className="h-8 grid grid-cols-2 w-full">
               <TabsTrigger value="preview" className="text-xs h-6">
                 XML Preview
@@ -111,8 +111,8 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
             </TabsList>
           </div>
 
-          <TabsContent value="preview" className="px-6 pb-4 mt-3">
-            <ScrollArea className="h-[280px] rounded-md border border-border/60 bg-muted/20">
+          <TabsContent value="preview" className="px-4 sm:px-6 pb-4 mt-3">
+            <ScrollArea className="h-[240px] sm:h-[280px] rounded-md border border-border/60 bg-muted/20">
               <pre className="text-[11px] leading-relaxed p-3 font-mono whitespace-pre text-foreground/85">
                 {xml}
               </pre>
@@ -122,8 +122,8 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
             </p>
           </TabsContent>
 
-          <TabsContent value="install" className="px-6 pb-4 mt-3">
-            <ScrollArea className="h-[280px] pr-3">
+          <TabsContent value="install" className="px-4 sm:px-6 pb-4 mt-3">
+            <ScrollArea className="h-[240px] sm:h-[280px] pr-3">
               <ol className="space-y-3">
                 <Step
                   index={1}
@@ -139,7 +139,7 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
                     <>
                       Place the file in the <strong>root directory</strong> of
                       your website so it's reachable at{" "}
-                      <code className="px-1 py-0.5 rounded bg-muted text-[10px]">
+                      <code className="px-1 py-0.5 rounded bg-muted text-[10px] break-all">
                         {sitemapUrl}
                       </code>
                       . Use FTP, your hosting file manager, or your CMS uploader.
@@ -157,7 +157,7 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
                         robots.txt
                       </code>
                       :
-                      <pre className="mt-1.5 px-2 py-1.5 rounded bg-muted text-[10px] font-mono">
+                      <pre className="mt-1.5 px-2 py-1.5 rounded bg-muted text-[10px] font-mono break-all whitespace-pre-wrap">
                         Sitemap: {sitemapUrl}
                       </pre>
                     </>
@@ -191,7 +191,7 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
           </TabsContent>
         </Tabs>
 
-        <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-border/60 bg-muted/20">
+        <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-3 border-t border-border/60 bg-muted/20 flex-wrap">
           <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
             <AnimatePresence mode="wait" initial={false}>
               {copied ? (

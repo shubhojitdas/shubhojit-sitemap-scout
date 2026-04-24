@@ -26,6 +26,12 @@ interface CrawlState {
   crawledFlags: CrawlOptions;
   /** True when running an incremental extract (extendCrawl), so progress UI can label it. */
   incremental: boolean;
+  /** Wall-clock ISO of when the current crawl was started. */
+  crawlStartedAt: string | null;
+  /** Wall-clock ISO of when the most recent crawl batch finished. */
+  crawlCompletedAt: string | null;
+  /** ISO of the most recent crawl activity (start, completion, or extension) in this dataset. */
+  lastCrawledAt: string | null;
 }
 
 const INITIAL_STATE: CrawlState = {
@@ -47,6 +53,9 @@ const INITIAL_STATE: CrawlState = {
     includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
   },
   incremental: false,
+  crawlStartedAt: null,
+  crawlCompletedAt: null,
+  lastCrawledAt: null,
 };
 
 const STORAGE_KEY = "sitemap-scout-crawl-data";
@@ -63,6 +72,9 @@ function loadPersistedState(): CrawlState | null {
       data.lastInput = data.lastInput ?? null;
       data.crawledFlags = data.crawledFlags ?? INITIAL_STATE.crawledFlags;
       data.incremental = false;
+      data.crawlStartedAt = data.crawlStartedAt ?? null;
+      data.crawlCompletedAt = data.crawlCompletedAt ?? null;
+      data.lastCrawledAt = data.lastCrawledAt ?? data.crawlCompletedAt ?? data.crawlStartedAt ?? null;
       if (data.phase === "crawling" || data.phase === "parsing") {
         data.phase = "done";
       }
@@ -200,6 +212,7 @@ export function useCrawler() {
     }
 
     if (!signal.aborted && !pausedRef.current) {
+      const completedAt = new Date().toISOString();
       setState((s) => ({
         ...s,
         phase: "done",
@@ -219,6 +232,8 @@ export function useCrawler() {
           includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
         },
         incremental: false,
+        crawlCompletedAt: completedAt,
+        lastCrawledAt: completedAt,
       }));
     }
   };
@@ -245,7 +260,8 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "sitemap", lastInput: { source: "sitemap", display: sitemapUrl }, includeTitle, includeDesc, includeH2, includeH3 });
+    const startedAt = new Date().toISOString();
+    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "sitemap", lastInput: { source: "sitemap", display: sitemapUrl }, includeTitle, includeDesc, includeH2, includeH3, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
@@ -294,7 +310,8 @@ export function useCrawler() {
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     const display = urls.length === 1 ? urls[0] : `${urls.length} URLs`;
-    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: urls.length, parsedUrls: urls, lastInput: { source: "urls", display, urls }, includeTitle, includeDesc, includeH2, includeH3 });
+    const startedAt = new Date().toISOString();
+    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: urls.length, parsedUrls: urls, lastInput: { source: "urls", display, urls }, includeTitle, includeDesc, includeH2, includeH3, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
       await runBatches(urls, signal, opts);
@@ -332,7 +349,8 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "site", lastInput: { source: "site", display: siteUrl }, includeTitle, includeDesc, includeH2, includeH3 });
+    const startedAt = new Date().toISOString();
+    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "site", lastInput: { source: "site", display: siteUrl }, includeTitle, includeDesc, includeH2, includeH3, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
       const urls = await spiderSiteUrls(siteUrl);
@@ -375,6 +393,7 @@ export function useCrawler() {
     crawlOptionsRef.current = opts;
     accumulatedResultsRef.current = [];
 
+    const startedAt = new Date().toISOString();
     setState((s) => ({
       ...s,
       phase: "crawling",
@@ -382,6 +401,9 @@ export function useCrawler() {
       processedUrls: 0,
       error: null,
       incremental: true,
+      crawlStartedAt: startedAt,
+      crawlCompletedAt: null,
+      lastCrawledAt: startedAt,
     }));
 
     const BATCH_SIZE = 10;
@@ -401,6 +423,7 @@ export function useCrawler() {
     }
 
     if (!signal.aborted) {
+      const completedAt = new Date().toISOString();
       setState((s) => ({
         ...s,
         phase: "done",
@@ -420,6 +443,8 @@ export function useCrawler() {
           jsRenderedLinks: s.crawledFlags.jsRenderedLinks || opts.jsRenderedLinks,
           includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
         },
+        crawlCompletedAt: completedAt,
+        lastCrawledAt: completedAt,
       }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -26,6 +26,12 @@ interface CrawlState {
   crawledFlags: CrawlOptions;
   /** True when running an incremental extract (extendCrawl), so progress UI can label it. */
   incremental: boolean;
+  /** Wall-clock ISO of when the current crawl was started. */
+  crawlStartedAt: string | null;
+  /** Wall-clock ISO of when the most recent crawl batch finished. */
+  crawlCompletedAt: string | null;
+  /** ISO of the most recent crawl activity (start, completion, or extension) in this dataset. */
+  lastCrawledAt: string | null;
 }
 
 const INITIAL_STATE: CrawlState = {
@@ -47,6 +53,9 @@ const INITIAL_STATE: CrawlState = {
     includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
   },
   incremental: false,
+  crawlStartedAt: null,
+  crawlCompletedAt: null,
+  lastCrawledAt: null,
 };
 
 const STORAGE_KEY = "sitemap-scout-crawl-data";

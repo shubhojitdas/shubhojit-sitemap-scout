@@ -97,18 +97,15 @@ export function extractJsRedirectTarget(html: string, baseUrl: string): string |
   const noComments = html.replace(/<!--[\s\S]*?-->/g, "");
 
   const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
-  // Combined pattern for window/document/top/self/parent.location[.href|.replace|.assign] = / ( "url"
+  // Capture the quote char so template literals can be distinguished from plain strings.
   const JS_REDIRECT_REGEX =
-    /(?:window\.|document\.|top\.|self\.|parent\.)?location(?:\.href|\.replace|\.assign)?\s*(?:=|\()\s*['"`]([^'"`]+)['"`]/gi;
+    /(?:window\.|document\.|top\.|self\.|parent\.)?location(?:\.href|\.replace|\.assign)?\s*(?:=|\()\s*(['"`])([^'"`]+)\1/gi;
 
   let scriptMatch: RegExpExecArray | null;
   while ((scriptMatch = scriptRegex.exec(noComments)) !== null) {
     const body = scriptMatch[1];
-    // Skip empty / external scripts.
     if (!body || !body.trim()) continue;
 
-    // Strip JS line comments and block comments to avoid commented-out redirects.
-    // Conservative: do not try to be JS-aware about strings; this is best-effort.
     const cleanedBody = body
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/(^|[^:])\/\/[^\n\r]*/g, "$1");
@@ -116,9 +113,23 @@ export function extractJsRedirectTarget(html: string, baseUrl: string): string |
     JS_REDIRECT_REGEX.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = JS_REDIRECT_REGEX.exec(cleanedBody)) !== null) {
-      const raw = m[1].trim();
+      const quote = m[1];
+      const raw = m[2].trim();
       if (!raw || raw === "#" || raw.startsWith("#")) continue;
       if (raw.startsWith("javascript:")) continue;
+
+      // Skip template literals containing interpolation — those are dynamic targets,
+      // not real page-level redirects (e.g. `/products/${handle}`).
+      if (quote === "`" && /\$\{/.test(raw)) continue;
+      if (/\{\{[^}]*\}\}/.test(raw)) continue;
+      if (/\$\{|%24%7B|%7B[^/]*%7D/i.test(raw)) continue;
+
+      // Skip assignments inside event-handler bodies — those fire on user action,
+      // not page load, so they aren't crawl-time redirects.
+      const ctxStart = Math.max(0, m.index - 200);
+      const ctx = cleanedBody.slice(ctxStart, m.index);
+      if (/addEventListener\s*\(\s*['"`](?:click|submit|change|input|keydown|keyup|mousedown|mouseup|touchstart|touchend)['"`]/i.test(ctx)) continue;
+      if (/\bon(?:click|submit|change|input|keydown|keyup|mousedown|mouseup|touchstart|touchend)\s*[:=]\s*(?:function|\([^)]*\)\s*=>)/i.test(ctx)) continue;
 
       let resolved: string;
       try {
@@ -127,8 +138,8 @@ export function extractJsRedirectTarget(html: string, baseUrl: string): string |
         continue;
       }
 
-      // Skip self-redirects.
       if (resolved === baseUrl) continue;
+      if (/\$\{|%24%7B|%7B/i.test(resolved)) continue;
 
       return resolved;
     }

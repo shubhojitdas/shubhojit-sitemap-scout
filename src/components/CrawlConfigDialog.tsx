@@ -11,10 +11,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Heading1, Heading2, Heading3, Image as ImageIcon, Code, Bot, Link2,
-  Languages, LinkIcon, Zap, Share2, FileText, Settings2, AlertTriangle,
+  Languages, LinkIcon, Zap, Share2, FileText, Settings2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 export interface CrawlConfig {
   includeTitle: boolean;
@@ -128,18 +128,13 @@ export function CrawlConfigDialog({
 }: Props) {
   const isIncremental = mode === "incremental";
 
-  // In incremental mode, build a separate "selection" that defaults to nothing
-  // and lets the user opt into newly-added fields, plus opt into RE-crawling
-  // already-crawled fields (with a warning).
+  // In incremental mode the user freely picks any fields to (re)extract.
+  // Previously-crawled fields are NOT greyed — they're just badged so the user
+  // knows clicking them will overwrite stored values for the same URL set.
   const [extraSelection, setExtraSelection] = useState<CrawlConfig>(EMPTY_FLAGS);
-  const [recrawlExisting, setRecrawlExisting] = useState(false);
 
-  // Reset incremental selection whenever the dialog opens fresh.
   useEffect(() => {
-    if (open && isIncremental) {
-      setExtraSelection(EMPTY_FLAGS);
-      setRecrawlExisting(false);
-    }
+    if (open && isIncremental) setExtraSelection(EMPTY_FLAGS);
   }, [open, isIncremental]);
 
   const setInitial = (key: keyof CrawlConfig, val: boolean) => {
@@ -156,23 +151,12 @@ export function CrawlConfigDialog({
 
   const initialEnabled = Object.values(config).filter(Boolean).length;
   const extraEnabled = Object.values(extraSelection).filter(Boolean).length;
-  const recrawlingCount = recrawlExisting
-    ? (Object.entries(extraSelection) as [keyof CrawlConfig, boolean][])
-        .filter(([k, v]) => v && crawledFlags[k]).length
-    : 0;
-  const newFieldsCount = (Object.entries(extraSelection) as [keyof CrawlConfig, boolean][])
-    .filter(([k, v]) => v && !crawledFlags[k]).length;
+  const overwriteCount = (Object.entries(extraSelection) as [keyof CrawlConfig, boolean][])
+    .filter(([k, v]) => v && crawledFlags[k]).length;
 
   const handleExtend = () => {
     if (extraEnabled === 0) return;
-    // If recrawlExisting is OFF, strip out any flags that were already crawled.
-    const finalSelection: Partial<CrawlConfig> = { ...extraSelection };
-    if (!recrawlExisting) {
-      for (const k of Object.keys(crawledFlags) as (keyof CrawlConfig)[]) {
-        if (crawledFlags[k]) finalSelection[k] = false;
-      }
-    }
-    onExtend?.(finalSelection);
+    onExtend?.({ ...extraSelection });
     onOpenChange(false);
   };
 
@@ -187,9 +171,8 @@ export function CrawlConfigDialog({
           <DialogDescription className="text-xs">
             {isIncremental ? (
               <>
-                Pick additional fields to extract from your existing {Object.keys(crawledFlags).length}-field crawl.
-                Already-crawled fields are greyed out — toggle{" "}
-                <strong>Re-crawl existing fields</strong> below if you want to refresh them too.
+                Pick any fields to (re)extract from your existing crawl. Already-crawled
+                fields are marked — selecting them will refresh their values.
               </>
             ) : (
               <>Choose which SEO data to extract. {initialEnabled} option{initialEnabled === 1 ? "" : "s"} enabled.</>
@@ -205,28 +188,24 @@ export function CrawlConfigDialog({
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {group.items
-                  .filter((it) => !it.parent || (isIncremental ? extraSelection[it.parent] || crawledFlags[it.parent] : config[it.parent]))
+                  .filter((it) => !it.parent || (isIncremental ? extraSelection[it.parent] : config[it.parent]))
                   .map((it) => {
                     const alreadyCrawled = isIncremental && crawledFlags[it.key];
-                    const greyedOut = alreadyCrawled && !recrawlExisting;
                     const checked = isIncremental ? !!extraSelection[it.key] : !!config[it.key];
 
                     return (
                       <Label
                         key={it.key}
                         htmlFor={`cfg-${it.key}`}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md border text-xs font-medium transition-colors ${
-                          greyedOut
-                            ? "border-border bg-muted/30 opacity-50 cursor-not-allowed"
-                            : checked
-                              ? "border-foreground/40 bg-muted cursor-pointer"
-                              : "border-border hover:border-foreground/30 hover:bg-muted/50 cursor-pointer"
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md border text-xs font-medium cursor-pointer transition-colors ${
+                          checked
+                            ? "border-foreground/40 bg-muted"
+                            : "border-border hover:border-foreground/30 hover:bg-muted/50"
                         }`}
                       >
                         <Checkbox
                           id={`cfg-${it.key}`}
                           checked={checked}
-                          disabled={greyedOut}
                           onCheckedChange={(v) =>
                             isIncremental ? setExtra(it.key, !!v) : setInitial(it.key, !!v)
                           }
@@ -234,7 +213,7 @@ export function CrawlConfigDialog({
                         <span className="text-muted-foreground">{it.icon}</span>
                         <span className="flex-1 truncate">{it.label}</span>
                         {alreadyCrawled && (
-                          <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70">
+                          <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted-foreground/15 text-muted-foreground">
                             crawled
                           </span>
                         )}
@@ -245,59 +224,27 @@ export function CrawlConfigDialog({
             </div>
           ))}
 
-          {/* Re-crawl toggle (incremental only) */}
-          {isIncremental && (
-            <div className="rounded-md border border-border bg-muted/30 p-3">
-              <Label className="flex items-start gap-2 cursor-pointer">
-                <Checkbox
-                  checked={recrawlExisting}
-                  onCheckedChange={(v) => setRecrawlExisting(!!v)}
-                  className="mt-0.5"
-                />
-                <div className="flex-1">
-                  <div className="text-xs font-medium">Re-crawl existing fields too</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">
-                    Allows you to refresh fields that were already extracted. Selected
-                    fields will overwrite their stored values for the same set of URLs.
-                  </div>
-                </div>
-              </Label>
-              <AnimatePresence>
-                {recrawlingCount > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-2 flex items-start gap-1.5 rounded bg-warning/10 border border-warning/30 p-2 text-[11px] text-warning"
-                  >
-                    <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-                    <span>
-                      {recrawlingCount} previously-crawled field{recrawlingCount === 1 ? "" : "s"} will be overwritten with fresh data. The URL list stays the same.
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+          {isIncremental && overwriteCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-md border border-warning/30 bg-warning/10 p-2.5 text-[11px] text-warning"
+            >
+              {overwriteCount} previously-crawled field{overwriteCount === 1 ? "" : "s"} will be refreshed and overwritten for the same URL set.
+            </motion.div>
           )}
         </div>
 
         <DialogFooter className="gap-2 flex-col-reverse sm:flex-row">
           {isIncremental ? (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setExtraSelection(EMPTY_FLAGS);
-                  setRecrawlExisting(false);
-                }}
-              >
+              <Button variant="outline" size="sm" onClick={() => setExtraSelection(EMPTY_FLAGS)}>
                 Reset
               </Button>
               <Button
                 size="sm"
                 onClick={handleExtend}
-                disabled={extraEnabled === 0 || (newFieldsCount === 0 && recrawlingCount === 0)}
+                disabled={extraEnabled === 0}
                 className="gap-1.5"
               >
                 Extract {extraEnabled} field{extraEnabled === 1 ? "" : "s"}

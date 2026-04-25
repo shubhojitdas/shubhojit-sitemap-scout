@@ -125,7 +125,9 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
                     <span className="flex-1 truncate">{it.label}</span>
                     {it.count !== undefined && it.count > 0 && (
                       <span className={`ml-auto text-[10px] tabular-nums px-1.5 py-0.5 rounded ${
-                        active ? "bg-background/20 text-background" : "bg-muted text-muted-foreground"
+                        active
+                          ? "bg-primary-foreground/20 text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
                       }`}>
                         {it.count.toLocaleString()}
                       </span>

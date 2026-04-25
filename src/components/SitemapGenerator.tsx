@@ -79,8 +79,8 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
         </motion.div>
       </DialogTrigger>
 
-      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto border-border/60 bg-background/95 backdrop-blur-xl p-0">
-        <DialogHeader className="px-4 sm:px-6 pt-5 pb-3 border-b border-border/60">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-2xl max-h-[90vh] overflow-hidden border-border/60 bg-background/95 backdrop-blur-xl p-0 flex flex-col">
+        <DialogHeader className="px-4 sm:px-6 pt-5 pb-3 border-b border-border/60 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <FileCode2 className="h-5 w-5 text-primary" />
             Your sitemap.xml is ready
@@ -92,15 +92,15 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
         </DialogHeader>
 
         {/* Stats strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-4 sm:px-6 py-3 border-b border-border/60 bg-muted/30">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-4 sm:px-6 py-3 border-b border-border/60 bg-muted/30 flex-shrink-0">
           <Stat label="Included" value={stats.included} accent />
           <Stat label="4xx / 5xx" value={stats.droppedNon2xx} />
           <Stat label="Temp redirects" value={stats.droppedTemporaryRedirect} />
           <Stat label="Duplicates" value={stats.droppedDuplicate} />
         </div>
 
-        <Tabs defaultValue="preview" className="w-full">
-          <div className="px-4 sm:px-6 pt-3">
+        <Tabs defaultValue="preview" className="w-full flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="px-4 sm:px-6 pt-3 flex-shrink-0">
             <TabsList className="h-8 grid grid-cols-2 w-full">
               <TabsTrigger value="preview" className="text-xs h-6">
                 XML Preview
@@ -111,13 +111,13 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
             </TabsList>
           </div>
 
-          <TabsContent value="preview" className="px-4 sm:px-6 pb-4 mt-3">
-            <ScrollArea className="h-[240px] sm:h-[280px] rounded-md border border-border/60 bg-muted/20">
-              <pre className="text-[11px] leading-relaxed p-3 font-mono whitespace-pre text-foreground/85">
+          <TabsContent value="preview" className="px-4 sm:px-6 pb-4 mt-3 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-[200px] rounded-md border border-border/60 bg-muted/20 overflow-auto">
+              <pre className="text-[11px] leading-relaxed p-3 font-mono whitespace-pre-wrap break-all text-foreground/85 m-0">
                 {xml}
               </pre>
-            </ScrollArea>
-            <p className="mt-2 text-[10px] text-muted-foreground">
+            </div>
+            <p className="mt-2 text-[10px] text-muted-foreground flex-shrink-0">
               Showing all {entries.length} URLs · UTF-8 · sitemap protocol 0.9
             </p>
           </TabsContent>

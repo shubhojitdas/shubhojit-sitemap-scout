@@ -126,7 +126,7 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
                     {it.count !== undefined && it.count > 0 && (
                       <span className={`ml-auto text-[10px] tabular-nums px-1.5 py-0.5 rounded ${
                         active
-                          ? "bg-primary-foreground/20 text-primary-foreground"
+                          ? "bg-sidebar-accent-foreground/15 text-sidebar-accent-foreground font-medium"
                           : "bg-muted text-muted-foreground"
                       }`}>
                         {it.count.toLocaleString()}

@@ -193,3 +193,42 @@ u, .rich-text u {
   text-underline-offset: 4px;
   text-decoration-thickness: 1px;
 }
+
+/* ─── Recharts tooltip — force proper contrast in both themes ─────────────
+   Recharts injects inline styles for the tooltip wrapper and item rows;
+   `contentStyle` only covers the outer wrapper, so labels/items still pick
+   up Recharts' default near-black color which is invisible on dark popovers.
+   These rules override every internal node so text is always readable. */
+.recharts-default-tooltip,
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px hsl(0 0% 0% / 0.18) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  padding: 8px 10px !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-label,
+.recharts-tooltip-wrapper .recharts-tooltip-item-list,
+.recharts-tooltip-wrapper .recharts-tooltip-item,
+.recharts-tooltip-wrapper .recharts-tooltip-item-name,
+.recharts-tooltip-wrapper .recharts-tooltip-item-separator,
+.recharts-tooltip-wrapper .recharts-tooltip-item-value,
+.recharts-tooltip-wrapper .recharts-tooltip-item-unit {
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-label {
+  font-weight: 600;
+  margin-bottom: 4px !important;
+}
+
+.recharts-default-tooltip .recharts-tooltip-item {
+  padding: 2px 0 !important;
+}
+
+/* Recharts legend should also pick up muted-foreground in dark mode. */
+.recharts-legend-item-text {
+  color: hsl(var(--muted-foreground)) !important;
+}

@@ -9,6 +9,7 @@ import { RobotsTxtPanel } from "@/components/RobotsTxtPanel";
 import { CrawlOverview } from "@/components/CrawlOverview";
 import { CrawlBar } from "@/components/CrawlBar";
 import { SectionVisualization, type SectionKey } from "@/components/SectionVisualization";
+import { SeoIssuesView } from "@/components/SeoIssuesView";
 import type { CrawlResult } from "@/lib/crawl-api";
 import type { LastCrawlInput } from "@/hooks/use-crawler";
 
@@ -89,6 +90,7 @@ const VIEW_TITLES: Record<ResultsView, string> = {
   overview: "Overview",
   internal: "Internal — All URLs",
   "response-codes": "Response Codes",
+  "seo-issues": "SEO Issues",
   combined: "Combined Meta Data",
   "page-titles": "Page Titles",
   "meta-description": "Meta Descriptions",
@@ -208,8 +210,12 @@ export function ResultsShell({
                 <RobotsTxtPanel results={results} domain={domain} />
               )}
 
+              {view === "seo-issues" && (
+                <SeoIssuesView results={results} flags={flags} />
+              )}
+
               {/* All data views: mini visualization + filtered table */}
-              {view !== "overview" && view !== "link-graph" && view !== "sitemap" && view !== "robots-txt" && (
+              {view !== "overview" && view !== "link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && (
                 <>
                   {SECTION_VIS_VIEWS.has(view) && (
                     <SectionVisualization

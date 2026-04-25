@@ -5,7 +5,7 @@ import {
 import {
   LayoutDashboard, FileText, AlignLeft, Heading1, Heading2, Heading3,
   Image as ImageIcon, Code, Bot, Link2, Languages, LinkIcon, Share2,
-  FileCode2, Network, ServerCrash, ListTree,
+  FileCode2, Network, ServerCrash, ListTree, Lightbulb,
 } from "lucide-react";
 import type { CrawlResult } from "@/lib/crawl-api";
 
@@ -13,6 +13,7 @@ export type ResultsView =
   | "overview"
   | "internal"
   | "response-codes"
+  | "seo-issues"
   | "combined"
   | "page-titles"
   | "meta-description"
@@ -75,6 +76,7 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
     { view: "overview", label: "Overview", icon: LayoutDashboard },
     { view: "internal", label: "Internal", icon: ListTree, count: total },
     { view: "response-codes", label: "Response Codes", icon: ServerCrash, count: errors + c3xx + c4xx + c5xx },
+    { view: "seo-issues", label: "SEO Issues", icon: Lightbulb, visible: results.length > 0 },
   ];
 
   const seoItems: Item[] = [
@@ -123,7 +125,9 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
                     <span className="flex-1 truncate">{it.label}</span>
                     {it.count !== undefined && it.count > 0 && (
                       <span className={`ml-auto text-[10px] tabular-nums px-1.5 py-0.5 rounded ${
-                        active ? "bg-background/20 text-background" : "bg-muted text-muted-foreground"
+                        active
+                          ? "bg-sidebar-accent-foreground/15 text-sidebar-accent-foreground font-medium"
+                          : "bg-muted text-muted-foreground"
                       }`}>
                         {it.count.toLocaleString()}
                       </span>

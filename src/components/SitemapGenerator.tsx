@@ -79,7 +79,7 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
         </motion.div>
       </DialogTrigger>
 
-      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto border-border/60 bg-background/95 backdrop-blur-xl p-0">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto border-border/60 bg-background/95 backdrop-blur-xl p-0">
         <DialogHeader className="px-4 sm:px-6 pt-5 pb-3 border-b border-border/60">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <FileCode2 className="h-5 w-5 text-primary" />

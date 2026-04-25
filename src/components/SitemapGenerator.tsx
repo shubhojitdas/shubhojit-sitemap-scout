@@ -122,8 +122,8 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
             </p>
           </TabsContent>
 
-          <TabsContent value="install" className="px-4 sm:px-6 pb-4 mt-3">
-            <ScrollArea className="h-[240px] sm:h-[280px] pr-3">
+          <TabsContent value="install" className="px-4 sm:px-6 pb-4 mt-3 flex-1 min-h-0 overflow-hidden">
+            <div className="h-full overflow-y-auto pr-1">
               <ol className="space-y-3">
                 <Step
                   index={1}
@@ -187,11 +187,11 @@ export function SitemapGenerator({ results, domain }: SitemapGeneratorProps) {
                   }
                 />
               </ol>
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
 
-        <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-3 border-t border-border/60 bg-muted/20 flex-wrap">
+        <div className="flex items-center justify-end gap-2 px-4 sm:px-6 py-3 border-t border-border/60 bg-muted/20 flex-wrap flex-shrink-0">
           <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
             <AnimatePresence mode="wait" initial={false}>
               {copied ? (

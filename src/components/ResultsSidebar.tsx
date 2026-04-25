@@ -5,7 +5,7 @@ import {
 import {
   LayoutDashboard, FileText, AlignLeft, Heading1, Heading2, Heading3,
   Image as ImageIcon, Code, Bot, Link2, Languages, LinkIcon, Share2,
-  FileCode2, Network, ServerCrash, ListTree,
+  FileCode2, Network, ServerCrash, ListTree, Lightbulb,
 } from "lucide-react";
 import type { CrawlResult } from "@/lib/crawl-api";
 
@@ -13,6 +13,7 @@ export type ResultsView =
   | "overview"
   | "internal"
   | "response-codes"
+  | "seo-issues"
   | "combined"
   | "page-titles"
   | "meta-description"

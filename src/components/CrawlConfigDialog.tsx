@@ -33,8 +33,8 @@ export interface CrawlConfig {
 }
 
 export const DEFAULT_CRAWL_CONFIG: CrawlConfig = {
-  includeTitle: true,
-  includeDesc: true,
+  includeTitle: false,
+  includeDesc: false,
   includeH1: false,
   includeH2: false,
   includeH3: false,

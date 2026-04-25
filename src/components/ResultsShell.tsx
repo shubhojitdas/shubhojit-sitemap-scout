@@ -210,8 +210,12 @@ export function ResultsShell({
                 <RobotsTxtPanel results={results} domain={domain} />
               )}
 
+              {view === "seo-issues" && (
+                <SeoIssuesView results={results} flags={flags} />
+              )}
+
               {/* All data views: mini visualization + filtered table */}
-              {view !== "overview" && view !== "link-graph" && view !== "sitemap" && view !== "robots-txt" && (
+              {view !== "overview" && view !== "link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && (
                 <>
                   {SECTION_VIS_VIEWS.has(view) && (
                     <SectionVisualization

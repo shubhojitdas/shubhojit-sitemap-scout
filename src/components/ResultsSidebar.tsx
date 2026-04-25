@@ -13,6 +13,7 @@ export type ResultsView =
   | "overview"
   | "internal"
   | "response-codes"
+  | "combined"
   | "page-titles"
   | "meta-description"
   | "h1" | "h2" | "h3"
@@ -40,6 +41,8 @@ interface Props {
   setView: (v: ResultsView) => void;
   results: CrawlResult[];
   flags: {
+    includeTitle: boolean;
+    includeDesc: boolean;
     includeH1: boolean;
     includeH2: boolean;
     includeH3: boolean;
@@ -56,11 +59,17 @@ interface Props {
 
 export function ResultsSidebar({ view, setView, results, flags, crawlSource }: Props) {
   const total = results.length;
-  const c2xx = results.filter((r) => r.statusCode >= 200 && r.statusCode < 300).length;
   const c3xx = results.filter((r) => (r.redirectChain?.length ?? 0) > 0 || (r.statusCode >= 300 && r.statusCode < 400)).length;
   const c4xx = results.filter((r) => r.statusCode >= 400 && r.statusCode < 500).length;
   const c5xx = results.filter((r) => r.statusCode >= 500).length;
   const errors = results.filter((r) => r.status === "Error").length;
+
+  // True if at least one metadata field was crawled — used to gate the Combined view.
+  const anyMetaCrawled =
+    flags.includeTitle || flags.includeDesc || flags.includeH1 || flags.includeH2 ||
+    flags.includeH3 || flags.includeRobots || flags.includeCanonical ||
+    flags.includeHreflangs || flags.includeSchemas || flags.includeImages ||
+    flags.includeInternalLinks || flags.includeSocialTags;
 
   const overviewItems: Item[] = [
     { view: "overview", label: "Overview", icon: LayoutDashboard },
@@ -69,8 +78,9 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
   ];
 
   const seoItems: Item[] = [
-    { view: "page-titles", label: "Page Titles", icon: FileText, count: total },
-    { view: "meta-description", label: "Meta Description", icon: AlignLeft, count: total },
+    { view: "combined", label: "Combined Meta Data", icon: LayoutDashboard, count: total, visible: anyMetaCrawled },
+    { view: "page-titles", label: "Page Titles", icon: FileText, count: total, visible: flags.includeTitle },
+    { view: "meta-description", label: "Meta Description", icon: AlignLeft, count: total, visible: flags.includeDesc },
     { view: "h1", label: "H1", icon: Heading1, count: total, visible: flags.includeH1 },
     { view: "h2", label: "H2", icon: Heading2, count: total, visible: flags.includeH2 },
     { view: "h3", label: "H3", icon: Heading3, count: total, visible: flags.includeH3 },

@@ -1713,3 +1713,35 @@ function InternalLinksTable({ results, domain, linkFilter, setLinkFilter, search
     </div>
   );
 }
+
+/**
+ * Inline character-count badge shown beneath Meta Title / Meta Description.
+ * Color-codes against an "ideal" length range so users can spot truncation
+ * or under-optimised tags at a glance.
+ */
+function CharCountBadge({ len, ideal }: { len: number; ideal: [number, number] }) {
+  const [min, max] = ideal;
+  const ok = len >= min && len <= max;
+  const tooLong = len > max;
+  const tooShort = len < min;
+  const cls = ok
+    ? "bg-success/15 text-success border-success/30"
+    : tooLong
+    ? "bg-destructive/15 text-destructive border-destructive/30"
+    : "bg-warning/15 text-warning border-warning/30";
+  const hint = ok
+    ? `Ideal (${min}–${max} chars)`
+    : tooLong
+    ? `Too long — over ${max} chars may truncate in SERPs`
+    : tooShort
+    ? `Short — under ${min} chars wastes SERP real estate`
+    : "";
+  return (
+    <span
+      title={hint}
+      className={`inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded border tabular-nums ${cls}`}
+    >
+      {len} chars
+    </span>
+  );
+}

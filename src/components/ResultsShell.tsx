@@ -9,6 +9,7 @@ import { RobotsTxtPanel } from "@/components/RobotsTxtPanel";
 import { CrawlOverview } from "@/components/CrawlOverview";
 import { CrawlBar } from "@/components/CrawlBar";
 import { SectionVisualization, type SectionKey } from "@/components/SectionVisualization";
+import { SeoIssuesView } from "@/components/SeoIssuesView";
 import type { CrawlResult } from "@/lib/crawl-api";
 import type { LastCrawlInput } from "@/hooks/use-crawler";
 

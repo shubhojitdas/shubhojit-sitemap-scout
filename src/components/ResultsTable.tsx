@@ -619,15 +619,30 @@ function MetaTable({
                     </button>
                     <div className="px-3 py-2 break-all font-mono text-[11px] text-muted-foreground">{initial}</div>
                     {includeTitle && (
-                      <div className="px-3 py-2 break-words text-[11px]">
-                        {row.title || <span className="text-muted-foreground italic">(empty)</span>}
+                      <div className="px-3 py-2 break-words text-[11px] space-y-1">
+                        {row.title ? (
+                          <>
+                            <div>{row.title}</div>
+                            <CharCountBadge len={row.title.length} ideal={[50, 60]} />
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground italic">(empty)</span>
+                        )}
                       </div>
                     )}
                     {includeDesc && (
-                      <div className="px-3 py-2 break-words text-[11px] text-muted-foreground">
-                        {row.description || <span className="italic">(empty)</span>}
+                      <div className="px-3 py-2 break-words text-[11px] text-muted-foreground space-y-1">
+                        {row.description ? (
+                          <>
+                            <div>{row.description}</div>
+                            <CharCountBadge len={row.description.length} ideal={[120, 160]} />
+                          </>
+                        ) : (
+                          <span className="italic">(empty)</span>
+                        )}
                       </div>
                     )}
+
                     {includeH1 && (
                       <div className="px-3 py-2 space-y-0.5">
                         {h1s.length === 0 ? (
@@ -1696,5 +1711,37 @@ function InternalLinksTable({ results, domain, linkFilter, setLinkFilter, search
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Inline character-count badge shown beneath Meta Title / Meta Description.
+ * Color-codes against an "ideal" length range so users can spot truncation
+ * or under-optimised tags at a glance.
+ */
+function CharCountBadge({ len, ideal }: { len: number; ideal: [number, number] }) {
+  const [min, max] = ideal;
+  const ok = len >= min && len <= max;
+  const tooLong = len > max;
+  const tooShort = len < min;
+  const cls = ok
+    ? "bg-success/15 text-success border-success/30"
+    : tooLong
+    ? "bg-destructive/15 text-destructive border-destructive/30"
+    : "bg-warning/15 text-warning border-warning/30";
+  const hint = ok
+    ? `Ideal (${min}–${max} chars)`
+    : tooLong
+    ? `Too long — over ${max} chars may truncate in SERPs`
+    : tooShort
+    ? `Short — under ${min} chars wastes SERP real estate`
+    : "";
+  return (
+    <span
+      title={hint}
+      className={`inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded border tabular-nums ${cls}`}
+    >
+      {len} chars
+    </span>
   );
 }

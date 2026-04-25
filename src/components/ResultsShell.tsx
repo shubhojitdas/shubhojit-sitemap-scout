@@ -69,6 +69,7 @@ function viewConfig(view: ResultsView, baseFlags: Props["flags"]) {
     case "h2":              return { forceTab: "meta" as const,         flags: onlyMeta({ includeH2: true }) };
     case "h3":              return { forceTab: "meta" as const,         flags: onlyMeta({ includeH3: true }) };
     case "meta-robots":     return { forceTab: "meta" as const,         flags: onlyMeta({ includeRobots: true }) };
+    case "combined":        return { forceTab: "meta" as const,         flags: baseFlags };
     case "canonicals":      return { forceTab: "canonical" as const,    flags: baseFlags };
     case "hreflang":        return { forceTab: "hreflangs" as const,    flags: baseFlags };
     case "schema":          return { forceTab: "schemas" as const,      flags: baseFlags };
@@ -88,6 +89,7 @@ const VIEW_TITLES: Record<ResultsView, string> = {
   overview: "Overview",
   internal: "Internal — All URLs",
   "response-codes": "Response Codes",
+  combined: "Combined Meta Data",
   "page-titles": "Page Titles",
   "meta-description": "Meta Descriptions",
   h1: "H1 Tags",
@@ -189,10 +191,18 @@ export function ResultsShell({
               )}
 
               {view === "sitemap" && (
-                <div className="rounded-lg border border-border p-4">
+                <div className="rounded-lg border border-border p-4 flex flex-col items-start gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold">Sitemap Generator</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Build a clean, Google-ready <code className="font-mono">sitemap.xml</code> from this crawl —
+                      only valid 2xx URLs, redirects resolved, duplicates removed.
+                    </p>
+                  </div>
                   <SitemapGenerator results={results} domain={domain} />
                 </div>
               )}
+
 
               {view === "robots-txt" && (
                 <RobotsTxtPanel results={results} domain={domain} />

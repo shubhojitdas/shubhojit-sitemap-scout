@@ -22,7 +22,17 @@ const Index = () => {
   const [config, setConfig] = useState<CrawlConfig>(DEFAULT_CRAWL_CONFIG);
   const [activeConfig, setActiveConfig] = useState<CrawlConfig>(DEFAULT_CRAWL_CONFIG);
   const [configOpen, setConfigOpen] = useState(false);
+  // ── New-crawl flow has its own config state + dialog so configuring fields for
+  //    the next crawl never touches the current dataset's incremental config.
   const [newCrawlOpen, setNewCrawlOpen] = useState(false);
+  const [newCrawlConfig, setNewCrawlConfig] = useState<CrawlConfig>(DEFAULT_CRAWL_CONFIG);
+  const [newCrawlConfigOpen, setNewCrawlConfigOpen] = useState(false);
+
+  // Whenever the user opens the "Start a new crawl" dialog, reset the picker
+  // to a clean slate so they explicitly choose what to extract.
+  useEffect(() => {
+    if (newCrawlOpen) setNewCrawlConfig(DEFAULT_CRAWL_CONFIG);
+  }, [newCrawlOpen]);
 
   useEffect(() => {
     const handleScroll = () => setShowTop(window.scrollY > 400);
@@ -75,6 +85,19 @@ const Index = () => {
   // renders in "incremental" mode and offers extend / re-crawl options.
   // Cancelling the dialog must NEVER clear the crawl.
   const handleOpenConfig = () => setConfigOpen(true);
+
+  // Helper: a fully-clean New Crawl handoff. Aborts any running crawl, wipes
+  // results + UI state, then immediately starts the new crawl with the user's
+  // freshly-picked fields. Closes the New Crawl dialog so the loading state
+  // takes over the screen.
+  const startNewCrawl = (kind: "sitemap" | "site" | "urls", payload: string | string[], c: CrawlConfig) => {
+    clearCrawl();
+    setNewCrawlOpen(false);
+    setNewCrawlConfigOpen(false);
+    if (kind === "sitemap") handleCrawl(payload as string, c);
+    else if (kind === "site") handleSpiderSite(payload as string, c);
+    else handleCrawlUrls(payload as string[], c);
+  };
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
@@ -237,21 +260,21 @@ const Index = () => {
         onExtend={handleExtend}
       />
 
-      {/* ── New crawl dialog (re-uses CrawlForm) ── */}
+      {/* ── New crawl dialog (re-uses CrawlForm with its OWN config state) ── */}
       <Dialog open={newCrawlOpen} onOpenChange={setNewCrawlOpen}>
         <DialogContent className="w-[calc(100vw-2rem)] sm:w-full sm:max-w-xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-base">Start a new crawl</DialogTitle>
           </DialogHeader>
           <p className="text-[11px] text-muted-foreground -mt-2">
-            Starting a new crawl will clear your current results.
+            Starting a new crawl will clear your current results and begin fresh.
           </p>
           <CrawlForm
-            config={config}
-            onOpenConfig={() => setConfigOpen(true)}
-            onCrawl={(url, c) => { clearCrawl(); handleCrawl(url, c); }}
-            onCrawlUrls={(urls, c) => { clearCrawl(); handleCrawlUrls(urls, c); }}
-            onSpiderSite={(url, c) => { clearCrawl(); handleSpiderSite(url, c); }}
+            config={newCrawlConfig}
+            onOpenConfig={() => setNewCrawlConfigOpen(true)}
+            onCrawl={(url, c) => startNewCrawl("sitemap", url, c)}
+            onCrawlUrls={(urls, c) => startNewCrawl("urls", urls, c)}
+            onSpiderSite={(url, c) => startNewCrawl("site", url, c)}
             isLoading={isLoading}
             isPaused={phase === "paused"}
             onReset={reset}
@@ -260,6 +283,15 @@ const Index = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* ── New-crawl field picker (always "initial" mode, independent state) ── */}
+      <CrawlConfigDialog
+        open={newCrawlConfigOpen}
+        onOpenChange={setNewCrawlConfigOpen}
+        config={newCrawlConfig}
+        onChange={setNewCrawlConfig}
+        mode="initial"
+      />
 
       {/* ── Back to top ── */}
       {showTop && (

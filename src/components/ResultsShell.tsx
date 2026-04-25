@@ -191,10 +191,18 @@ export function ResultsShell({
               )}
 
               {view === "sitemap" && (
-                <div className="rounded-lg border border-border p-4">
+                <div className="rounded-lg border border-border p-4 flex flex-col items-start gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold">Sitemap Generator</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Build a clean, Google-ready <code className="font-mono">sitemap.xml</code> from this crawl —
+                      only valid 2xx URLs, redirects resolved, duplicates removed.
+                    </p>
+                  </div>
                   <SitemapGenerator results={results} domain={domain} />
                 </div>
               )}
+
 
               {view === "robots-txt" && (
                 <RobotsTxtPanel results={results} domain={domain} />

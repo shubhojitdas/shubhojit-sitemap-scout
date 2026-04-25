@@ -619,15 +619,30 @@ function MetaTable({
                     </button>
                     <div className="px-3 py-2 break-all font-mono text-[11px] text-muted-foreground">{initial}</div>
                     {includeTitle && (
-                      <div className="px-3 py-2 break-words text-[11px]">
-                        {row.title || <span className="text-muted-foreground italic">(empty)</span>}
+                      <div className="px-3 py-2 break-words text-[11px] space-y-1">
+                        {row.title ? (
+                          <>
+                            <div>{row.title}</div>
+                            <CharCountBadge len={row.title.length} ideal={[50, 60]} />
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground italic">(empty)</span>
+                        )}
                       </div>
                     )}
                     {includeDesc && (
-                      <div className="px-3 py-2 break-words text-[11px] text-muted-foreground">
-                        {row.description || <span className="italic">(empty)</span>}
+                      <div className="px-3 py-2 break-words text-[11px] text-muted-foreground space-y-1">
+                        {row.description ? (
+                          <>
+                            <div>{row.description}</div>
+                            <CharCountBadge len={row.description.length} ideal={[120, 160]} />
+                          </>
+                        ) : (
+                          <span className="italic">(empty)</span>
+                        )}
                       </div>
                     )}
+
                     {includeH1 && (
                       <div className="px-3 py-2 space-y-0.5">
                         {h1s.length === 0 ? (

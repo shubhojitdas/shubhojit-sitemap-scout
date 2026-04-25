@@ -181,6 +181,25 @@ export function useCrawler() {
     const allResults: CrawlResult[] = [...existingResults];
     const BATCH_SIZE = 10;
 
+    // ── Redirect-dedup bookkeeping ───────────────────────────────────────────
+    // Track every URL we've already represented in the crawl (either because
+    // we crawled it directly OR because it was reached as the final destination
+    // of an earlier redirect chain). Any URL already in this set is skipped on
+    // subsequent batches so we never crawl the same final page twice.
+    const seenUrls = new Set<string>();
+    const norm = (u: string) => {
+      try {
+        const parsed = new URL(u);
+        // Normalize trailing slash + lowercase host so /foo and /foo/ collapse.
+        let path = parsed.pathname.replace(/\/+$/, "") || "/";
+        return `${parsed.protocol}//${parsed.host.toLowerCase()}${path}${parsed.search}`;
+      } catch { return u; }
+    };
+    for (const r of allResults) {
+      seenUrls.add(norm(r.url));
+      if (r.finalUrl) seenUrls.add(norm(r.finalUrl));
+    }
+
     for (let i = startIndex; i < urls.length; i += BATCH_SIZE) {
       if (signal.aborted) return;
       if (pausedRef.current) {
@@ -189,22 +208,32 @@ export function useCrawler() {
         setState((s) => ({ ...s, phase: "paused" }));
         return;
       }
-      const batch = urls.slice(i, i + BATCH_SIZE);
+      // Filter out URLs that are already represented (avoid re-crawling
+      // redirect destinations that we've already resolved).
+      const rawBatch = urls.slice(i, i + BATCH_SIZE);
+      const batch = rawBatch.filter((u) => !seenUrls.has(norm(u)));
+      if (batch.length === 0) {
+        setState((s) => ({ ...s, processedUrls: Math.min(i + BATCH_SIZE, urls.length) }));
+        continue;
+      }
       try {
         const batchResults = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags);
         if (signal.aborted) return;
         if (pausedRef.current) {
+          for (const r of batchResults) { seenUrls.add(norm(r.url)); if (r.finalUrl) seenUrls.add(norm(r.finalUrl)); }
           allResults.push(...batchResults);
           pendingIndexRef.current = i + BATCH_SIZE;
           accumulatedResultsRef.current = [...allResults];
           setState((s) => ({ ...s, results: [...allResults], processedUrls: Math.min(i + BATCH_SIZE, urls.length), phase: "paused" }));
           return;
         }
+        for (const r of batchResults) { seenUrls.add(norm(r.url)); if (r.finalUrl) seenUrls.add(norm(r.finalUrl)); }
         allResults.push(...batchResults);
       } catch {
         if (signal.aborted) return;
         batch.forEach((url) => {
           allResults.push({ url, title: "", description: "", h1s: [], ...EMPTY_RESULT_FIELDS, status: "Error", statusCode: 0, redirectType: 'none', redirectChain: [], hopCount: 0, initialUrl: url, finalUrl: url, fetchTime: "0s" });
+          seenUrls.add(norm(url));
         });
       }
       if (signal.aborted) return;

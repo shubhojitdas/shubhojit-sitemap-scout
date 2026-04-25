@@ -69,6 +69,7 @@ function viewConfig(view: ResultsView, baseFlags: Props["flags"]) {
     case "h2":              return { forceTab: "meta" as const,         flags: onlyMeta({ includeH2: true }) };
     case "h3":              return { forceTab: "meta" as const,         flags: onlyMeta({ includeH3: true }) };
     case "meta-robots":     return { forceTab: "meta" as const,         flags: onlyMeta({ includeRobots: true }) };
+    case "combined":        return { forceTab: "meta" as const,         flags: baseFlags };
     case "canonicals":      return { forceTab: "canonical" as const,    flags: baseFlags };
     case "hreflang":        return { forceTab: "hreflangs" as const,    flags: baseFlags };
     case "schema":          return { forceTab: "schemas" as const,      flags: baseFlags };
@@ -88,6 +89,7 @@ const VIEW_TITLES: Record<ResultsView, string> = {
   overview: "Overview",
   internal: "Internal — All URLs",
   "response-codes": "Response Codes",
+  combined: "Combined Meta Data",
   "page-titles": "Page Titles",
   "meta-description": "Meta Descriptions",
   h1: "H1 Tags",

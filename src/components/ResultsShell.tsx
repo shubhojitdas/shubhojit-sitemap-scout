@@ -90,6 +90,7 @@ const VIEW_TITLES: Record<ResultsView, string> = {
   overview: "Overview",
   internal: "Internal — All URLs",
   "response-codes": "Response Codes",
+  "seo-issues": "SEO Issues",
   combined: "Combined Meta Data",
   "page-titles": "Page Titles",
   "meta-description": "Meta Descriptions",

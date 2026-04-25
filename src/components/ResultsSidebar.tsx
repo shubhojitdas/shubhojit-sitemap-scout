@@ -76,6 +76,7 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
     { view: "overview", label: "Overview", icon: LayoutDashboard },
     { view: "internal", label: "Internal", icon: ListTree, count: total },
     { view: "response-codes", label: "Response Codes", icon: ServerCrash, count: errors + c3xx + c4xx + c5xx },
+    { view: "seo-issues", label: "SEO Issues", icon: Lightbulb, visible: results.length > 0 },
   ];
 
   const seoItems: Item[] = [

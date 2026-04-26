@@ -12,21 +12,38 @@ export function AppHeader() {
   const isActive = (p: string) =>
     p === "/" ? pathname === "/" : pathname.startsWith(p);
 
-  const navItem = (to: string, label: string) => (
-    <Link
-      to={to}
-      className={`relative text-xs font-medium px-2 py-1 rounded-md transition-colors ${
-        isActive(to)
-          ? "text-foreground"
-          : "text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {label}
-      {isActive(to) && (
-        <span className="absolute -bottom-[10px] left-1/2 -translate-x-1/2 h-[2px] w-6 bg-foreground rounded-full" />
-      )}
-    </Link>
-  );
+  const navItem = (to: string, label: string) => {
+    // About page (and any non-root nav target) opens in a new tab so the
+    // crawler state in the current tab is never reset.
+    const openInNewTab = to !== "/";
+    const baseClass = `relative text-xs font-medium px-2 py-1 rounded-md transition-colors ${
+      isActive(to)
+        ? "text-foreground"
+        : "text-muted-foreground hover:text-foreground"
+    }`;
+
+    if (openInNewTab) {
+      return (
+        <a
+          href={to}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={baseClass}
+        >
+          {label}
+        </a>
+      );
+    }
+
+    return (
+      <Link to={to} className={baseClass}>
+        {label}
+        {isActive(to) && (
+          <span className="absolute -bottom-[10px] left-1/2 -translate-x-1/2 h-[2px] w-6 bg-foreground rounded-full" />
+        )}
+      </Link>
+    );
+  };
 
   return (
     <header className="fixed top-0 inset-x-0 h-14 z-50 border-b border-border bg-background/80 backdrop-blur-xl">

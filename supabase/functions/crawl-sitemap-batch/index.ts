@@ -935,11 +935,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Concurrency pool: bumped from 5→12 (jsRenderedLinks 2→4) for ~2-3× speed.
-    // Uses a single rolling pool so we never wait on the slowest URL of a batch
-    // before starting the next URL — the previous serial-batch loop was the
-    // primary cause of the perceived slowness.
-    const concurrency = jsRenderedLinks ? 4 : 12;
+    // Balanced concurrency: 8 simultaneous fetches (4 for JS-rendered).
+    // The rolling pool keeps Deno responsive without hammering the target
+    // site or saturating outbound sockets — a tested sweet spot between the
+    // original 5-wide serial loop (too slow) and 12-wide pool (too aggressive).
+    const concurrency = jsRenderedLinks ? 4 : 8;
     const results: CrawlResult[] = new Array(urls.length);
     let cursor = 0;
 

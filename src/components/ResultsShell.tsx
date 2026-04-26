@@ -4,6 +4,7 @@ import { ResultsSidebar, type ResultsView } from "@/components/ResultsSidebar";
 import { StatsCards } from "@/components/StatsCards";
 import { ResultsTable } from "@/components/ResultsTable";
 import { LinkGraph } from "@/components/LinkGraph";
+import { InternalLinkGraph } from "@/components/InternalLinkGraph";
 import { SitemapGenerator } from "@/components/SitemapGenerator";
 import { RobotsTxtPanel } from "@/components/RobotsTxtPanel";
 import { CrawlOverview } from "@/components/CrawlOverview";

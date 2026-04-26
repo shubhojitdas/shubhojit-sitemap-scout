@@ -179,10 +179,11 @@ export function useCrawler() {
     existingResults: CrawlResult[] = [],
   ) => {
     const allResults: CrawlResult[] = [...existingResults];
-    // Larger client-side batches → fewer edge-function round trips.
-    // The edge function now uses a 12-wide concurrent pool, so a batch of 24
-    // keeps it saturated without overwhelming Deno's outbound connections.
-    const BATCH_SIZE = 24;
+    // Balanced batch size: large enough to amortize round-trip latency,
+    // small enough that progress updates feel responsive and we never
+    // overwhelm a target site's server. Pairs with the edge function's
+    // 8-wide concurrent pool (4 for JS-rendered).
+    const BATCH_SIZE = 16;
 
     // ── Redirect-dedup bookkeeping ───────────────────────────────────────────
     // Track every URL we've already represented in the crawl (either because

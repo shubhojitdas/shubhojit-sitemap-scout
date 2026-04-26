@@ -10,6 +10,7 @@ import { RobotsTxtPanel } from "@/components/RobotsTxtPanel";
 import { CrawlOverview } from "@/components/CrawlOverview";
 import { CrawlBar } from "@/components/CrawlBar";
 import { SectionVisualization, type SectionKey } from "@/components/SectionVisualization";
+import { SectionIssues } from "@/components/SectionIssues";
 import { SeoIssuesView } from "@/components/SeoIssuesView";
 import type { CrawlResult } from "@/lib/crawl-api";
 import type { LastCrawlInput } from "@/hooks/use-crawler";
@@ -224,10 +225,16 @@ export function ResultsShell({
               {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && (
                 <>
                   {SECTION_VIS_VIEWS.has(view) && (
-                    <SectionVisualization
-                      view={view as SectionKey}
-                      results={results}
-                    />
+                    <>
+                      <SectionVisualization
+                        view={view as SectionKey}
+                        results={results}
+                      />
+                      <SectionIssues
+                        view={view as SectionKey}
+                        results={results}
+                      />
+                    </>
                   )}
                   <ResultsTable
                     results={results}

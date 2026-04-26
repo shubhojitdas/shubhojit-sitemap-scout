@@ -104,7 +104,8 @@ const VIEW_TITLES: Record<ResultsView, string> = {
   "meta-robots": "Meta Robots",
   social: "Social Tags (OG &amp; Twitter)",
   "internal-links": "Internal Links",
-  "link-graph": "Visual Link Graph",
+  "link-graph": "Site Structure Graph",
+  "internal-link-graph": "Internal Link Graph",
   sitemap: "Sitemap Generator",
   "robots-txt": "Robots.txt",
 };

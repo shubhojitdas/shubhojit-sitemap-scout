@@ -26,6 +26,7 @@ export type ResultsView =
   | "social"
   | "internal-links"
   | "link-graph"
+  | "internal-link-graph"
   | "sitemap"
   | "robots-txt";
 

@@ -193,6 +193,10 @@ export function ResultsShell({
                 <LinkGraph urls={parsedUrls.length > 0 ? parsedUrls : results.map((r) => r.url)} />
               )}
 
+              {view === "internal-link-graph" && (
+                <InternalLinkGraph results={results} />
+              )}
+
               {view === "sitemap" && (
                 <div className="rounded-lg border border-border p-4 flex flex-col items-start gap-3">
                   <div>
@@ -216,7 +220,7 @@ export function ResultsShell({
               )}
 
               {/* All data views: mini visualization + filtered table */}
-              {view !== "overview" && view !== "link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && (
+              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && (
                 <>
                   {SECTION_VIS_VIEWS.has(view) && (
                     <SectionVisualization

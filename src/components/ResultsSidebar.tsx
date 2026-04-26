@@ -26,6 +26,7 @@ export type ResultsView =
   | "social"
   | "internal-links"
   | "link-graph"
+  | "internal-link-graph"
   | "sitemap"
   | "robots-txt";
 
@@ -96,7 +97,8 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
   ];
 
   const toolItems: Item[] = [
-    { view: "link-graph", label: "Link Graph", icon: Network },
+    { view: "link-graph", label: "Site Structure Graph", icon: Network },
+    { view: "internal-link-graph", label: "Internal Link Graph", icon: LinkIcon, visible: flags.includeInternalLinks },
     { view: "sitemap", label: "Sitemap", icon: FileCode2, visible: crawlSource === "site" || crawlSource === "sitemap" },
     { view: "robots-txt", label: "Robots.txt", icon: Bot },
   ];

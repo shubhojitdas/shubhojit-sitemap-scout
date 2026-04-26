@@ -935,16 +935,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    const batchSize = jsRenderedLinks ? 2 : 5;
-    const results: CrawlResult[] = [];
+    // Concurrency pool: bumped from 5→12 (jsRenderedLinks 2→4) for ~2-3× speed.
+    // Uses a single rolling pool so we never wait on the slowest URL of a batch
+    // before starting the next URL — the previous serial-batch loop was the
+    // primary cause of the perceived slowness.
+    const concurrency = jsRenderedLinks ? 4 : 12;
+    const results: CrawlResult[] = new Array(urls.length);
+    let cursor = 0;
 
-    for (let i = 0; i < urls.length; i += batchSize) {
-      const batch = urls.slice(i, i + batchSize);
-      const batchResults = await Promise.all(
-        batch.map((url: string) => fetchMeta(url, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags))
-      );
-      results.push(...batchResults);
-    }
+    const worker = async () => {
+      while (true) {
+        const i = cursor++;
+        if (i >= urls.length) return;
+        results[i] = await fetchMeta(
+          urls[i], includeTitle, includeDesc, includeH1, includeH2, includeH3,
+          includeImages, includeSchemas, includeRobots, includeCanonical,
+          includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags,
+        );
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, worker));
 
     return new Response(
       JSON.stringify({ results }),

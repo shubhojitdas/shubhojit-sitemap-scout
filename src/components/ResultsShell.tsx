@@ -4,6 +4,7 @@ import { ResultsSidebar, type ResultsView } from "@/components/ResultsSidebar";
 import { StatsCards } from "@/components/StatsCards";
 import { ResultsTable } from "@/components/ResultsTable";
 import { LinkGraph } from "@/components/LinkGraph";
+import { InternalLinkGraph } from "@/components/InternalLinkGraph";
 import { SitemapGenerator } from "@/components/SitemapGenerator";
 import { RobotsTxtPanel } from "@/components/RobotsTxtPanel";
 import { CrawlOverview } from "@/components/CrawlOverview";
@@ -104,7 +105,8 @@ const VIEW_TITLES: Record<ResultsView, string> = {
   "meta-robots": "Meta Robots",
   social: "Social Tags (OG &amp; Twitter)",
   "internal-links": "Internal Links",
-  "link-graph": "Visual Link Graph",
+  "link-graph": "Site Structure Graph",
+  "internal-link-graph": "Internal Link Graph",
   sitemap: "Sitemap Generator",
   "robots-txt": "Robots.txt",
 };
@@ -192,6 +194,10 @@ export function ResultsShell({
                 <LinkGraph urls={parsedUrls.length > 0 ? parsedUrls : results.map((r) => r.url)} />
               )}
 
+              {view === "internal-link-graph" && (
+                <InternalLinkGraph results={results} />
+              )}
+
               {view === "sitemap" && (
                 <div className="rounded-lg border border-border p-4 flex flex-col items-start gap-3">
                   <div>
@@ -215,7 +221,7 @@ export function ResultsShell({
               )}
 
               {/* All data views: mini visualization + filtered table */}
-              {view !== "overview" && view !== "link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && (
+              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && (
                 <>
                   {SECTION_VIS_VIEWS.has(view) && (
                     <SectionVisualization

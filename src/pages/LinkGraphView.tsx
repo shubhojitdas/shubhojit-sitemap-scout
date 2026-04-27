@@ -10,8 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { Maximize2, X, ExternalLink, Download, Linkedin, ChevronDown, ChevronUp } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Maximize2, X, ExternalLink, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,

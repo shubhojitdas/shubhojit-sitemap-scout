@@ -6,121 +6,148 @@
 
 @layer base {
   :root {
-    /* Soft, off-white neutral with the faintest cool cast */
-    --background: 220 30% 98%;
-    --foreground: 222 25% 12%;
+    /* Iridescent off-white with a faint lavender cast (ref: image-31) */
+    --background: 240 40% 98%;
+    --foreground: 235 30% 12%;
 
-    /* Glass surfaces — slightly translucent feel via low saturation */
+    /* Glass surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222 25% 12%;
+    --card-foreground: 235 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 25% 12%;
+    --popover-foreground: 235 30% 12%;
 
-    --primary: 222 47% 14%;
-    --primary-foreground: 220 30% 98%;
+    /* Primary = deep indigo violet (replaces near-black) */
+    --primary: 250 55% 22%;
+    --primary-foreground: 240 40% 98%;
 
-    --secondary: 220 25% 95%;
-    --secondary-foreground: 222 25% 12%;
+    --secondary: 240 30% 95%;
+    --secondary-foreground: 235 30% 12%;
 
-    --muted: 220 25% 95%;
-    --muted-foreground: 222 12% 42%;
+    --muted: 240 25% 95%;
+    --muted-foreground: 235 14% 42%;
 
-    --accent: 220 25% 95%;
-    --accent-foreground: 222 25% 12%;
+    --accent: 270 60% 94%;
+    --accent-foreground: 250 55% 22%;
 
     --destructive: 0 78% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 62% 42%;
+    --success: 158 65% 42%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 35 92% 52%;
+    --warning: 32 95% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 220 20% 88%;
-    --input: 220 20% 88%;
-    --ring: 222 47% 14%;
+    --border: 240 25% 89%;
+    --input: 240 25% 89%;
+    --ring: 265 80% 60%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    --sidebar-background: 220 30% 97%;
-    --sidebar-foreground: 222 18% 28%;
-    --sidebar-primary: 222 47% 14%;
-    --sidebar-primary-foreground: 220 30% 98%;
-    --sidebar-accent: 220 25% 95%;
-    --sidebar-accent-foreground: 222 25% 12%;
-    --sidebar-border: 220 20% 88%;
-    --sidebar-ring: 222 47% 14%;
+    --sidebar-background: 240 40% 97%;
+    --sidebar-foreground: 235 22% 28%;
+    --sidebar-primary: 250 55% 22%;
+    --sidebar-primary-foreground: 240 40% 98%;
+    --sidebar-accent: 270 60% 94%;
+    --sidebar-accent-foreground: 250 55% 22%;
+    --sidebar-border: 240 25% 89%;
+    --sidebar-ring: 265 80% 60%;
 
-    --highlight: 224 90% 60%;
+    /* Iridescent accent (violet → pink) used for highlights */
+    --highlight: 265 85% 62%;
     --highlight-foreground: 0 0% 100%;
 
-    /* Glass + ambient gradient tokens */
-    --glass-bg: 0 0% 100% / 0.6;
-    --glass-border: 220 30% 80% / 0.4;
-    --glass-shadow: 220 40% 20% / 0.08;
+    /* Warm coral accent inspired by image-30 */
+    --coral: 14 92% 60%;
+    --coral-foreground: 0 0% 100%;
+
+    /* Glass + ambient iridescent gradient tokens (ref: image-31, image-32) */
+    --glass-bg: 0 0% 100% / 0.55;
+    --glass-border: 250 60% 80% / 0.45;
+    --glass-shadow: 250 50% 25% / 0.10;
+    --gradient-iridescent: linear-gradient(
+      135deg,
+      hsl(265 90% 70%) 0%,
+      hsl(295 85% 72%) 35%,
+      hsl(325 90% 72%) 60%,
+      hsl(195 90% 70%) 100%
+    );
+    --gradient-coral: linear-gradient(135deg, hsl(14 92% 62%), hsl(355 85% 62%));
     --gradient-ambient:
-      radial-gradient(60rem 40rem at 12% -10%, hsl(224 90% 70% / 0.10), transparent 60%),
-      radial-gradient(50rem 36rem at 100% 10%, hsl(280 80% 70% / 0.10), transparent 60%),
-      radial-gradient(50rem 40rem at 50% 110%, hsl(190 80% 70% / 0.08), transparent 60%);
+      radial-gradient(55rem 38rem at 8% -8%, hsl(265 95% 75% / 0.22), transparent 60%),
+      radial-gradient(48rem 34rem at 100% 5%, hsl(320 95% 78% / 0.18), transparent 60%),
+      radial-gradient(46rem 36rem at 50% 115%, hsl(195 95% 72% / 0.16), transparent 60%),
+      radial-gradient(38rem 28rem at 80% 60%, hsl(285 90% 78% / 0.12), transparent 60%);
   }
 
   .dark {
-    /* Deep slate-blue, never pure black */
-    --background: 224 32% 6%;
-    --foreground: 220 20% 94%;
+    /* Deep cosmic indigo, never pure black (ref: image-31 backdrop inverted) */
+    --background: 250 40% 6%;
+    --foreground: 240 30% 95%;
 
-    --card: 224 28% 9%;
-    --card-foreground: 220 20% 94%;
+    --card: 250 35% 9%;
+    --card-foreground: 240 30% 95%;
 
-    --popover: 224 28% 10%;
-    --popover-foreground: 220 20% 94%;
+    --popover: 250 35% 10%;
+    --popover-foreground: 240 30% 95%;
 
-    --primary: 220 20% 96%;
-    --primary-foreground: 224 32% 8%;
+    --primary: 240 30% 96%;
+    --primary-foreground: 250 40% 8%;
 
-    --secondary: 224 22% 14%;
-    --secondary-foreground: 220 20% 94%;
+    --secondary: 250 28% 14%;
+    --secondary-foreground: 240 30% 95%;
 
-    --muted: 224 22% 14%;
-    --muted-foreground: 220 12% 65%;
+    --muted: 250 28% 14%;
+    --muted-foreground: 240 15% 68%;
 
-    --accent: 224 22% 16%;
-    --accent-foreground: 220 20% 94%;
+    --accent: 265 50% 22%;
+    --accent-foreground: 240 30% 95%;
 
-    --destructive: 0 70% 55%;
+    --destructive: 0 70% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 62% 48%;
+    --success: 158 65% 50%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 35 92% 56%;
+    --warning: 32 95% 60%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 224 20% 20%;
-    --input: 224 20% 20%;
-    --ring: 220 20% 80%;
+    --border: 250 25% 22%;
+    --input: 250 25% 22%;
+    --ring: 280 90% 70%;
 
-    --sidebar-background: 224 32% 6%;
-    --sidebar-foreground: 220 20% 94%;
-    --sidebar-primary: 220 20% 96%;
-    --sidebar-primary-foreground: 224 32% 8%;
-    --sidebar-accent: 224 22% 14%;
-    --sidebar-accent-foreground: 220 20% 94%;
-    --sidebar-border: 224 20% 20%;
-    --sidebar-ring: 220 20% 80%;
+    --sidebar-background: 250 40% 6%;
+    --sidebar-foreground: 240 30% 95%;
+    --sidebar-primary: 240 30% 96%;
+    --sidebar-primary-foreground: 250 40% 8%;
+    --sidebar-accent: 265 50% 22%;
+    --sidebar-accent-foreground: 240 30% 95%;
+    --sidebar-border: 250 25% 22%;
+    --sidebar-ring: 280 90% 70%;
 
-    --highlight: 224 90% 65%;
+    --highlight: 280 95% 72%;
     --highlight-foreground: 0 0% 100%;
 
-    --glass-bg: 224 28% 10% / 0.55;
-    --glass-border: 220 30% 60% / 0.18;
-    --glass-shadow: 220 50% 2% / 0.5;
+    --coral: 14 92% 64%;
+    --coral-foreground: 0 0% 100%;
+
+    --glass-bg: 250 35% 11% / 0.55;
+    --glass-border: 270 60% 70% / 0.20;
+    --glass-shadow: 250 60% 2% / 0.55;
+    --gradient-iridescent: linear-gradient(
+      135deg,
+      hsl(265 95% 70%) 0%,
+      hsl(295 90% 72%) 35%,
+      hsl(325 95% 72%) 60%,
+      hsl(195 95% 70%) 100%
+    );
+    --gradient-coral: linear-gradient(135deg, hsl(14 92% 62%), hsl(355 85% 62%));
     --gradient-ambient:
-      radial-gradient(60rem 40rem at 10% -10%, hsl(224 90% 50% / 0.18), transparent 60%),
-      radial-gradient(50rem 36rem at 100% 5%, hsl(280 80% 50% / 0.14), transparent 60%),
-      radial-gradient(50rem 40rem at 50% 110%, hsl(190 80% 45% / 0.12), transparent 60%);
+      radial-gradient(60rem 42rem at 8% -10%, hsl(265 95% 55% / 0.32), transparent 60%),
+      radial-gradient(52rem 36rem at 100% 5%, hsl(320 95% 55% / 0.24), transparent 60%),
+      radial-gradient(50rem 40rem at 50% 115%, hsl(195 95% 50% / 0.20), transparent 60%),
+      radial-gradient(40rem 30rem at 80% 55%, hsl(285 90% 60% / 0.18), transparent 60%);
   }
 }
 

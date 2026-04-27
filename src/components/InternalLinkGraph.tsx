@@ -414,11 +414,15 @@ setTimeout(()=>G.zoomToFit(600,40),800);
 
   const openInNewTab = () => {
     try {
-      sessionStorage.setItem("internalLinkGraphData", JSON.stringify(buildPayload()));
+      // Persist only the fields the graph needs to keep payload small.
+      const slim = results.map((r) => ({
+        url: r.url,
+        internalLinks: (r.internalLinks ?? []).filter((l: InternalLinkData) => l.isInternal),
+      }));
+      sessionStorage.setItem("internalLinkGraphResults", JSON.stringify(slim));
       window.open("/internal-link-graph-view", "_blank");
     } catch {
-      const blob = new Blob([/* fallback */], { type: "text/html" });
-      window.open(URL.createObjectURL(blob), "_blank");
+      exportAsHtml();
     }
   };
 

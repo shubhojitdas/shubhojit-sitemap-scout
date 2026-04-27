@@ -345,6 +345,83 @@ export function InternalLinkGraph({ results }: Props) {
   const orphanCount = useMemo(() => built.graph.nodes.filter((n) => n.isOrphan).length, [built]);
   const totalLinks = built.graph.links.length;
 
+  // ── Export helpers ────────────────────────────────────────────
+  const getCanvasElement = (): HTMLCanvasElement | null =>
+    containerRef.current?.querySelector("canvas") || null;
+
+  const exportAsImage = (format: "png" | "jpeg") => {
+    const canvas = getCanvasElement();
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = `internal-link-graph.${format}`;
+    link.href = canvas.toDataURL(`image/${format}`, 0.95);
+    link.click();
+  };
+
+  const exportAsSvg = () => {
+    const canvas = getCanvasElement();
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
+      <image href="${dataUrl}" width="${canvas.width}" height="${canvas.height}"/>
+    </svg>`;
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const link = document.createElement("a");
+    link.download = "internal-link-graph.svg";
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const buildPayload = () => ({
+    nodes: built.graph.nodes,
+    links: built.graph.links,
+    clusterColors: built.clusterColors,
+    originalUrlById: Array.from(built.originalUrlById.entries()),
+  });
+
+  const exportAsHtml = () => {
+    const payload = buildPayload();
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Internal Link Graph</title>
+<script src="https://unpkg.com/force-graph@1.47.3/dist/force-graph.min.js"><\/script>
+<style>body{margin:0;background:#0a0a0a;color:#e5e5e5;font-family:Inter,system-ui,sans-serif}#g{width:100vw;height:100vh}
+.legend{position:fixed;top:10px;right:10px;background:rgba(20,20,20,0.95);border:1px solid #333;border-radius:10px;padding:10px;font-size:11px;max-height:80vh;overflow:auto}
+.legend .row{display:flex;align-items:center;gap:6px;margin:2px 0}.legend .dot{width:10px;height:10px;border-radius:50%}
+</style></head><body><div id="g"></div><div class="legend" id="lg"></div><script>
+const D=${JSON.stringify(payload)};
+const L=document.getElementById('lg');L.innerHTML='<b>Clusters</b>';
+Object.entries(D.clusterColors).forEach(([c,col])=>{L.innerHTML+='<div class="row"><span class="dot" style="background:'+col+'"></span>'+c+'</div>';});
+L.innerHTML+='<div class="row" style="color:#ef4444"><span class="dot" style="background:#ef4444"></span>Orphan</div>';
+const G=ForceGraph()(document.getElementById('g'))
+.graphData({nodes:D.nodes.map(n=>({...n})),links:D.links.map(l=>({...l}))})
+.backgroundColor('#0a0a0a')
+.nodeColor(n=>n.isOrphan?'#ef4444':(D.clusterColors[n.cluster]||'#64748b'))
+.nodeVal(n=>n.val)
+.nodeLabel(n=>n.fullUrl+' (in:'+n.inDegree+' out:'+n.outDegree+')')
+.linkColor(()=>'rgba(120,140,170,0.18)')
+.linkDirectionalArrowLength(3).linkDirectionalArrowRelPos(1)
+.onNodeClick(n=>n.fullUrl&&window.open(n.fullUrl,'_blank'));
+G.d3Force('link').distance(${linkDistance});
+setTimeout(()=>G.zoomToFit(600,40),800);
+<\/script></body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const link = document.createElement("a");
+    link.download = "internal-link-graph.html";
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const openInNewTab = () => {
+    try {
+      sessionStorage.setItem("internalLinkGraphData", JSON.stringify(buildPayload()));
+      window.open("/internal-link-graph-view", "_blank");
+    } catch {
+      const blob = new Blob([/* fallback */], { type: "text/html" });
+      window.open(URL.createObjectURL(blob), "_blank");
+    }
+  };
+
   if (built.graph.links.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card p-6 text-center">

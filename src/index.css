@@ -129,14 +129,30 @@
     @apply border-border;
   }
 
+  html, body {
+    min-height: 100%;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    background-color: hsl(var(--background));
+    background-image: var(--gradient-ambient);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
   }
 
   .font-mono {
     font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+  }
+
+  /* Smoother default motion across interactive elements */
+  button, a, [role="button"], input, select, textarea {
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+      color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease,
+      opacity 0.2s ease, backdrop-filter 0.2s ease;
   }
 }
 
@@ -148,28 +164,71 @@
     background-clip: text;
   }
 
+  /* Glassmorphism — Apple-style translucent surface */
+  .glass {
+    background-color: hsl(var(--glass-bg));
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.5) inset,
+      0 8px 24px -12px hsl(var(--glass-shadow));
+  }
+
+  .dark .glass {
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.04) inset,
+      0 12px 32px -16px hsl(var(--glass-shadow));
+  }
+
+  .glass-strong {
+    background-color: hsl(var(--glass-bg));
+    backdrop-filter: saturate(200%) blur(22px);
+    -webkit-backdrop-filter: saturate(200%) blur(22px);
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.6) inset,
+      0 16px 48px -20px hsl(var(--glass-shadow));
+  }
+
   .card-elevated {
-    box-shadow: 0 0 0 1px hsl(var(--border)), 0 2px 4px hsl(0 0% 0% / 0.04);
-    transition: box-shadow 0.15s ease;
+    background-color: hsl(var(--card) / 0.7);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    box-shadow:
+      0 0 0 1px hsl(var(--border) / 0.7),
+      0 1px 0 hsl(0 0% 100% / 0.5) inset,
+      0 8px 24px -16px hsl(var(--glass-shadow));
+    transition: box-shadow 0.25s ease, transform 0.2s ease, background-color 0.25s ease;
   }
 
   .card-elevated:hover {
-    box-shadow: 0 0 0 1px hsl(var(--border)), 0 4px 12px hsl(0 0% 0% / 0.08);
+    box-shadow:
+      0 0 0 1px hsl(var(--border)),
+      0 1px 0 hsl(0 0% 100% / 0.6) inset,
+      0 14px 36px -18px hsl(var(--glass-shadow));
   }
 
   .dark .card-elevated {
-    box-shadow: 0 0 0 1px hsl(var(--border)), 0 2px 4px hsl(0 0% 0% / 0.2);
+    background-color: hsl(var(--card) / 0.55);
+    box-shadow:
+      0 0 0 1px hsl(var(--border) / 0.8),
+      0 1px 0 hsl(0 0% 100% / 0.04) inset,
+      0 12px 32px -18px hsl(var(--glass-shadow));
   }
 
   .dark .card-elevated:hover {
-    box-shadow: 0 0 0 1px hsl(0 0% 20%), 0 4px 12px hsl(0 0% 0% / 0.3);
+    box-shadow:
+      0 0 0 1px hsl(220 20% 28%),
+      0 1px 0 hsl(0 0% 100% / 0.05) inset,
+      0 18px 44px -20px hsl(var(--glass-shadow));
   }
 
   .grid-bg {
     background-size: 64px 64px;
     background-image:
-      linear-gradient(to right, hsl(var(--border) / 0.5) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--border) / 0.5) 1px, transparent 1px);
+      linear-gradient(to right, hsl(var(--border) / 0.4) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.4) 1px, transparent 1px);
   }
 
   .fade-mask {

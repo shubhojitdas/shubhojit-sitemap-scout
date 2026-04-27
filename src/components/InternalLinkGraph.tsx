@@ -4,8 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Maximize2, X, ExternalLink, ChevronDown, ChevronUp, AlertTriangle, ArrowDown, ArrowUp, Link as LinkIcon } from "lucide-react";
+import { Maximize2, X, ExternalLink, ChevronDown, ChevronUp, AlertTriangle, ArrowDown, ArrowUp, Link as LinkIcon, Download, ExternalLink as OpenIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { CrawlResult, InternalLinkData } from "@/lib/crawl-api";
 
 interface ILGNode {

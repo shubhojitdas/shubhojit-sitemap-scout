@@ -218,6 +218,33 @@ export default function LinkGraphView() {
     URL.revokeObjectURL(link.href);
   };
 
+  const exportAsHtml = () => {
+    const serializableNodes = graphData.nodes.map((n) => ({
+      id: n.id, label: n.label, group: n.group, depth: n.depth,
+      fullUrl: n.fullUrl, parentId: n.parentId, val: n.val,
+    }));
+    const serializableLinks = graphData.links.map((l: any) => ({
+      source: typeof l.source === "object" ? l.source.id : l.source,
+      target: typeof l.target === "object" ? l.target.id : l.target,
+    }));
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Sitemap Link Graph</title>
+<script src="https://unpkg.com/force-graph@1.47.3/dist/force-graph.min.js"><\/script>
+<style>body{margin:0;background:#0a0a0a;color:#e5e5e5;font-family:Inter,system-ui,sans-serif}#g{width:100vw;height:100vh}</style>
+</head><body><div id="g"></div><script>
+const N=${JSON.stringify(serializableNodes)};const L=${JSON.stringify(serializableLinks)};
+const C=${JSON.stringify(legend)};
+ForceGraph()(document.getElementById('g')).graphData({nodes:N.map(n=>({...n})),links:L.map(l=>({...l}))})
+.backgroundColor('#0a0a0a').nodeColor(n=>C[n.group]||'#64748b').nodeLabel(n=>n.fullUrl)
+.linkColor(()=>'rgba(120,140,170,0.18)').onNodeClick(n=>n.fullUrl&&window.open(n.fullUrl,'_blank'));
+<\/script></body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const link = document.createElement("a");
+    link.download = "link-graph.html";
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   if (urls.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

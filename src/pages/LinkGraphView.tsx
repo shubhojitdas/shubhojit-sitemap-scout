@@ -105,12 +105,17 @@ export default function LinkGraphView() {
   }, [nodeDistance]);
 
   useEffect(() => {
-    const updateSize = () => {
-      setDimensions({ width: window.innerWidth, height: window.innerHeight });
-    };
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setDimensions({
+          width: entry.contentRect.width,
+          height: Math.max(500, entry.contentRect.height),
+        });
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
   }, []);
 
   const handleZoomToFit = useCallback(() => {
@@ -313,10 +318,11 @@ ForceGraph()(document.getElementById('g')).graphData({nodes:N.map(n=>({...n})),l
                     <Download className="h-3 w-3 mr-1" /> Export
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[120px]">
+                <DropdownMenuContent align="start" className="min-w-[140px]">
                   <DropdownMenuItem onClick={() => exportAsImage("png")} className="text-xs">PNG</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => exportAsImage("jpeg")} className="text-xs">JPEG</DropdownMenuItem>
                   <DropdownMenuItem onClick={exportAsSvg} className="text-xs">SVG</DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportAsHtml} className="text-xs">Interactive HTML</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </motion.div>
@@ -369,14 +375,14 @@ ForceGraph()(document.getElementById('g')).graphData({nodes:N.map(n=>({...n})),l
         )}
       </AnimatePresence>
 
-      {/* Selected Node Panel - top right, doesn't overlap legend now */}
+      {/* Selected Node Panel */}
       <AnimatePresence>
         {selectedNode && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed top-16 right-3 z-20 bg-popover border border-border rounded-xl p-3 w-72 shadow-xl"
+            className="absolute top-3 right-3 z-20 bg-popover border border-border rounded-xl p-3 w-72 shadow-xl"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold text-foreground">Node Details</span>
@@ -423,7 +429,7 @@ ForceGraph()(document.getElementById('g')).graphData({nodes:N.map(n=>({...n})),l
         ref={fgRef as any}
         graphData={graphData}
         width={dimensions.width}
-        height={dimensions.height - 48}
+        height={dimensions.height}
         nodeCanvasObject={nodeCanvasObject}
         nodePointerAreaPaint={(node: any, color, ctx) => {
           const r = node.depth === 0 ? 8 : 5;

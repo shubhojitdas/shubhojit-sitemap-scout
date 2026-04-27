@@ -453,6 +453,9 @@ setTimeout(()=>G.zoomToFit(600,40),800);
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => fgRef.current?.zoomToFit(400, 40)} title="Zoom to fit">
               <Maximize2 className="h-3 w-3" />
             </Button>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openInNewTab} title="Open in new tab">
+              <OpenIcon className="h-3 w-3" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setControlsCollapsed(!controlsCollapsed)}>
               {controlsCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
             </Button>
@@ -488,6 +491,20 @@ setTimeout(()=>G.zoomToFit(600,40),800);
                   <span>{orphanCount} orphan{orphanCount === 1 ? "" : "s"}</span>
                 </div>
               </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-[10px] w-full">
+                    <Download className="h-3 w-3 mr-1" /> Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-[140px]">
+                  <DropdownMenuItem onClick={() => exportAsImage("png")} className="text-xs">PNG</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => exportAsImage("jpeg")} className="text-xs">JPEG</DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportAsSvg} className="text-xs">SVG</DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportAsHtml} className="text-xs">Interactive HTML</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </motion.div>
           )}
         </AnimatePresence>

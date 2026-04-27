@@ -10,8 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { Maximize2, X, ExternalLink, Download, Linkedin, ChevronDown, ChevronUp } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Maximize2, X, ExternalLink, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
@@ -105,12 +104,17 @@ export default function LinkGraphView() {
   }, [nodeDistance]);
 
   useEffect(() => {
-    const updateSize = () => {
-      setDimensions({ width: window.innerWidth, height: window.innerHeight });
-    };
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setDimensions({
+          width: entry.contentRect.width,
+          height: Math.max(500, entry.contentRect.height),
+        });
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
   }, []);
 
   const handleZoomToFit = useCallback(() => {
@@ -218,6 +222,33 @@ export default function LinkGraphView() {
     URL.revokeObjectURL(link.href);
   };
 
+  const exportAsHtml = () => {
+    const serializableNodes = graphData.nodes.map((n) => ({
+      id: n.id, label: n.label, group: n.group, depth: n.depth,
+      fullUrl: n.fullUrl, parentId: n.parentId, val: n.val,
+    }));
+    const serializableLinks = graphData.links.map((l: any) => ({
+      source: typeof l.source === "object" ? l.source.id : l.source,
+      target: typeof l.target === "object" ? l.target.id : l.target,
+    }));
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Sitemap Link Graph</title>
+<script src="https://unpkg.com/force-graph@1.47.3/dist/force-graph.min.js"><\/script>
+<style>body{margin:0;background:#0a0a0a;color:#e5e5e5;font-family:Inter,system-ui,sans-serif}#g{width:100vw;height:100vh}</style>
+</head><body><div id="g"></div><script>
+const N=${JSON.stringify(serializableNodes)};const L=${JSON.stringify(serializableLinks)};
+const C=${JSON.stringify(legend)};
+ForceGraph()(document.getElementById('g')).graphData({nodes:N.map(n=>({...n})),links:L.map(l=>({...l}))})
+.backgroundColor('#0a0a0a').nodeColor(n=>C[n.group]||'#64748b').nodeLabel(n=>n.fullUrl)
+.linkColor(()=>'rgba(120,140,170,0.18)').onNodeClick(n=>n.fullUrl&&window.open(n.fullUrl,'_blank'));
+<\/script></body></html>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const link = document.createElement("a");
+    link.download = "link-graph.html";
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   if (urls.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -232,24 +263,7 @@ export default function LinkGraphView() {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden" ref={containerRef}>
-      {/* Header */}
-      <header className="border-b border-border bg-background/80 backdrop-blur-xl sticky top-0 z-30">
-        <div className="container max-w-5xl mx-auto flex items-center justify-between h-12 px-4">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm tracking-tight text-foreground">Sitemap Scout</span>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <ThemeToggle />
-            <a href="https://www.linkedin.com/in/shubhojitdas/" target="_blank" rel="noopener noreferrer">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground">
-                <Linkedin className="h-3.5 w-3.5" />
-              </Button>
-            </a>
-          </div>
-        </div>
-      </header>
-
+    <div className="relative bg-background overflow-hidden" ref={containerRef} style={{ height: "calc(100vh - 3.5rem)" }}>
       {/* Loading */}
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-20">
@@ -261,7 +275,7 @@ export default function LinkGraphView() {
       )}
 
       {/* Controls Panel */}
-      <div className="fixed top-16 left-3 z-10 bg-card/95 backdrop-blur-md border border-border rounded-xl p-3 max-w-[220px] shadow-xl">
+      <div className="absolute top-3 left-3 z-10 bg-card/95 backdrop-blur-md border border-border rounded-xl p-3 max-w-[240px] shadow-xl">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-semibold text-foreground">Controls</span>
           <div className="flex gap-1">
@@ -303,10 +317,11 @@ export default function LinkGraphView() {
                     <Download className="h-3 w-3 mr-1" /> Export
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[120px]">
+                <DropdownMenuContent align="start" className="min-w-[140px]">
                   <DropdownMenuItem onClick={() => exportAsImage("png")} className="text-xs">PNG</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => exportAsImage("jpeg")} className="text-xs">JPEG</DropdownMenuItem>
                   <DropdownMenuItem onClick={exportAsSvg} className="text-xs">SVG</DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportAsHtml} className="text-xs">Interactive HTML</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </motion.div>
@@ -359,14 +374,14 @@ export default function LinkGraphView() {
         )}
       </AnimatePresence>
 
-      {/* Selected Node Panel - top right, doesn't overlap legend now */}
+      {/* Selected Node Panel */}
       <AnimatePresence>
         {selectedNode && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed top-16 right-3 z-20 bg-popover border border-border rounded-xl p-3 w-72 shadow-xl"
+            className="absolute top-3 right-3 z-20 bg-popover border border-border rounded-xl p-3 w-72 shadow-xl"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold text-foreground">Node Details</span>
@@ -413,7 +428,7 @@ export default function LinkGraphView() {
         ref={fgRef as any}
         graphData={graphData}
         width={dimensions.width}
-        height={dimensions.height - 48}
+        height={dimensions.height}
         nodeCanvasObject={nodeCanvasObject}
         nodePointerAreaPaint={(node: any, color, ctx) => {
           const r = node.depth === 0 ? 8 : 5;

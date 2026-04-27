@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LinkGraphView from "./pages/LinkGraphView";
+import InternalLinkGraphView from "./pages/InternalLinkGraphView";
 import AboutShubhojit from "./pages/AboutShubhojit";
 import CmsLogin from "./pages/CmsLogin";
 import CmsDashboard from "./pages/CmsDashboard";
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/shubhojit-das" element={<AboutShubhojit />} />
             <Route path="/link-graph-view" element={<LinkGraphView />} />
+            <Route path="/internal-link-graph-view" element={<InternalLinkGraphView />} />
             <Route path="/cms/login" element={<CmsLogin />} />
             <Route path="/cms" element={<CmsDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

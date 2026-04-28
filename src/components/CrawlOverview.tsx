@@ -1,7 +1,16 @@
 import { useMemo, useState } from "react";
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Legend,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
 } from "recharts";
 import { motion } from "framer-motion";
 import { Sparkles, KeyRound, Loader2 } from "lucide-react";
@@ -43,7 +52,16 @@ const COLORS = {
   blocked: "hsl(var(--muted-foreground))",
 };
 
-type Provider = "openai" | "gemini" | "anthropic" | "openrouter" | "groq" | "deepseek" | "mistral" | "together" | "cohere";
+type Provider =
+  | "openai"
+  | "gemini"
+  | "anthropic"
+  | "openrouter"
+  | "groq"
+  | "deepseek"
+  | "mistral"
+  | "together"
+  | "cohere";
 
 const KEY_STORAGE = "sso-byo-llm-key";
 const PROVIDER_STORAGE = "sso-byo-llm-provider";
@@ -52,23 +70,28 @@ function buildStaticSummary(results: CrawlResult[], domain: string): string {
   const total = results.length;
   if (total === 0) return "";
   const ok = results.filter((r) => r.statusCode >= 200 && r.statusCode < 300).length;
-  const redirect = results.filter((r) => (r.redirectChain?.length ?? 0) > 0 || (r.statusCode >= 300 && r.statusCode < 400)).length;
+  const redirect = results.filter(
+    (r) => (r.redirectChain?.length ?? 0) > 0 || (r.statusCode >= 300 && r.statusCode < 400),
+  ).length;
   const c4xx = results.filter((r) => r.statusCode >= 400 && r.statusCode < 500).length;
   const c5xx = results.filter((r) => r.statusCode >= 500).length;
   const errors = results.filter((r) => r.status === "Error").length;
 
   const missingTitle = results.filter((r) => r.statusCode >= 200 && r.statusCode < 300 && !r.title).length;
   const missingDesc = results.filter((r) => r.statusCode >= 200 && r.statusCode < 300 && !r.description).length;
-  const missingH1 = results.filter((r) => (r.h1s ?? []).length === 0 && r.statusCode >= 200 && r.statusCode < 300).length;
+  const missingH1 = results.filter(
+    (r) => (r.h1s ?? []).length === 0 && r.statusCode >= 200 && r.statusCode < 300,
+  ).length;
   const multiH1 = results.filter((r) => (r.h1s ?? []).length > 1).length;
   const altMissing = results.reduce((s, r) => s + (r.images ?? []).filter((i) => !i.alt).length, 0);
 
-  const avgTime =
-    results.reduce((s, r) => s + parseFloat(r.fetchTime || "0"), 0) / total;
+  const avgTime = results.reduce((s, r) => s + parseFloat(r.fetchTime || "0"), 0) / total;
 
   const parts: string[] = [];
   parts.push(`Crawled ${total.toLocaleString()} URL${total === 1 ? "" : "s"}${domain ? ` on ${domain}` : ""}.`);
-  parts.push(`${ok} returned 200 OK${redirect ? `, ${redirect} redirected` : ""}${c4xx ? `, ${c4xx} client error${c4xx === 1 ? "" : "s"}` : ""}${c5xx ? `, ${c5xx} server error${c5xx === 1 ? "" : "s"}` : ""}${errors ? `, ${errors} network failure${errors === 1 ? "" : "s"}` : ""}.`);
+  parts.push(
+    `${ok} returned 200 OK${redirect ? `, ${redirect} redirected` : ""}${c4xx ? `, ${c4xx} client error${c4xx === 1 ? "" : "s"}` : ""}${c5xx ? `, ${c5xx} server error${c5xx === 1 ? "" : "s"}` : ""}${errors ? `, ${errors} network failure${errors === 1 ? "" : "s"}` : ""}.`,
+  );
 
   const issues: string[] = [];
   if (missingTitle) issues.push(`${missingTitle} page${missingTitle === 1 ? "" : "s"} missing a meta title`);
@@ -96,7 +119,11 @@ export function CrawlOverview({ results, domain, flags }: Props) {
   // ── Pie data: status code distribution ────────────────────────────────────
   const pieData = useMemo(() => {
     const counts: Record<string, number> = {
-      "2xx Success": 0, "3xx Redirect": 0, "4xx Client": 0, "5xx Server": 0, "Network/Blocked": 0,
+      "2xx Success": 0,
+      "3xx Redirect": 0,
+      "4xx Client": 0,
+      "5xx Server": 0,
+      "Network/Blocked": 0,
     };
     for (const r of results) {
       const bucket = getStatusBucket(r.statusCode);
@@ -106,10 +133,18 @@ export function CrawlOverview({ results, domain, flags }: Props) {
       else if (bucket === "server") counts["5xx Server"]++;
       else counts["Network/Blocked"]++;
     }
-    return Object.entries(counts).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
+    return Object.entries(counts)
+      .filter(([, v]) => v > 0)
+      .map(([name, value]) => ({ name, value }));
   }, [results]);
 
-  const pieColors = ["hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--destructive))", "hsl(var(--destructive) / 0.65)", "hsl(var(--muted-foreground))"];
+  const pieColors = [
+    "hsl(var(--success))",
+    "hsl(var(--warning))",
+    "hsl(var(--destructive))",
+    "hsl(var(--destructive) / 0.65)",
+    "hsl(var(--muted-foreground))",
+  ];
 
   // ── Line data: smoothed response times across URLs (windowed avg if many) ──
   const lineData = useMemo(() => {
@@ -133,7 +168,9 @@ export function CrawlOverview({ results, domain, flags }: Props) {
 
   // ── BYO LLM key panel ──────────────────────────────────────────────────────
   const [showKeyPanel, setShowKeyPanel] = useState(false);
-  const [provider, setProvider] = useState<Provider>(() => (localStorage.getItem(PROVIDER_STORAGE) as Provider) || "openai");
+  const [provider, setProvider] = useState<Provider>(
+    () => (localStorage.getItem(PROVIDER_STORAGE) as Provider) || "openai",
+  );
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem(KEY_STORAGE) || "");
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -154,8 +191,11 @@ export function CrawlOverview({ results, domain, flags }: Props) {
       statusBuckets: pieData,
       avgFetchSec: results.reduce((s, r) => s + parseFloat(r.fetchTime || "0"), 0) / Math.max(1, results.length),
       sample: results.slice(0, 30).map((r) => ({
-        url: r.url, status: r.statusCode, title: r.title?.slice(0, 90),
-        descLen: r.description?.length ?? 0, h1Count: r.h1s?.length ?? 0,
+        url: r.url,
+        status: r.statusCode,
+        title: r.title?.slice(0, 90),
+        descLen: r.description?.length ?? 0,
+        h1Count: r.h1s?.length ?? 0,
       })),
     };
 
@@ -163,12 +203,18 @@ export function CrawlOverview({ results, domain, flags }: Props) {
 
     // OpenAI-compatible endpoints (all use the same chat-completions schema):
     const OAI_COMPAT: Record<string, { url: string; model: string }> = {
-      openai:     { url: "https://api.openai.com/v1/chat/completions",          model: "gpt-4o-mini" },
-      openrouter: { url: "https://openrouter.ai/api/v1/chat/completions",       model: "meta-llama/llama-3.1-8b-instruct:free" },
-      groq:       { url: "https://api.groq.com/openai/v1/chat/completions",     model: "llama-3.1-8b-instant" },
-      deepseek:   { url: "https://api.deepseek.com/v1/chat/completions",        model: "deepseek-chat" },
-      mistral:    { url: "https://api.mistral.ai/v1/chat/completions",          model: "mistral-small-latest" },
-      together:   { url: "https://api.together.xyz/v1/chat/completions",        model: "meta-llama/Llama-3.1-8B-Instruct-Turbo" },
+      openai: { url: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini" },
+      openrouter: {
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        model: "meta-llama/llama-3.1-8b-instruct:free",
+      },
+      groq: { url: "https://api.groq.com/openai/v1/chat/completions", model: "llama-3.1-8b-instant" },
+      deepseek: { url: "https://api.deepseek.com/v1/chat/completions", model: "deepseek-chat" },
+      mistral: { url: "https://api.mistral.ai/v1/chat/completions", model: "mistral-small-latest" },
+      together: {
+        url: "https://api.together.xyz/v1/chat/completions",
+        model: "meta-llama/Llama-3.1-8B-Instruct-Turbo",
+      },
     };
 
     try {
@@ -240,11 +286,7 @@ export function CrawlOverview({ results, domain, flags }: Props) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
-    >
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
       {/* ── Charts row ───────────────────────────────────────────────────── */}
       <div className="grid gap-3 lg:grid-cols-2">
         {/* Pie */}
@@ -260,13 +302,17 @@ export function CrawlOverview({ results, domain, flags }: Props) {
                   data={pieData}
                   dataKey="value"
                   nameKey="name"
-                  cx="50%" cy="50%"
-                  innerRadius={50} outerRadius={90}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={90}
                   paddingAngle={2}
                   stroke="hsl(var(--background))"
                   strokeWidth={2}
                 >
-                  {pieData.map((_, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
+                  {pieData.map((_, i) => (
+                    <Cell key={i} fill={pieColors[i % pieColors.length]} />
+                  ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{
@@ -286,7 +332,7 @@ export function CrawlOverview({ results, domain, flags }: Props) {
         {/* Line */}
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-semibold">Response time (smoothed)</h3>
+            <h3 className="text-xs font-semibold">Response time</h3>
             <span className="text-[10px] text-muted-foreground">seconds per URL</span>
           </div>
           <div className="h-[260px]">
@@ -321,7 +367,6 @@ export function CrawlOverview({ results, domain, flags }: Props) {
       {/* ── Per-field health donuts (one card per crawled flag) ─────────── */}
       {flags && <PerFieldDonuts results={results} flags={flags} />}
 
-
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <h3 className="text-xs font-semibold">Crawl summary</h3>
@@ -336,9 +381,7 @@ export function CrawlOverview({ results, domain, flags }: Props) {
           </Button>
         </div>
 
-        <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
-          {summary}
-        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">{summary}</p>
 
         {showKeyPanel && (
           <motion.div
@@ -348,7 +391,8 @@ export function CrawlOverview({ results, domain, flags }: Props) {
           >
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
               <KeyRound className="h-3 w-3" />
-              Your key never leaves your browser — it's sent directly to your chosen provider and stored only in localStorage.
+              Your key never leaves your browser — it's sent directly to your chosen provider and stored only in
+              localStorage.
             </div>
             <div className="grid sm:grid-cols-[160px_1fr_auto] gap-2 items-end">
               <div>
@@ -435,7 +479,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const tooShort = present.filter((r) => r.title.length > 0 && r.title.length < 30).length;
     const optimal = present.length - tooLong - tooShort;
     out.push({
-      key: "title", label: "Meta Titles", total,
+      key: "title",
+      label: "Meta Titles",
+      total,
       segments: [
         { name: "Optimal (30–60)", value: optimal, tone: "ok" },
         { name: "Too long (>60)", value: tooLong, tone: "warn" },
@@ -457,7 +503,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const tooShort = present.filter((r) => r.description.length > 0 && r.description.length < 70).length;
     const optimal = present.length - tooLong - tooShort;
     out.push({
-      key: "desc", label: "Meta Descriptions", total,
+      key: "desc",
+      label: "Meta Descriptions",
+      total,
       segments: [
         { name: "Optimal (70–160)", value: optimal, tone: "ok" },
         { name: "Too long (>160)", value: tooLong, tone: "warn" },
@@ -477,7 +525,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const multi = ok.filter((r) => (r.h1s ?? []).length > 1).length;
     const single = total - none - multi;
     out.push({
-      key: "h1", label: "H1 Tags", total,
+      key: "h1",
+      label: "H1 Tags",
+      total,
       segments: [
         { name: "Single H1", value: single, tone: "ok" },
         { name: "Multiple H1s", value: multi, tone: "warn" },
@@ -494,7 +544,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
   if (flags.includeH2) {
     const none = ok.filter((r) => (r.h2s ?? []).length === 0).length;
     out.push({
-      key: "h2", label: "H2 Tags", total,
+      key: "h2",
+      label: "H2 Tags",
+      total,
       segments: [
         { name: "Has H2(s)", value: total - none, tone: "ok" },
         { name: "No H2", value: none, tone: "warn" },
@@ -508,14 +560,14 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
   if (flags.includeH3) {
     const none = ok.filter((r) => (r.h3s ?? []).length === 0).length;
     out.push({
-      key: "h3", label: "H3 Tags", total,
+      key: "h3",
+      label: "H3 Tags",
+      total,
       segments: [
         { name: "Has H3(s)", value: total - none, tone: "ok" },
         { name: "No H3", value: none, tone: "muted" },
       ],
-      insight: none
-        ? `${none} page${none === 1 ? "" : "s"} have no H3 sections.`
-        : "All pages use H3 sub-headings.",
+      insight: none ? `${none} page${none === 1 ? "" : "s"} have no H3 sections.` : "All pages use H3 sub-headings.",
     });
   }
 
@@ -524,7 +576,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const missingAlt = ok.reduce((s, r) => s + (r.images ?? []).filter((i) => !i.alt).length, 0);
     const withAlt = totalImgs - missingAlt;
     out.push({
-      key: "img", label: "Image Alt Texts", total: totalImgs,
+      key: "img",
+      label: "Image Alt Texts",
+      total: totalImgs,
       segments: [
         { name: "With alt", value: withAlt, tone: "ok" },
         { name: "Missing alt", value: missingAlt, tone: "bad" },
@@ -542,7 +596,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const nofollow = ok.filter((r) => /nofollow/i.test(r.robots ?? "")).length;
     const indexable = total - noindex;
     out.push({
-      key: "robots", label: "Meta Robots", total,
+      key: "robots",
+      label: "Meta Robots",
+      total,
       segments: [
         { name: "Indexable", value: indexable, tone: "ok" },
         { name: "Noindex", value: noindex, tone: "bad" },
@@ -559,7 +615,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const canonicalised = ok.filter((r) => r.canonicalStatus === "Canonicalised").length;
     const missing = ok.filter((r) => r.canonicalStatus === "Missing").length;
     out.push({
-      key: "canonical", label: "Canonicals", total,
+      key: "canonical",
+      label: "Canonicals",
+      total,
       segments: [
         { name: "Self-referencing", value: selfRef, tone: "ok" },
         { name: "Canonicalised away", value: canonicalised, tone: "warn" },
@@ -577,7 +635,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const has = ok.filter((r) => (r.hreflangs ?? []).length > 0).length;
     const none = total - has;
     out.push({
-      key: "hreflang", label: "Hreflang", total,
+      key: "hreflang",
+      label: "Hreflang",
+      total,
       segments: [
         { name: "Has hreflang", value: has, tone: "ok" },
         { name: "No hreflang", value: none, tone: "muted" },
@@ -592,7 +652,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const has = ok.filter((r) => (r.schemas ?? []).length > 0).length;
     const none = total - has;
     out.push({
-      key: "schema", label: "Schema Markup", total,
+      key: "schema",
+      label: "Schema Markup",
+      total,
       segments: [
         { name: "Has schema", value: has, tone: "ok" },
         { name: "No schema", value: none, tone: "warn" },
@@ -607,7 +669,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const orphan = ok.filter((r) => (r.internalLinks ?? []).length === 0).length;
     const linked = total - orphan;
     out.push({
-      key: "links", label: "Internal Links", total,
+      key: "links",
+      label: "Internal Links",
+      total,
       segments: [
         { name: "Has internal links", value: linked, tone: "ok" },
         { name: "No internal links", value: orphan, tone: "warn" },
@@ -622,7 +686,9 @@ function buildFieldStats(results: CrawlResult[], flags: FieldFlags): FieldStat[]
     const hasOg = ok.filter((r) => Array.isArray(r.socialTags) && r.socialTags.length > 0).length;
     const noOg = total - hasOg;
     out.push({
-      key: "social", label: "Open Graph & Twitter", total,
+      key: "social",
+      label: "Open Graph & Twitter",
+      total,
       segments: [
         { name: "Has OG/Twitter tags", value: hasOg, tone: "ok" },
         { name: "Missing", value: noOg, tone: "warn" },
@@ -664,13 +730,17 @@ function PerFieldDonuts({ results, flags }: { results: CrawlResult[]; flags: Fie
                       data={data}
                       dataKey="value"
                       nameKey="name"
-                      cx="50%" cy="50%"
-                      innerRadius={28} outerRadius={50}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={28}
+                      outerRadius={50}
                       paddingAngle={2}
                       stroke="hsl(var(--background))"
                       strokeWidth={2}
                     >
-                      {data.map((seg, i) => <Cell key={i} fill={TONE_COLOR[seg.tone]} />)}
+                      {data.map((seg, i) => (
+                        <Cell key={i} fill={TONE_COLOR[seg.tone]} />
+                      ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{
@@ -688,7 +758,9 @@ function PerFieldDonuts({ results, flags }: { results: CrawlResult[]; flags: Fie
                 {s.segments.map((seg) => (
                   <div key={seg.name} className="flex items-center gap-1 text-[10px] text-muted-foreground">
                     <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: TONE_COLOR[seg.tone] }} />
-                    <span className="truncate" title={seg.name}>{seg.name}</span>
+                    <span className="truncate" title={seg.name}>
+                      {seg.name}
+                    </span>
                     <span className="ml-auto tabular-nums text-foreground/80">{seg.value}</span>
                   </div>
                 ))}

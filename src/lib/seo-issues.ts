@@ -178,6 +178,31 @@ const RULES: Partial<Record<keyof FieldFlags, Rule>> = {
       });
     }
 
+    // Duplicate descriptions across pages
+    const descMap = new Map<string, string[]>();
+    for (const r of list) {
+      const d = r.description?.trim();
+      if (!d) continue;
+      const key = d.toLowerCase();
+      if (!descMap.has(key)) descMap.set(key, []);
+      descMap.get(key)!.push(r.url);
+    }
+    const dupDescUrls: string[] = [];
+    for (const urls of descMap.values()) if (urls.length > 1) dupDescUrls.push(...urls);
+    if (dupDescUrls.length) {
+      issues.push({
+        id: "desc-duplicate",
+        flag: "includeDesc",
+        group: "Meta Descriptions",
+        title: `${dupDescUrls.length} page${dupDescUrls.length === 1 ? "" : "s"} share duplicate meta descriptions`,
+        why: "Duplicate descriptions waste an opportunity to differentiate pages in search results and signal weak templating to Google. Unique snippets earn more clicks.",
+        fix: "Rewrite each meta description so it uniquely reflects the page's content. Avoid auto-generating from a single template across many URLs.",
+        severity: "warning",
+        urls: dupDescUrls,
+        count: dupDescUrls.length,
+      });
+    }
+
     return issues;
   },
 
@@ -213,6 +238,64 @@ const RULES: Partial<Record<keyof FieldFlags, Rule>> = {
         urls: multi.map((r) => r.url),
         count: multi.length,
       });
+    }
+
+    // Duplicate H1s across pages
+    const h1Map = new Map<string, string[]>();
+    for (const r of list) {
+      const first = (r.h1s ?? [])[0]?.trim();
+      if (!first) continue;
+      const key = first.toLowerCase();
+      if (!h1Map.has(key)) h1Map.set(key, []);
+      h1Map.get(key)!.push(r.url);
+    }
+    const dupH1Urls: string[] = [];
+    for (const urls of h1Map.values()) if (urls.length > 1) dupH1Urls.push(...urls);
+    if (dupH1Urls.length) {
+      issues.push({
+        id: "h1-duplicate",
+        flag: "includeH1",
+        group: "H1 Tags",
+        title: `${dupH1Urls.length} page${dupH1Urls.length === 1 ? "" : "s"} share duplicate H1 tags`,
+        why: "Repeated H1s across many URLs blur each page's topical focus, making it harder for Google to decide which one to rank for the shared keyword.",
+        fix: "Make every H1 unique. Add a distinguishing qualifier (category, location, product variant) so each headline reflects that page's specific intent.",
+        severity: "warning",
+        urls: dupH1Urls,
+        count: dupH1Urls.length,
+      });
+    }
+
+    // Thin / very thin content (uses wordCount populated by the crawler)
+    const withWc = list.filter((r) => typeof r.wordCount === "number");
+    if (withWc.length) {
+      const veryThin = withWc.filter((r) => (r.wordCount ?? 0) < 100);
+      const thin = withWc.filter((r) => (r.wordCount ?? 0) >= 100 && (r.wordCount ?? 0) < 300);
+      if (veryThin.length) {
+        issues.push({
+          id: "content-very-thin",
+          flag: "includeH1",
+          group: "Content Quality",
+          title: `${veryThin.length} page${veryThin.length === 1 ? "" : "s"} have very thin content (<100 words)`,
+          why: "Pages with almost no body text struggle to rank because search engines can't determine relevance. They also frustrate users who land on near-empty pages.",
+          fix: "Expand each page with substantive, original content (300+ words) that fully answers the user's intent. Or merge/redirect ultra-thin pages into a richer parent page.",
+          severity: "warning",
+          urls: veryThin.map((r) => r.url),
+          count: veryThin.length,
+        });
+      }
+      if (thin.length) {
+        issues.push({
+          id: "content-thin",
+          flag: "includeH1",
+          group: "Content Quality",
+          title: `${thin.length} page${thin.length === 1 ? "" : "s"} have thin content (100–300 words)`,
+          why: "Short pages can rank but usually for narrow long-tail queries only. Competitors with deeper content typically outperform them on commercial keywords.",
+          fix: "Add depth — examples, FAQs, supporting media, and internal links — until each important page comfortably exceeds 300 words of original content.",
+          severity: "info",
+          urls: thin.map((r) => r.url),
+          count: thin.length,
+        });
+      }
     }
 
     return issues;
@@ -355,19 +438,49 @@ const RULES: Partial<Record<keyof FieldFlags, Rule>> = {
 
   includeInternalLinks: (results) => {
     const list = ok(results);
+    const issues: SeoIssue[] = [];
+
     const orphan = list.filter((r) => (r.internalLinks ?? []).length === 0);
-    if (!orphan.length) return [];
-    return [{
-      id: "internal-orphan",
-      flag: "includeInternalLinks",
-      group: "Internal Links",
-      title: `${orphan.length} page${orphan.length === 1 ? "" : "s"} have zero outbound internal links`,
-      why: "Pages with no internal links are dead-ends for both crawlers and users. They limit how PageRank flows through your site and reduce the chance of further engagement.",
-      fix: "Add 3–10 contextual internal links from each page to related content — related products, supporting blog posts, category pages, etc.",
-      severity: "warning",
-      urls: orphan.map((r) => r.url),
-      count: orphan.length,
-    }];
+    if (orphan.length) {
+      issues.push({
+        id: "internal-orphan",
+        flag: "includeInternalLinks",
+        group: "Internal Links",
+        title: `${orphan.length} page${orphan.length === 1 ? "" : "s"} have zero outbound internal links`,
+        why: "Pages with no internal links are dead-ends for both crawlers and users. They limit how PageRank flows through your site and reduce the chance of further engagement.",
+        fix: "Add 3–10 contextual internal links from each page to related content — related products, supporting blog posts, category pages, etc.",
+        severity: "warning",
+        urls: orphan.map((r) => r.url),
+        count: orphan.length,
+      });
+    }
+
+    // External links missing rel="nofollow"/sponsored/ugc — review-worthy.
+    const pagesMissingRel: string[] = [];
+    let totalMissingRel = 0;
+    for (const r of list) {
+      const ext = (r.internalLinks ?? []).filter((l) => !l.isInternal);
+      const missing = ext.filter((l) => !l.nofollow && !l.sponsored && !l.ugc);
+      if (missing.length > 0) {
+        pagesMissingRel.push(r.url);
+        totalMissingRel += missing.length;
+      }
+    }
+    if (pagesMissingRel.length) {
+      issues.push({
+        id: "links-missing-rel",
+        flag: "includeInternalLinks",
+        group: "Internal Links",
+        title: `${totalMissingRel} external link${totalMissingRel === 1 ? "" : "s"} missing rel attributes across ${pagesMissingRel.length} page${pagesMissingRel.length === 1 ? "" : "s"}`,
+        why: "External links without rel=\"nofollow\", \"sponsored\", or \"ugc\" silently pass ranking signals (and trust) to third-party sites. For paid placements or user-generated content, this can also violate Google's link spam guidelines.",
+        fix: "Audit outbound links per page. Add rel=\"sponsored\" to paid/affiliate links, rel=\"ugc\" to user-generated content, and rel=\"nofollow\" to untrusted destinations. Leave editorial/partner links followed.",
+        severity: "info",
+        urls: pagesMissingRel,
+        count: pagesMissingRel.length,
+      });
+    }
+
+    return issues;
   },
 
   includeHreflangs: () => [], // hreflang correctness needs cross-page validation; out of scope for v1

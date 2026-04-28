@@ -12,6 +12,12 @@ import { CrawlBar } from "@/components/CrawlBar";
 import { SectionVisualization, type SectionKey } from "@/components/SectionVisualization";
 import { SectionIssues } from "@/components/SectionIssues";
 import { SeoIssuesView } from "@/components/SeoIssuesView";
+import { DuplicatesPanel } from "@/components/DuplicatesPanel";
+import { ThinContentPanel } from "@/components/ThinContentPanel";
+import { LinkAttributesPanel } from "@/components/LinkAttributesPanel";
+import { LinkEquityPanel } from "@/components/LinkEquityPanel";
+import { SocialTagGenerator } from "@/components/SocialTagGenerator";
+import { HreflangGenerator } from "@/components/HreflangGenerator";
 import type { CrawlResult } from "@/lib/crawl-api";
 import type { LastCrawlInput } from "@/hooks/use-crawler";
 
@@ -110,6 +116,8 @@ const VIEW_TITLES: Record<ResultsView, string> = {
   "internal-link-graph": "Internal Link Graph",
   sitemap: "Sitemap Generator",
   "robots-txt": "Robots.txt",
+  "og-generator": "OG &amp; Twitter Card Generator",
+  "hreflang-generator": "Hreflang Generator",
 };
 
 const SECTION_VIS_VIEWS = new Set<ResultsView>([
@@ -221,8 +229,16 @@ export function ResultsShell({
                 <SeoIssuesView results={results} flags={flags} />
               )}
 
+              {view === "og-generator" && (
+                <SocialTagGenerator results={results} />
+              )}
+
+              {view === "hreflang-generator" && (
+                <HreflangGenerator />
+              )}
+
               {/* All data views: mini visualization + filtered table */}
-              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && (
+              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && view !== "og-generator" && view !== "hreflang-generator" && (
                 <>
                   {SECTION_VIS_VIEWS.has(view) && (
                     <>
@@ -234,6 +250,25 @@ export function ResultsShell({
                         view={view as SectionKey}
                         results={results}
                       />
+                      {/* Field-level enhancements */}
+                      {view === "page-titles" && (
+                        <DuplicatesPanel results={results} field="title" />
+                      )}
+                      {view === "meta-description" && (
+                        <DuplicatesPanel results={results} field="description" />
+                      )}
+                      {view === "h1" && (
+                        <>
+                          <DuplicatesPanel results={results} field="h1" />
+                          <ThinContentPanel results={results} />
+                        </>
+                      )}
+                      {view === "internal-links" && (
+                        <>
+                          <LinkEquityPanel results={results} />
+                          <LinkAttributesPanel results={results} />
+                        </>
+                      )}
                     </>
                   )}
                   <ResultsTable

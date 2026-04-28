@@ -17,6 +17,14 @@ interface InternalLinkData {
   anchorText: string;
   href: string;
   isInternal: boolean;
+  /** Raw rel attribute value (lowercased, space-normalized). Empty string if absent. */
+  rel?: string;
+  /** True if rel contains "nofollow". */
+  nofollow?: boolean;
+  /** True if rel contains "sponsored". */
+  sponsored?: boolean;
+  /** True if rel contains "ugc". */
+  ugc?: boolean;
 }
 
 interface SocialTag {
@@ -62,6 +70,8 @@ interface CrawlResult {
   hopCount?: number;
   /** ISO-8601 Last-Modified from the final HTTP response, when provided. */
   lastModified?: string;
+  /** Approximate visible main-content word count (used for thin-content detection). */
+  wordCount?: number;
   fetchTime: string;
 }
 
@@ -525,11 +535,34 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
     }
     
     if (!finalText) continue;
-    
-    links.push({ anchorText: finalText, href, isInternal });
+
+    // Parse rel attribute (HTML5 allows multiple space-separated tokens).
+    let relMatch = attrs.match(/\brel\s*=\s*"([^"]*)"/i);
+    if (!relMatch) relMatch = attrs.match(/\brel\s*=\s*'([^']*)'/i);
+    const rel = (relMatch ? relMatch[1] : '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const tokens = rel ? rel.split(' ') : [];
+    const nofollow = tokens.includes('nofollow');
+    const sponsored = tokens.includes('sponsored');
+    const ugc = tokens.includes('ugc');
+
+    links.push({ anchorText: finalText, href, isInternal, rel, nofollow, sponsored, ugc });
   }
   
   return links;
+}
+
+/** Approximate visible word count from main content — strips tags, collapses whitespace. */
+function computeWordCount(html: string): number {
+  const main = extractMainContent(html);
+  const text = main
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return 0;
+  // Count whitespace-delimited tokens with at least one letter/digit.
+  const tokens = text.split(' ').filter((t) => /[\p{L}\p{N}]/u.test(t));
+  return tokens.length;
 }
 
 // ─── JS-rendered link extraction via Jina Reader ──────────────────────────────
@@ -894,6 +927,9 @@ async function fetchMeta(
         ? (jsRenderedLinks ? await extractJsRenderedLinks(finalUrl) : extractInternalLinks(html, finalUrl))
         : [],
       socialTags: includeSocialTags ? extractSocialTags(html, finalUrl) : [],
+      // Word count is cheap (single regex pass over already-extracted main body)
+      // and powers thin-content detection without needing a new flag.
+      wordCount: computeWordCount(html),
       status: 'OK',
       statusCode: detection.finalStatus,
       ...baseFields,

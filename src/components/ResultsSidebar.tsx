@@ -5,7 +5,7 @@ import {
 import {
   LayoutDashboard, FileText, AlignLeft, Heading1, Heading2, Heading3,
   Image as ImageIcon, Code, Bot, Link2, Languages, LinkIcon, Share2,
-  FileCode2, Network, ServerCrash, ListTree, Lightbulb,
+  FileCode2, Network, ServerCrash, ListTree, Lightbulb, Wand2,
 } from "lucide-react";
 import type { CrawlResult } from "@/lib/crawl-api";
 
@@ -28,7 +28,9 @@ export type ResultsView =
   | "link-graph"
   | "internal-link-graph"
   | "sitemap"
-  | "robots-txt";
+  | "robots-txt"
+  | "og-generator"
+  | "hreflang-generator";
 
 interface Item {
   view: ResultsView;
@@ -101,6 +103,8 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
     { view: "internal-link-graph", label: "Internal Link Graph", icon: LinkIcon, visible: flags.includeInternalLinks },
     { view: "sitemap", label: "Sitemap", icon: FileCode2, visible: crawlSource === "site" || crawlSource === "sitemap" },
     { view: "robots-txt", label: "Robots.txt", icon: Bot },
+    { view: "og-generator", label: "OG / Twitter Generator", icon: Share2 },
+    { view: "hreflang-generator", label: "Hreflang Generator", icon: Wand2 },
   ];
 
   const renderGroup = (label: string, items: Item[]) => {

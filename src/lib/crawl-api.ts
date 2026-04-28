@@ -14,6 +14,11 @@ export interface InternalLinkData {
   anchorText: string;
   href: string;
   isInternal: boolean;
+  /** Raw rel attribute value (lowercased). Empty string when absent. */
+  rel?: string;
+  nofollow?: boolean;
+  sponsored?: boolean;
+  ugc?: boolean;
 }
 
 export interface SocialTag {
@@ -65,6 +70,8 @@ export interface CrawlResult {
   hopCount?: number;
   /** ISO-8601 Last-Modified header from the final HTTP response, when present. */
   lastModified?: string;
+  /** Approximate main-content word count (used for thin-content detection). */
+  wordCount?: number;
   fetchTime: string;
 }
 

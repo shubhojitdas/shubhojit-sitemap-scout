@@ -300,6 +300,8 @@ const RULES: Partial<Record<keyof FieldFlags, Rule>> = {
 
     return issues;
   },
+
+  includeH2: (results) => {
     const list = ok(results);
     const noH2 = list.filter((r) => (r.h2s ?? []).length === 0);
     if (!noH2.length) return [];

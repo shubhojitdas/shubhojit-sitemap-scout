@@ -205,6 +205,8 @@ const RULES: Partial<Record<keyof FieldFlags, Rule>> = {
 
     return issues;
   },
+
+  includeH1: (results) => {
     const list = ok(results);
     const issues: SeoIssue[] = [];
 

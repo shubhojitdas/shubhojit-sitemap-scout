@@ -438,19 +438,49 @@ const RULES: Partial<Record<keyof FieldFlags, Rule>> = {
 
   includeInternalLinks: (results) => {
     const list = ok(results);
+    const issues: SeoIssue[] = [];
+
     const orphan = list.filter((r) => (r.internalLinks ?? []).length === 0);
-    if (!orphan.length) return [];
-    return [{
-      id: "internal-orphan",
-      flag: "includeInternalLinks",
-      group: "Internal Links",
-      title: `${orphan.length} page${orphan.length === 1 ? "" : "s"} have zero outbound internal links`,
-      why: "Pages with no internal links are dead-ends for both crawlers and users. They limit how PageRank flows through your site and reduce the chance of further engagement.",
-      fix: "Add 3–10 contextual internal links from each page to related content — related products, supporting blog posts, category pages, etc.",
-      severity: "warning",
-      urls: orphan.map((r) => r.url),
-      count: orphan.length,
-    }];
+    if (orphan.length) {
+      issues.push({
+        id: "internal-orphan",
+        flag: "includeInternalLinks",
+        group: "Internal Links",
+        title: `${orphan.length} page${orphan.length === 1 ? "" : "s"} have zero outbound internal links`,
+        why: "Pages with no internal links are dead-ends for both crawlers and users. They limit how PageRank flows through your site and reduce the chance of further engagement.",
+        fix: "Add 3–10 contextual internal links from each page to related content — related products, supporting blog posts, category pages, etc.",
+        severity: "warning",
+        urls: orphan.map((r) => r.url),
+        count: orphan.length,
+      });
+    }
+
+    // External links missing rel="nofollow"/sponsored/ugc — review-worthy.
+    const pagesMissingRel: string[] = [];
+    let totalMissingRel = 0;
+    for (const r of list) {
+      const ext = (r.internalLinks ?? []).filter((l) => !l.isInternal);
+      const missing = ext.filter((l) => !l.nofollow && !l.sponsored && !l.ugc);
+      if (missing.length > 0) {
+        pagesMissingRel.push(r.url);
+        totalMissingRel += missing.length;
+      }
+    }
+    if (pagesMissingRel.length) {
+      issues.push({
+        id: "links-missing-rel",
+        flag: "includeInternalLinks",
+        group: "Internal Links",
+        title: `${totalMissingRel} external link${totalMissingRel === 1 ? "" : "s"} missing rel attributes across ${pagesMissingRel.length} page${pagesMissingRel.length === 1 ? "" : "s"}`,
+        why: "External links without rel=\"nofollow\", \"sponsored\", or \"ugc\" silently pass ranking signals (and trust) to third-party sites. For paid placements or user-generated content, this can also violate Google's link spam guidelines.",
+        fix: "Audit outbound links per page. Add rel=\"sponsored\" to paid/affiliate links, rel=\"ugc\" to user-generated content, and rel=\"nofollow\" to untrusted destinations. Leave editorial/partner links followed.",
+        severity: "info",
+        urls: pagesMissingRel,
+        count: pagesMissingRel.length,
+      });
+    }
+
+    return issues;
   },
 
   includeHreflangs: () => [], // hreflang correctness needs cross-page validation; out of scope for v1

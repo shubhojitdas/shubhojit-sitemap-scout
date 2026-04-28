@@ -229,8 +229,16 @@ export function ResultsShell({
                 <SeoIssuesView results={results} flags={flags} />
               )}
 
+              {view === "og-generator" && (
+                <SocialTagGenerator results={results} />
+              )}
+
+              {view === "hreflang-generator" && (
+                <HreflangGenerator />
+              )}
+
               {/* All data views: mini visualization + filtered table */}
-              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && (
+              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && view !== "og-generator" && view !== "hreflang-generator" && (
                 <>
                   {SECTION_VIS_VIEWS.has(view) && (
                     <>
@@ -242,6 +250,25 @@ export function ResultsShell({
                         view={view as SectionKey}
                         results={results}
                       />
+                      {/* Field-level enhancements */}
+                      {view === "page-titles" && (
+                        <DuplicatesPanel results={results} field="title" />
+                      )}
+                      {view === "meta-description" && (
+                        <DuplicatesPanel results={results} field="description" />
+                      )}
+                      {view === "h1" && (
+                        <>
+                          <DuplicatesPanel results={results} field="h1" />
+                          <ThinContentPanel results={results} />
+                        </>
+                      )}
+                      {view === "internal-links" && (
+                        <>
+                          <LinkEquityPanel results={results} />
+                          <LinkAttributesPanel results={results} />
+                        </>
+                      )}
                     </>
                   )}
                   <ResultsTable

@@ -178,10 +178,33 @@ const RULES: Partial<Record<keyof FieldFlags, Rule>> = {
       });
     }
 
+    // Duplicate descriptions across pages
+    const descMap = new Map<string, string[]>();
+    for (const r of list) {
+      const d = r.description?.trim();
+      if (!d) continue;
+      const key = d.toLowerCase();
+      if (!descMap.has(key)) descMap.set(key, []);
+      descMap.get(key)!.push(r.url);
+    }
+    const dupDescUrls: string[] = [];
+    for (const urls of descMap.values()) if (urls.length > 1) dupDescUrls.push(...urls);
+    if (dupDescUrls.length) {
+      issues.push({
+        id: "desc-duplicate",
+        flag: "includeDesc",
+        group: "Meta Descriptions",
+        title: `${dupDescUrls.length} page${dupDescUrls.length === 1 ? "" : "s"} share duplicate meta descriptions`,
+        why: "Duplicate descriptions waste an opportunity to differentiate pages in search results and signal weak templating to Google. Unique snippets earn more clicks.",
+        fix: "Rewrite each meta description so it uniquely reflects the page's content. Avoid auto-generating from a single template across many URLs.",
+        severity: "warning",
+        urls: dupDescUrls,
+        count: dupDescUrls.length,
+      });
+    }
+
     return issues;
   },
-
-  includeH1: (results) => {
     const list = ok(results);
     const issues: SeoIssue[] = [];
 

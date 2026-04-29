@@ -137,14 +137,14 @@ export function LinkAttributesPanel({ results }: Props) {
 
       <ScrollArea className="h-[320px] border-t border-border">
         <table className="w-full text-[11px]">
-          <thead className="bg-muted/40 sticky top-0">
+          <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_hsl(var(--border))]">
             <tr>
-              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Source page</th>
-              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Link</th>
-              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Anchor</th>
-              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Type</th>
-              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Status</th>
-              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Rel</th>
+              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">Source page</th>
+              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">Link</th>
+              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">Anchor</th>
+              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">Type</th>
+              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">Status</th>
+              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">Rel</th>
             </tr>
           </thead>
           <tbody>

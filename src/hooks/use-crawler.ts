@@ -689,6 +689,10 @@ export function useCrawler() {
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try {
+      localStorage.removeItem("sitemap-scout-ui-results-view");
+      localStorage.removeItem("sitemap-scout-ui-table-state");
+    } catch {}
     clearPersistedStateFromDb();
     setState(INITIAL_STATE);
   }, []);

@@ -24,6 +24,8 @@ interface CrawlState {
   lastInput: LastCrawlInput | null;
   /** Tracks every flag that has been crawled at least once on the current dataset. */
   crawledFlags: CrawlOptions;
+  /** Tracks the full field selection for the current/restored crawl session. */
+  selectedOptions: CrawlOptions;
   /** True when running an incremental extract (extendCrawl), so progress UI can label it. */
   incremental: boolean;
   /** Wall-clock ISO of when the current crawl was started. */
@@ -32,64 +34,6 @@ interface CrawlState {
   crawlCompletedAt: string | null;
   /** ISO of the most recent crawl activity (start, completion, or extension) in this dataset. */
   lastCrawledAt: string | null;
-}
-
-const INITIAL_STATE: CrawlState = {
-  phase: "idle",
-  crawlSource: null,
-  results: [],
-  totalUrls: 0,
-  processedUrls: 0,
-  error: null,
-  includeTitle: true,
-  includeDesc: true,
-  includeH2: false,
-  includeH3: false,
-  parsedUrls: [],
-  lastInput: null,
-  crawledFlags: {
-    includeTitle: false, includeDesc: false, includeH1: false, includeH2: false, includeH3: false,
-    includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false,
-    includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
-  },
-  incremental: false,
-  crawlStartedAt: null,
-  crawlCompletedAt: null,
-  lastCrawledAt: null,
-};
-
-const STORAGE_KEY = "sitemap-scout-crawl-data";
-
-const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const, hreflangs: [], internalLinks: [] };
-
-function loadPersistedState(): CrawlState | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as CrawlState;
-    if (data.results && data.results.length > 0) {
-      data.crawlSource = data.crawlSource ?? null;
-      data.lastInput = data.lastInput ?? null;
-      data.crawledFlags = data.crawledFlags ?? INITIAL_STATE.crawledFlags;
-      data.incremental = false;
-      data.crawlStartedAt = data.crawlStartedAt ?? null;
-      data.crawlCompletedAt = data.crawlCompletedAt ?? null;
-      data.lastCrawledAt = data.lastCrawledAt ?? data.crawlCompletedAt ?? data.crawlStartedAt ?? null;
-      if (data.phase === "crawling" || data.phase === "parsing") {
-        data.phase = "done";
-      }
-      return data;
-    }
-  } catch { /* ignore corrupt data */ }
-  return null;
-}
-
-function persistState(state: CrawlState) {
-  try {
-    if (state.results.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-  } catch { /* storage full or unavailable */ }
 }
 
 export interface CrawlOptions {
@@ -108,7 +52,126 @@ export interface CrawlOptions {
   includeSocialTags: boolean;
 }
 
-const DEFAULT_OPTS: CrawlOptions = { includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false };
+const EMPTY_CRAWL_OPTIONS: CrawlOptions = {
+  includeTitle: false, includeDesc: false, includeH1: false, includeH2: false, includeH3: false,
+  includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false,
+  includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
+};
+
+const DEFAULT_OPTS: CrawlOptions = {
+  includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false,
+  includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false,
+  includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
+};
+
+const INITIAL_STATE: CrawlState = {
+  phase: "idle",
+  crawlSource: null,
+  results: [],
+  totalUrls: 0,
+  processedUrls: 0,
+  error: null,
+  includeTitle: true,
+  includeDesc: true,
+  includeH2: false,
+  includeH3: false,
+  parsedUrls: [],
+  lastInput: null,
+  crawledFlags: EMPTY_CRAWL_OPTIONS,
+  selectedOptions: EMPTY_CRAWL_OPTIONS,
+  incremental: false,
+  crawlStartedAt: null,
+  crawlCompletedAt: null,
+  lastCrawledAt: null,
+};
+
+const STORAGE_KEY = "sitemap-scout-crawl-data";
+const DB_NAME = "sitemap-scout-crawl-store";
+const DB_VERSION = 1;
+const DB_STORE = "sessions";
+const DB_SESSION_KEY = "current";
+
+const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const, hreflangs: [], internalLinks: [] };
+
+function hasAnyOption(options: CrawlOptions) {
+  return Object.values(options).some(Boolean);
+}
+
+function normalizeOptions(options?: Partial<CrawlOptions> | null, fallback: CrawlOptions = EMPTY_CRAWL_OPTIONS): CrawlOptions {
+  return { ...fallback, ...(options ?? {}) };
+}
+
+function inferOptionsFromResults(data: Partial<CrawlState>): CrawlOptions {
+  const results = Array.isArray(data.results) ? data.results : [];
+  const inferred = normalizeOptions(data.crawledFlags, normalizeOptions(data.selectedOptions));
+
+  if (hasAnyOption(inferred)) return inferred;
+
+  return {
+    includeTitle: !!data.includeTitle || results.some((r) => !!r.title),
+    includeDesc: !!data.includeDesc || results.some((r) => !!r.description),
+    includeH1: results.some((r) => Array.isArray(r.h1s) && r.h1s.length > 0),
+    includeH2: !!data.includeH2 || results.some((r) => Array.isArray(r.h2s) && r.h2s.length > 0),
+    includeH3: !!data.includeH3 || results.some((r) => Array.isArray(r.h3s) && r.h3s.length > 0),
+    includeImages: results.some((r) => Array.isArray(r.images) && r.images.length > 0),
+    includeSchemas: results.some((r) => Array.isArray(r.schemas) && r.schemas.length > 0),
+    includeRobots: results.some((r) => typeof r.robots === "string" && r.robots.length > 0),
+    includeCanonical: results.some((r) => typeof r.canonical === "string" && r.canonical.length > 0),
+    includeHreflangs: results.some((r) => Array.isArray(r.hreflangs) && r.hreflangs.length > 0),
+    includeInternalLinks: results.some((r) => Array.isArray(r.internalLinks) && r.internalLinks.length > 0),
+    jsRenderedLinks: false,
+    includeSocialTags: results.some((r) => !!r.socialTags),
+  };
+}
+
+function normalizePersistedState(data: Partial<CrawlState> | null): CrawlState | null {
+  if (!data) return null;
+  const results = Array.isArray(data.results) ? data.results : [];
+  const parsedUrls = Array.isArray(data.parsedUrls) ? data.parsedUrls : [];
+  const hasSession = results.length > 0 || parsedUrls.length > 0 || !!data.lastInput;
+  if (!hasSession) return null;
+
+  const inferredOptions = inferOptionsFromResults(data);
+  const selectedOptions = normalizeOptions(data.selectedOptions, inferredOptions);
+  const crawledFlags = normalizeOptions(data.crawledFlags, hasAnyOption(inferredOptions) ? inferredOptions : selectedOptions);
+
+  return {
+    ...INITIAL_STATE,
+    ...data,
+    results,
+    parsedUrls,
+    crawlSource: data.crawlSource ?? null,
+    lastInput: data.lastInput ?? null,
+    crawledFlags,
+    selectedOptions,
+    incremental: false,
+    crawlStartedAt: data.crawlStartedAt ?? null,
+    crawlCompletedAt: data.crawlCompletedAt ?? null,
+    lastCrawledAt: data.lastCrawledAt ?? data.crawlCompletedAt ?? data.crawlStartedAt ?? null,
+    phase: data.phase === "crawling" || data.phase === "parsing" || data.phase === "paused" ? "done" : data.phase ?? "done",
+  };
+}
+
+function shouldPersistSession(state: CrawlState) {
+  return state.results.length > 0 || state.parsedUrls.length > 0 || !!state.lastInput || state.phase !== "idle";
+}
+
+function loadPersistedState(): CrawlState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return normalizePersistedState(JSON.parse(raw) as Partial<CrawlState>);
+  } catch { /* ignore corrupt data */ }
+  return null;
+}
+
+function persistState(state: CrawlState) {
+  try {
+    if (shouldPersistSession(state)) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+  } catch { /* storage full or unavailable */ }
+}
 
 /** Merge an incremental batch into existing results: keep existing fields, only overwrite the
  *  ones the user requested in this incremental crawl. Uses URL as join key. */

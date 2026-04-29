@@ -255,7 +255,21 @@ function mergeResults(existing: CrawlResult[], fresh: CrawlResult[], opts: Crawl
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(() => loadPersistedState() || INITIAL_STATE);
 
-  useEffect(() => { persistState(state); }, [state]);
+  useEffect(() => {
+    let cancelled = false;
+    loadPersistedStateFromDb().then((stored) => {
+      if (!cancelled && stored && stored.results.length >= state.results.length) {
+        setState(stored);
+      }
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    persistState(state);
+    persistStateToDb(state);
+  }, [state]);
 
   // Crawl state must survive page reloads and tab refreshes — never clear
   // localStorage on unload. Only an explicit user action (clear/new crawl)
@@ -399,7 +413,7 @@ export function useCrawler() {
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     const startedAt = new Date().toISOString();
-    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "sitemap", lastInput: { source: "sitemap", display: sitemapUrl }, includeTitle, includeDesc, includeH2, includeH3, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
+    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "sitemap", lastInput: { source: "sitemap", display: sitemapUrl }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
@@ -449,7 +463,7 @@ export function useCrawler() {
     accumulatedResultsRef.current = [];
     const display = urls.length === 1 ? urls[0] : `${urls.length} URLs`;
     const startedAt = new Date().toISOString();
-    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: urls.length, parsedUrls: urls, lastInput: { source: "urls", display, urls }, includeTitle, includeDesc, includeH2, includeH3, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
+    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: urls.length, parsedUrls: urls, lastInput: { source: "urls", display, urls }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
       await runBatches(urls, signal, opts);
@@ -488,7 +502,7 @@ export function useCrawler() {
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     const startedAt = new Date().toISOString();
-    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "site", lastInput: { source: "site", display: siteUrl }, includeTitle, includeDesc, includeH2, includeH3, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
+    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "site", lastInput: { source: "site", display: siteUrl }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
       const urls = await spiderSiteUrls(siteUrl);

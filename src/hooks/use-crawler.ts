@@ -383,6 +383,21 @@ export function useCrawler() {
           jsRenderedLinks: s.crawledFlags.jsRenderedLinks || opts.jsRenderedLinks,
           includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
         },
+        selectedOptions: {
+          includeTitle: s.selectedOptions.includeTitle || opts.includeTitle,
+          includeDesc: s.selectedOptions.includeDesc || opts.includeDesc,
+          includeH1: s.selectedOptions.includeH1 || opts.includeH1,
+          includeH2: s.selectedOptions.includeH2 || opts.includeH2,
+          includeH3: s.selectedOptions.includeH3 || opts.includeH3,
+          includeImages: s.selectedOptions.includeImages || opts.includeImages,
+          includeSchemas: s.selectedOptions.includeSchemas || opts.includeSchemas,
+          includeRobots: s.selectedOptions.includeRobots || opts.includeRobots,
+          includeCanonical: s.selectedOptions.includeCanonical || opts.includeCanonical,
+          includeHreflangs: s.selectedOptions.includeHreflangs || opts.includeHreflangs,
+          includeInternalLinks: s.selectedOptions.includeInternalLinks || opts.includeInternalLinks,
+          jsRenderedLinks: s.selectedOptions.jsRenderedLinks || opts.jsRenderedLinks,
+          includeSocialTags: s.selectedOptions.includeSocialTags || opts.includeSocialTags,
+        },
         incremental: false,
         crawlCompletedAt: completedAt,
         lastCrawledAt: completedAt,
@@ -553,6 +568,21 @@ export function useCrawler() {
       processedUrls: 0,
       error: null,
       incremental: true,
+        selectedOptions: {
+          includeTitle: s.selectedOptions.includeTitle || opts.includeTitle,
+          includeDesc: s.selectedOptions.includeDesc || opts.includeDesc,
+          includeH1: s.selectedOptions.includeH1 || opts.includeH1,
+          includeH2: s.selectedOptions.includeH2 || opts.includeH2,
+          includeH3: s.selectedOptions.includeH3 || opts.includeH3,
+          includeImages: s.selectedOptions.includeImages || opts.includeImages,
+          includeSchemas: s.selectedOptions.includeSchemas || opts.includeSchemas,
+          includeRobots: s.selectedOptions.includeRobots || opts.includeRobots,
+          includeCanonical: s.selectedOptions.includeCanonical || opts.includeCanonical,
+          includeHreflangs: s.selectedOptions.includeHreflangs || opts.includeHreflangs,
+          includeInternalLinks: s.selectedOptions.includeInternalLinks || opts.includeInternalLinks,
+          jsRenderedLinks: s.selectedOptions.jsRenderedLinks || opts.jsRenderedLinks,
+          includeSocialTags: s.selectedOptions.includeSocialTags || opts.includeSocialTags,
+        },
       crawlStartedAt: startedAt,
       crawlCompletedAt: null,
       lastCrawledAt: startedAt,
@@ -594,6 +624,21 @@ export function useCrawler() {
           includeInternalLinks: s.crawledFlags.includeInternalLinks || opts.includeInternalLinks,
           jsRenderedLinks: s.crawledFlags.jsRenderedLinks || opts.jsRenderedLinks,
           includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
+        },
+        selectedOptions: {
+          includeTitle: s.selectedOptions.includeTitle || opts.includeTitle,
+          includeDesc: s.selectedOptions.includeDesc || opts.includeDesc,
+          includeH1: s.selectedOptions.includeH1 || opts.includeH1,
+          includeH2: s.selectedOptions.includeH2 || opts.includeH2,
+          includeH3: s.selectedOptions.includeH3 || opts.includeH3,
+          includeImages: s.selectedOptions.includeImages || opts.includeImages,
+          includeSchemas: s.selectedOptions.includeSchemas || opts.includeSchemas,
+          includeRobots: s.selectedOptions.includeRobots || opts.includeRobots,
+          includeCanonical: s.selectedOptions.includeCanonical || opts.includeCanonical,
+          includeHreflangs: s.selectedOptions.includeHreflangs || opts.includeHreflangs,
+          includeInternalLinks: s.selectedOptions.includeInternalLinks || opts.includeInternalLinks,
+          jsRenderedLinks: s.selectedOptions.jsRenderedLinks || opts.jsRenderedLinks,
+          includeSocialTags: s.selectedOptions.includeSocialTags || opts.includeSocialTags,
         },
         crawlCompletedAt: completedAt,
         lastCrawledAt: completedAt,
@@ -644,6 +689,7 @@ export function useCrawler() {
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    clearPersistedStateFromDb();
     setState(INITIAL_STATE);
   }, []);
 

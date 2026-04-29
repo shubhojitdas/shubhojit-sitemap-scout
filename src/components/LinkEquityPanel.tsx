@@ -99,15 +99,15 @@ export function LinkEquityPanel({ results }: Props) {
 
       <ScrollArea className="h-[340px] border-t border-border">
         <table className="w-full text-[11px]">
-          <thead className="bg-muted/40 sticky top-0">
+          <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_hsl(var(--border))]">
             <tr>
-              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">URL</th>
+              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">URL</th>
               <SortHead label="In" k="incoming" sortKey={sortKey} sortDir={sortDir} onClick={handleSort} />
               <SortHead label="Out" k="outgoing" sortKey={sortKey} sortDir={sortDir} onClick={handleSort} />
               <SortHead label="Diversity" k="diversity" sortKey={sortKey} sortDir={sortDir} onClick={handleSort} />
               <SortHead label="Score" k="score" sortKey={sortKey} sortDir={sortDir} onClick={handleSort} />
-              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Strength</th>
-              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Top anchor</th>
+              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">Strength</th>
+              <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">Top anchor</th>
             </tr>
           </thead>
           <tbody>
@@ -165,7 +165,7 @@ function SortHead({
 }: { label: string; k: SortKey; sortKey: SortKey; sortDir: "asc" | "desc"; onClick: (k: SortKey) => void }) {
   const active = sortKey === k;
   return (
-    <th className="px-3 py-1.5 text-right">
+    <th className="px-3 py-1.5 text-right bg-card">
       <button
         onClick={() => onClick(k)}
         className={`inline-flex items-center gap-0.5 text-[10px] font-medium uppercase tracking-wider ${active ? "text-foreground" : "text-muted-foreground"} hover:text-foreground`}

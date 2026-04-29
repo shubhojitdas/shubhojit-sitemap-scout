@@ -13,14 +13,15 @@ import type { CrawlResult, InternalLinkData } from "./crawl-api";
  * time = potential over-optimization signal).
  */
 
-function normalizeUrl(u: string): string {
+function normalizeUrl(u: string, base?: string): string {
   try {
-    const x = new URL(u);
+    const x = base ? new URL(u, base) : new URL(u);
     x.hash = "";
-    // Drop trailing slash for consistent matching
     let p = x.pathname;
     if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
-    return `${x.protocol}//${x.host}${p}${x.search}`;
+    // Strip leading www. so /foo on www.x.com matches /foo on x.com
+    const host = x.host.replace(/^www\./i, "");
+    return `${x.protocol}//${host}${p}${x.search}`;
   } catch {
     return u;
   }
@@ -60,7 +61,7 @@ export function computeLinkEquity(results: CrawlResult[]): EquityReport {
     const links = r.internalLinks ?? [];
     for (const l of links) {
       if (!l.isInternal) continue;
-      const dest = normalizeUrl(l.href);
+      const dest = normalizeUrl(l.href, r.url);
       if (!byUrl.has(dest)) continue; // only count links to crawled pages
       incomingCounts.set(dest, (incomingCounts.get(dest) ?? 0) + 1);
       const anchorBag = anchorMap.get(dest) ?? new Map<string, number>();

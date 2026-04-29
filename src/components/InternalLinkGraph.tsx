@@ -41,9 +41,9 @@ const PALETTE = [
   "#06b6d4", "#f97316", "#14b8a6", "#a855f7", "#64748b", "#84cc16",
 ];
 
-function normalizeUrl(raw: string): string | null {
+function normalizeUrl(raw: string, base?: string): string | null {
   try {
-    const u = new URL(raw);
+    const u = base ? new URL(raw, base) : new URL(raw);
     u.hash = "";
     if (u.pathname.length > 1 && u.pathname.endsWith("/")) {
       u.pathname = u.pathname.slice(0, -1);
@@ -121,7 +121,7 @@ function buildInternalLinkGraph(results: CrawlResult[]): SidecarBuilt {
     if (!sourceId) continue;
     const links = (r.internalLinks ?? []).filter((l: InternalLinkData) => l.isInternal);
     for (const link of links) {
-      const targetId = normalizeUrl(link.href);
+      const targetId = normalizeUrl(link.href, r.url);
       if (!targetId || targetId === sourceId) continue;
 
       // Add destination node if it wasn't itself crawled (still useful to render).

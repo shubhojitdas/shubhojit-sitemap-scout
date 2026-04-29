@@ -115,11 +115,11 @@ export function ThinContentPanel({ results }: Props) {
         </div>
         <ScrollArea className="h-[200px]">
           <table className="w-full text-[11px]">
-            <thead className="bg-muted/40 sticky top-0">
+            <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_hsl(var(--border))]">
               <tr>
-                <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">URL</th>
-                <th className="text-right px-3 py-1.5 font-medium text-muted-foreground">Words</th>
-                <th className="text-right px-3 py-1.5 font-medium text-muted-foreground">Status</th>
+                <th className="text-left px-3 py-1.5 font-medium text-muted-foreground bg-card">URL</th>
+                <th className="text-right px-3 py-1.5 font-medium text-muted-foreground bg-card">Words</th>
+                <th className="text-right px-3 py-1.5 font-medium text-muted-foreground bg-card">Status</th>
               </tr>
             </thead>
             <tbody>

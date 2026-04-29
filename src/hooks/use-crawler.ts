@@ -139,22 +139,9 @@ export function useCrawler() {
 
   useEffect(() => { persistState(state); }, [state]);
 
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (state.results.length > 0) { e.preventDefault(); }
-    };
-    const handleUnload = () => {
-      if (state.results.length > 0) {
-        try { localStorage.removeItem(STORAGE_KEY); } catch {}
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("unload", handleUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("unload", handleUnload);
-    };
-  }, [state.results.length]);
+  // Crawl state must survive page reloads and tab refreshes — never clear
+  // localStorage on unload. Only an explicit user action (clear/new crawl)
+  // should wipe it.
 
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);

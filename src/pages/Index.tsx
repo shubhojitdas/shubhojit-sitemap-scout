@@ -52,14 +52,14 @@ const Index = () => {
   const setDomainFromUrl = (url: string) => setDomain(extractDomain(url));
 
   useEffect(() => {
-    if (!hasResults) return;
+    if (results.length === 0) return;
     setActiveConfig(selectedOptions);
     setConfig(selectedOptions);
     if (!domain) {
       const restoredUrl = lastInput?.source === "urls" ? lastInput.urls?.[0] : lastInput?.display;
       setDomain(extractDomain(restoredUrl || results[0]?.finalUrl || results[0]?.url || ""));
     }
-  }, [hasResults, selectedOptions, domain, lastInput, results]);
+  }, [results, selectedOptions, domain, lastInput]);
 
   const handleCrawl = (url: string, c: CrawlConfig) => {
     setDomainFromUrl(url);

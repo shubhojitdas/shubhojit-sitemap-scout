@@ -173,6 +173,61 @@ function persistState(state: CrawlState) {
   } catch { /* storage full or unavailable */ }
 }
 
+function openSessionDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function loadPersistedStateFromDb(): Promise<CrawlState | null> {
+  try {
+    const db = await openSessionDb();
+    return await new Promise((resolve) => {
+      const tx = db.transaction(DB_STORE, "readonly");
+      const request = tx.objectStore(DB_STORE).get(DB_SESSION_KEY);
+      request.onsuccess = () => resolve(normalizePersistedState(request.result as Partial<CrawlState> | null));
+      request.onerror = () => resolve(null);
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => db.close();
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function persistStateToDb(state: CrawlState) {
+  if (!shouldPersistSession(state)) return;
+  try {
+    const db = await openSessionDb();
+    await new Promise<void>((resolve) => {
+      const tx = db.transaction(DB_STORE, "readwrite");
+      tx.objectStore(DB_STORE).put(state, DB_SESSION_KEY);
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); resolve(); };
+      tx.onabort = () => { db.close(); resolve(); };
+    });
+  } catch { /* IndexedDB unavailable */ }
+}
+
+async function clearPersistedStateFromDb() {
+  try {
+    const db = await openSessionDb();
+    await new Promise<void>((resolve) => {
+      const tx = db.transaction(DB_STORE, "readwrite");
+      tx.objectStore(DB_STORE).delete(DB_SESSION_KEY);
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); resolve(); };
+      tx.onabort = () => { db.close(); resolve(); };
+    });
+  } catch { /* IndexedDB unavailable */ }
+}
+
 /** Merge an incremental batch into existing results: keep existing fields, only overwrite the
  *  ones the user requested in this incremental crawl. Uses URL as join key. */
 function mergeResults(existing: CrawlResult[], fresh: CrawlResult[], opts: CrawlOptions): CrawlResult[] {

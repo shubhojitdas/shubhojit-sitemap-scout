@@ -188,7 +188,7 @@ function openSessionDb(): Promise<IDBDatabase> {
 async function loadPersistedStateFromDb(): Promise<CrawlState | null> {
   try {
     const db = await openSessionDb();
-    return await new Promise((resolve) => {
+    return await new Promise<CrawlState | null>((resolve) => {
       const tx = db.transaction(DB_STORE, "readonly");
       const request = tx.objectStore(DB_STORE).get(DB_SESSION_KEY);
       request.onsuccess = () => resolve(normalizePersistedState(request.result as Partial<CrawlState> | null));
@@ -676,6 +676,12 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try {
+      localStorage.removeItem("sitemap-scout-ui-results-view");
+      localStorage.removeItem("sitemap-scout-ui-table-state");
+    } catch {}
+    clearPersistedStateFromDb();
     setState(INITIAL_STATE);
   }, []);
 

@@ -18,6 +18,13 @@ import { LinkAttributesPanel } from "@/components/LinkAttributesPanel";
 import { LinkEquityPanel } from "@/components/LinkEquityPanel";
 import { SocialTagGenerator } from "@/components/SocialTagGenerator";
 import { HreflangGenerator } from "@/components/HreflangGenerator";
+import { AnchorAuditPanel } from "@/components/AnchorAuditPanel";
+import { RedirectChainPanel } from "@/components/RedirectChainPanel";
+import { ContentSimilarityPanel } from "@/components/ContentSimilarityPanel";
+import { SeoScorePanel } from "@/components/SeoScorePanel";
+import { ContentLinkRatioPanel } from "@/components/ContentLinkRatioPanel";
+import { AnomalyPanel } from "@/components/AnomalyPanel";
+import { PageTypePanel } from "@/components/PageTypePanel";
 import type { CrawlResult } from "@/lib/crawl-api";
 import type { LastCrawlInput } from "@/hooks/use-crawler";
 

@@ -1,4 +1,8 @@
 import type { CrawlResult } from "./crawl-api";
+import {
+  auditAnchors, analyzeRedirects, analyzeSimilarity,
+  detectAnomalies, contentLinkRatio,
+} from "./seo-advanced";
 
 /**
  * Static, rule-based SEO issue detector. No AI involved — every rule is a
@@ -556,6 +560,147 @@ function runUniversalRules(results: CrawlResult[]): SeoIssue[] {
   return issues;
 }
 
+function runAdvancedRules(results: CrawlResult[], flags: FieldFlags): SeoIssue[] {
+  const issues: SeoIssue[] = [];
+
+  if (flags.includeInternalLinks) {
+    const anchors = auditAnchors(results);
+    const sourcesFor = (type: string) => {
+      const set = new Set<string>();
+      for (const r of anchors.rows) if (r.issueType === type) set.add(r.sourceUrl);
+      return Array.from(set);
+    };
+    if (anchors.totals["Generic Anchor"] > 0) {
+      const urls = sourcesFor("Generic Anchor");
+      issues.push({
+        id: "anchor-generic", flag: "includeInternalLinks", group: "Anchor Text",
+        title: `${anchors.totals["Generic Anchor"]} generic anchor${anchors.totals["Generic Anchor"] === 1 ? "" : "s"} found across ${urls.length} page${urls.length === 1 ? "" : "s"}`,
+        why: "Generic anchors like 'click here' or 'read more' tell search engines nothing about the destination page. They waste a strong on-page ranking signal.",
+        fix: "Replace generic phrases with descriptive anchor text that previews the destination — e.g. 'our 2026 SEO audit guide' instead of 'read more'.",
+        severity: "warning", urls, count: urls.length,
+      });
+    }
+    if (anchors.totals["Over-Optimized Anchor"] > 0) {
+      const urls = sourcesFor("Over-Optimized Anchor");
+      issues.push({
+        id: "anchor-over-optimized", flag: "includeInternalLinks", group: "Anchor Text",
+        title: `${anchors.totals["Over-Optimized Anchor"]} over-optimized anchor${anchors.totals["Over-Optimized Anchor"] === 1 ? "" : "s"} pointing to the same target`,
+        why: "When the same exact-match anchor dominates incoming links, Google may interpret it as manipulative link-building and discount the signal.",
+        fix: "Diversify anchor wording. Use natural variations (synonyms, partial matches, branded anchors) instead of repeating the same keyword phrase.",
+        severity: "warning", urls, count: urls.length,
+      });
+    }
+    if (anchors.totals["Low Diversity"] > 0) {
+      const urls = sourcesFor("Low Diversity");
+      issues.push({
+        id: "anchor-low-diversity", flag: "includeInternalLinks", group: "Anchor Text",
+        title: `${urls.length} page${urls.length === 1 ? "" : "s"} link with low anchor diversity`,
+        why: "Pages receiving most of their inbound links with one anchor lose topical breadth. Diverse anchors help Google rank a page for more related queries.",
+        fix: "When linking to the same target from multiple pages, vary the anchor to reflect different facets of the topic.",
+        severity: "info", urls, count: urls.length,
+      });
+    }
+    if (anchors.totals["Empty Anchor"] > 0) {
+      const urls = sourcesFor("Empty Anchor");
+      issues.push({
+        id: "anchor-empty", flag: "includeInternalLinks", group: "Anchor Text",
+        title: `${anchors.totals["Empty Anchor"]} empty / image-only anchor${anchors.totals["Empty Anchor"] === 1 ? "" : "s"}`,
+        why: "Links without text (or only an image without alt) give search engines and screen readers no context about the destination, weakening internal link signals and accessibility.",
+        fix: "Add descriptive text to every link. For image links, include a descriptive alt attribute on the <img>.",
+        severity: "info", urls, count: urls.length,
+      });
+    }
+  }
+
+  const redirects = analyzeRedirects(results);
+  const chains = redirects.filter((r) => r.warning === "Redirect Chain");
+  const loops = redirects.filter((r) => r.warning === "Redirect Loop");
+  if (chains.length) {
+    issues.push({
+      id: "redirect-chain", flag: "includeTitle", group: "Redirects",
+      title: `${chains.length} URL${chains.length === 1 ? "" : "s"} go through multi-hop redirect chains`,
+      why: "Each redirect hop adds latency and slightly dilutes link equity. Chains also waste crawl budget and can break entirely if a middle hop fails.",
+      fix: "Update internal links and server rules to point directly at the final destination so each redirected URL has only one hop.",
+      severity: "warning", urls: chains.map((c) => c.originalUrl), count: chains.length,
+    });
+  }
+  if (loops.length) {
+    issues.push({
+      id: "redirect-loop", flag: "includeTitle", group: "Redirects",
+      title: `${loops.length} redirect loop${loops.length === 1 ? "" : "s"} detected`,
+      why: "A redirect loop traps both crawlers and users — the page can never load. Google drops looping URLs from its index and you lose any rankings tied to them.",
+      fix: "Trace the loop in your server config / CMS redirect rules and break the cycle. Each URL must end at a final 200 OK destination.",
+      severity: "critical", urls: loops.map((c) => c.originalUrl), count: loops.length,
+    });
+  }
+
+  if (results.length >= 3) {
+    const sim = analyzeSimilarity(results);
+    const dupes = sim.pairs.filter((p) => p.similarity >= 0.85);
+    if (dupes.length) {
+      const urls = Array.from(new Set(dupes.flatMap((p) => [p.a, p.b])));
+      issues.push({
+        id: "content-near-duplicate", flag: "includeTitle", group: "Content Quality",
+        title: `${dupes.length} near-duplicate page pair${dupes.length === 1 ? "" : "s"} detected`,
+        why: "Pages with near-identical metadata and headings compete with each other in search, splitting ranking signals and confusing Google about the canonical version.",
+        fix: "Merge duplicate content into one strong page with a 301 redirect, or differentiate each version with unique titles, H1s, and substantive content.",
+        severity: "warning", urls, count: urls.length,
+      });
+    }
+    if (sim.cannibalization.length) {
+      const urls = Array.from(new Set(sim.cannibalization.flatMap((p) => [p.a, p.b])));
+      issues.push({
+        id: "content-cannibalization", flag: "includeTitle", group: "Content Quality",
+        title: `${sim.cannibalization.length} page pair${sim.cannibalization.length === 1 ? "" : "s"} likely targeting the same query`,
+        why: "Multiple pages targeting the same intent cannibalize each other's rankings — Google rotates which one appears, hurting consistent visibility.",
+        fix: "Pick one primary page per topic. Consolidate the others into it (with a 301), or refocus them onto distinct sub-topics.",
+        severity: "warning", urls, count: urls.length,
+      });
+    }
+  }
+
+  if (flags.includeInternalLinks) {
+    const ratios = contentLinkRatio(results);
+    const overlinked = ratios.filter((r) => r.status === "Overlinked");
+    if (overlinked.length) {
+      issues.push({
+        id: "ratio-overlinked", flag: "includeInternalLinks", group: "Internal Links",
+        title: `${overlinked.length} thin page${overlinked.length === 1 ? "" : "s"} are overlinked relative to their content`,
+        why: "Stuffing many internal links into a short page dilutes equity and can look spammy. Google may discount these links entirely.",
+        fix: "Either expand the page's content to support the link count, or trim the outbound link list to the most relevant 3–10.",
+        severity: "info", urls: overlinked.map((r) => r.url), count: overlinked.length,
+      });
+    }
+    const underlinked = ratios.filter((r) => r.status === "Underlinked");
+    if (underlinked.length) {
+      issues.push({
+        id: "ratio-underlinked", flag: "includeInternalLinks", group: "Internal Links",
+        title: `${underlinked.length} long-form page${underlinked.length === 1 ? "" : "s"} are underlinked`,
+        why: "Long content with very few internal links wastes equity and traps users — they can't easily explore related material from your strongest pages.",
+        fix: "Add 5–15 contextual internal links from each long-form page to related guides, products, or category hubs.",
+        severity: "info", urls: underlinked.map((r) => r.url), count: underlinked.length,
+      });
+    }
+  }
+
+  const anomalies = detectAnomalies(results);
+  const highAnoms = anomalies.filter(
+    (a) => a.severity === "high" && a.type !== "Missing Title" && a.type !== "HTTP Error",
+  );
+  if (highAnoms.length) {
+    const urls = Array.from(new Set(highAnoms.map((a) => a.url)));
+    issues.push({
+      id: "crawl-anomaly-high", flag: "includeTitle", group: "Crawl Anomalies",
+      title: `${urls.length} page${urls.length === 1 ? "" : "s"} show unusual crawl behavior`,
+      why: "Unexpected crawl patterns (zero word count, redirect loops, etc.) usually indicate broken templates, render issues, or misconfigured pages — silent killers for organic traffic.",
+      fix: "Open each affected URL and verify it renders the expected content for both users and a basic HTML crawler. Look for JS-only rendering, blocked resources, or template bugs.",
+      severity: "critical", urls, count: urls.length,
+    });
+  }
+
+  return issues;
+}
+
 export function analyzeSeoIssues(results: CrawlResult[], flags: FieldFlags): SeoIssue[] {
   const issues: SeoIssue[] = [];
 
@@ -566,6 +711,7 @@ export function analyzeSeoIssues(results: CrawlResult[], flags: FieldFlags): Seo
   }
 
   issues.push(...runUniversalRules(results));
+  issues.push(...runAdvancedRules(results, flags));
 
   // Sort: critical → warning → info, then by impact (count desc).
   const sevWeight: Record<IssueSeverity, number> = { critical: 0, warning: 1, info: 2 };

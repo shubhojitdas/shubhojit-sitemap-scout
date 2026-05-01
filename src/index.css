@@ -117,10 +117,10 @@
 
     --sidebar-background: 240 12% 9%;
     --sidebar-foreground: 240 18% 90%;
-    --sidebar-primary: 240 18% 94%;
-    --sidebar-primary-foreground: 240 14% 10%;
-    --sidebar-accent: 260 30% 22%;
-    --sidebar-accent-foreground: 240 18% 92%;
+    --sidebar-primary: 252 90% 70%;
+    --sidebar-primary-foreground: 240 14% 8%;
+    --sidebar-accent: 252 60% 26%;
+    --sidebar-accent-foreground: 252 90% 92%;
     --sidebar-border: 240 10% 22%;
     --sidebar-ring: 265 70% 66%;
 

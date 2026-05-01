@@ -271,9 +271,44 @@ export function useCrawler() {
     persistStateToDb(state);
   }, [state]);
 
-  // Crawl state must survive page reloads and tab refreshes — never clear
-  // localStorage on unload. Only an explicit user action (clear/new crawl)
-  // should wipe it.
+  // Tab/window close protection — when the user has crawl data, warn them
+  // before leaving. If the navigation actually proceeds (the tab is being
+  // discarded), clear the persisted crawl session so the next visit starts
+  // fresh. If they cancel the prompt, nothing is cleared and state is preserved.
+  useEffect(() => {
+    const hasData = state.results.length > 0 || state.parsedUrls.length > 0;
+    if (!hasData) return;
+
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Modern browsers ignore custom strings, but setting returnValue is
+      // what triggers the native confirmation dialog cross-browser.
+      e.preventDefault();
+      const msg = "You are about to leave. Your crawl data will be cleared if you continue.";
+      e.returnValue = msg;
+      return msg;
+    };
+
+    const onPageHide = (e: PageTransitionEvent) => {
+      // pagehide fires when navigation actually proceeds (tab close / refresh).
+      // If persisted=false, the page is being unloaded → wipe crawl storage.
+      if (e.persisted) return;
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem("sitemap-scout-ui-results-view");
+        localStorage.removeItem("sitemap-scout-ui-table-state");
+        sessionStorage.clear();
+      } catch { /* ignore */ }
+      // Best-effort IDB clear (may not flush before unload, but safe to try).
+      void clearPersistedStateFromDb();
+    };
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("pagehide", onPageHide);
+    };
+  }, [state.results.length, state.parsedUrls.length]);
 
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);

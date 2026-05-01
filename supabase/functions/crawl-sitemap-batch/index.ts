@@ -795,24 +795,17 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     }
 
     if (resp.status >= 200 && resp.status < 300 && finalHtml) {
-      // 1) Meta-refresh first.
+      // Meta-refresh only — server-side (3xx) is handled above, and HTML <meta refresh>
+      // has clear, unambiguous semantics. Inline JavaScript pattern matching is
+      // disabled here because it produced false positives on sites that simply
+      // contain `location.href = ...` inside analytics, routing, or event-handler
+      // code that never actually navigates the page on load. If you need to detect
+      // SPA / async JS redirects, do it via headless rendering (future Phase 2),
+      // not regex on inline scripts.
       const meta = extractMetaRefresh(finalHtml, current);
       if (meta && meta.target !== current && !visited.has(meta.target)) {
         chain.push({ url: current, status: resp.status, type: 'meta-refresh' });
         current = meta.target;
-        finalHtml = '';
-        finalStatus = 0;
-        if (i === MAX_HOPS - 1) {
-          chain.push({ url: current, status: -1, type: 'http', statusText: 'Max redirects exceeded' });
-        }
-        continue;
-      }
-
-      // 2) Inline JS redirect (window.location / document.location patterns).
-      const jsTarget = extractJsRedirect(finalHtml, current);
-      if (jsTarget && jsTarget !== current && !visited.has(jsTarget)) {
-        chain.push({ url: current, status: resp.status, type: 'javascript' });
-        current = jsTarget;
         finalHtml = '';
         finalStatus = 0;
         if (i === MAX_HOPS - 1) {

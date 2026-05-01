@@ -6,79 +6,77 @@
 
 @layer base {
   :root {
-    /* Premium soft neutral background — warm off-white, never pure white.
-       Page bg is slightly darker than card surfaces for layered depth. */
-    --background: 240 18% 96%;
-    --foreground: 235 24% 16%;
+    /* Premium soft neutral background — warm off-white, never pure white. */
+    --background: 240 22% 95%;
+    --foreground: 235 28% 12%;
 
     /* Cards sit *above* the background — slightly lighter, soft elevation. */
-    --card: 240 30% 99%;
-    --card-foreground: 235 24% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 235 28% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 235 24% 16%;
+    --popover-foreground: 235 28% 12%;
 
-    /* Primary = restrained indigo for buttons / focus */
-    --primary: 250 50% 28%;
-    --primary-foreground: 240 30% 99%;
+    /* Primary = vivid indigo — clearly visible on white surfaces */
+    --primary: 252 78% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 18% 93%;
-    --secondary-foreground: 235 24% 16%;
+    --secondary: 240 20% 90%;
+    --secondary-foreground: 235 28% 12%;
 
-    --muted: 240 16% 92%;
-    --muted-foreground: 235 12% 46%;
+    --muted: 240 18% 90%;
+    --muted-foreground: 235 14% 38%;
 
-    --accent: 265 55% 93%;
-    --accent-foreground: 250 50% 28%;
+    --accent: 252 90% 95%;
+    --accent-foreground: 252 78% 36%;
 
-    --destructive: 0 72% 52%;
+    --destructive: 0 78% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 158 58% 38%;
+    --success: 158 64% 36%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 32 88% 50%;
+    --warning: 32 92% 48%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 240 16% 88%;
-    --input: 240 16% 88%;
-    --ring: 265 70% 58%;
+    --border: 240 18% 84%;
+    --input: 240 18% 84%;
+    --ring: 252 78% 52%;
 
     --radius: 0.875rem;
 
-    --sidebar-background: 240 22% 95%;
-    --sidebar-foreground: 235 18% 30%;
-    --sidebar-primary: 250 50% 28%;
-    --sidebar-primary-foreground: 240 30% 99%;
-    --sidebar-accent: 265 55% 93%;
-    --sidebar-accent-foreground: 250 50% 28%;
-    --sidebar-border: 240 16% 88%;
-    --sidebar-ring: 265 70% 58%;
+    --sidebar-background: 240 22% 94%;
+    --sidebar-foreground: 235 22% 22%;
+    --sidebar-primary: 252 78% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 252 90% 95%;
+    --sidebar-accent-foreground: 252 78% 36%;
+    --sidebar-border: 240 18% 84%;
+    --sidebar-ring: 252 78% 52%;
 
     /* Iridescent accent (violet → pink) used for highlights */
-    --highlight: 265 85% 62%;
+    --highlight: 268 88% 60%;
     --highlight-foreground: 0 0% 100%;
 
     /* Warm coral accent inspired by image-30 */
-    --coral: 14 92% 60%;
+    --coral: 14 92% 58%;
     --coral-foreground: 0 0% 100%;
 
-    /* Soft glass + restrained ambient — much subtler in light mode now. */
-    --glass-bg: 0 0% 100% / 0.7;
-    --glass-border: 240 25% 85% / 0.6;
-    --glass-shadow: 235 30% 20% / 0.08;
+    --glass-bg: 0 0% 100% / 0.78;
+    --glass-border: 240 30% 80% / 0.7;
+    --glass-shadow: 235 30% 18% / 0.10;
     --gradient-iridescent: linear-gradient(
       135deg,
-      hsl(250 70% 60%) 0%,
-      hsl(280 65% 64%) 40%,
-      hsl(315 70% 66%) 70%,
-      hsl(200 75% 62%) 100%
+      hsl(252 78% 58%) 0%,
+      hsl(282 72% 62%) 40%,
+      hsl(318 76% 64%) 70%,
+      hsl(202 80% 60%) 100%
     );
     --gradient-coral: linear-gradient(135deg, hsl(14 88% 58%), hsl(355 80% 60%));
     --gradient-ambient:
-      radial-gradient(50rem 34rem at 8% -10%, hsl(250 80% 70% / 0.10), transparent 60%),
-      radial-gradient(46rem 32rem at 100% 0%, hsl(310 80% 75% / 0.08), transparent 60%),
-      radial-gradient(44rem 32rem at 50% 115%, hsl(200 80% 70% / 0.07), transparent 60%);
+      radial-gradient(50rem 34rem at 8% -10%, hsl(252 90% 70% / 0.14), transparent 60%),
+      radial-gradient(46rem 32rem at 100% 0%, hsl(310 85% 75% / 0.12), transparent 60%),
+      radial-gradient(44rem 32rem at 50% 115%, hsl(200 85% 70% / 0.10), transparent 60%);
   }
 
   .dark {
@@ -92,8 +90,8 @@
     --popover: 240 14% 12%;
     --popover-foreground: 240 18% 92%;
 
-    --primary: 240 18% 94%;
-    --primary-foreground: 240 14% 10%;
+    --primary: 252 90% 70%;
+    --primary-foreground: 240 14% 8%;
 
     --secondary: 240 10% 16%;
     --secondary-foreground: 240 18% 92%;
@@ -101,8 +99,8 @@
     --muted: 240 10% 16%;
     --muted-foreground: 240 10% 64%;
 
-    --accent: 260 30% 22%;
-    --accent-foreground: 240 18% 92%;
+    --accent: 252 60% 26%;
+    --accent-foreground: 252 90% 92%;
 
     --destructive: 0 65% 56%;
     --destructive-foreground: 0 0% 100%;
@@ -119,10 +117,10 @@
 
     --sidebar-background: 240 12% 9%;
     --sidebar-foreground: 240 18% 90%;
-    --sidebar-primary: 240 18% 94%;
-    --sidebar-primary-foreground: 240 14% 10%;
-    --sidebar-accent: 260 30% 22%;
-    --sidebar-accent-foreground: 240 18% 92%;
+    --sidebar-primary: 252 90% 70%;
+    --sidebar-primary-foreground: 240 14% 8%;
+    --sidebar-accent: 252 60% 26%;
+    --sidebar-accent-foreground: 252 90% 92%;
     --sidebar-border: 240 10% 22%;
     --sidebar-ring: 265 70% 66%;
 

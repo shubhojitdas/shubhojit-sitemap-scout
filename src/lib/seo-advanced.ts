@@ -361,32 +361,85 @@ export function classifyPages(results: CrawlResult[]): Map<string, PageType> {
   return out;
 }
 
+function hasSchemaType(r: CrawlResult, types: string[]): boolean {
+  const schemas = r.schemas ?? [];
+  if (schemas.length === 0) return false;
+  const lower = types.map((t) => t.toLowerCase());
+  for (const s of schemas) {
+    const m = s.match(/"@type"\s*:\s*"([^"]+)"/gi) ?? [];
+    for (const hit of m) {
+      const v = hit.toLowerCase();
+      if (lower.some((t) => v.includes(t))) return true;
+    }
+  }
+  return false;
+}
+
+function looksLikeProductSlug(seg: string): boolean {
+  // multi-word kebab/snake slug, e.g. "nike-air-max-90", "iphone-15-pro-256gb"
+  // Heuristic: 2+ separators OR digits, length > 8.
+  if (seg.length < 8) return false;
+  const sepCount = (seg.match(/[-_]/g) ?? []).length;
+  const hasDigits = /\d/.test(seg);
+  return sepCount >= 2 || (sepCount >= 1 && hasDigits);
+}
+
 function classifyOne(r: CrawlResult): PageType {
   let path = "/";
   try { path = new URL(r.url).pathname.toLowerCase(); } catch { /* ignore */ }
   const segs = path.split("/").filter(Boolean);
   if (segs.length === 0 || path === "/") return "Homepage";
+  const wrapped = "/" + segs.join("/") + "/";
+  const last = segs[segs.length - 1];
 
-  const utilPatterns = /(login|signin|signup|register|account|cart|checkout|terms|privacy|policy|cookie|sitemap|search|404|contact|legal|refund|shipping)/;
+  // 1. Strongest signal: structured data (Product / Article / etc.)
+  if (hasSchemaType(r, ["Product", "ProductGroup"])) return "Product";
+  if (hasSchemaType(r, ["BlogPosting", "NewsArticle", "Article"])) return "Blog/Article";
+  if (hasSchemaType(r, ["CollectionPage", "ItemList"])) return "Category";
+
+  // 2. Utility / system pages
+  const utilPatterns = /(login|signin|signup|register|account|cart|checkout|terms|privacy|policy|cookie|sitemap|search|404|contact|legal|refund|shipping|wishlist|compare|thank-you)/;
   if (utilPatterns.test(path)) return "Utility";
 
-  const blogPatterns = /(\/blog\/|\/news\/|\/article\/|\/post\/|\/insights\/|\/journal\/|\/stories\/|\/guide\/|\/tutorial\/|\/learn\/)/;
-  if (blogPatterns.test("/" + segs.join("/") + "/")) return "Blog/Article";
+  // 3. Blog patterns
+  const blogPatterns = /(\/blog\/|\/blogs\/|\/news\/|\/article\/|\/articles\/|\/post\/|\/posts\/|\/insights\/|\/journal\/|\/stories\/|\/story\/|\/guide\/|\/guides\/|\/tutorial\/|\/tutorials\/|\/learn\/|\/resources\/)/;
+  if (blogPatterns.test(wrapped)) {
+    // /blog/ alone (single seg) is the blog index → Category-like, but label as Blog/Article
+    return "Blog/Article";
+  }
 
-  const productPatterns = /(\/product\/|\/products\/|\/p\/|\/item\/|\/shop\/|\/store\/)/;
-  if (productPatterns.test("/" + segs.join("/") + "/")) {
-    // category vs product: product usually deeper
-    if (segs.length >= 3) return "Product";
+  // 4. Explicit product paths
+  const productPathPatterns = /(\/product\/|\/products\/|\/p\/|\/item\/|\/items\/|\/dp\/)/;
+  if (productPathPatterns.test(wrapped)) {
+    // Shopify pattern: /products/<slug> → product. /products on its own → category.
+    if (segs.length === 1) return "Category";
+    return "Product";
+  }
+
+  // 5. Explicit collection / category paths
+  const categoryPathPatterns = /(\/category\/|\/categories\/|\/collection\/|\/collections\/|\/cat\/|\/tag\/|\/tags\/|\/topics?\/|\/department\/|\/shop\/|\/store\/|\/range\/)/;
+  if (categoryPathPatterns.test(wrapped)) {
+    // /collections/<handle>/products/<slug> → Product
+    if (/\/products?\//.test(wrapped) && segs.length >= 4) return "Product";
     return "Category";
   }
 
-  const categoryPatterns = /(\/category\/|\/categories\/|\/collection\/|\/collections\/|\/tag\/|\/topics?\/|\/department\/)/;
-  if (categoryPatterns.test("/" + segs.join("/") + "/")) return "Category";
+  // 6. Slug-shape heuristic — deep path with a multi-word slug usually = product/article
+  if (segs.length >= 2 && looksLikeProductSlug(last)) {
+    // Distinguish blog-ish content (long-form) from product (short body, has price-like signals)
+    const wc = r.wordCount ?? 0;
+    const h2 = (r.h2s ?? []).length;
+    if (wc >= 600 && h2 >= 3) return "Blog/Article";
+    return "Product";
+  }
 
-  // Heuristic by content shape
+  // 7. Heuristic by content shape — long article-shaped pages
   const wc = r.wordCount ?? 0;
   const h2 = (r.h2s ?? []).length;
   if (wc >= 600 && h2 >= 3) return "Blog/Article";
+
+  // 8. Single-segment landing → Category
+  if (segs.length === 1) return "Category";
 
   return "Other";
 }

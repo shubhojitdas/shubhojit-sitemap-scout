@@ -223,7 +223,7 @@ async function parseSitemap(url: string, seed: URL, visited: Set<string>, out: S
   const pageUrls = extractLocValues(xml, 'url');
   for (const loc of pageUrls) {
     if (out.size >= maxUrls) break;
-    const norm = normalizeUrl(loc, seed);
+    const norm = normalizeUrl(loc, seed, seed);
     if (!norm) continue;
     try {
       const parsed = new URL(norm);
@@ -254,7 +254,7 @@ async function spider(seedUrl: string, maxUrls: number) {
   const queue: string[] = [];
   const skipped = { nonHtml: 0, offSite: 0, errors: 0, timedOut: false, sitemapSeeded: 0 };
 
-  const seedNorm = normalizeUrl(resolvedSeed, seed);
+  const seedNorm = normalizeUrl(resolvedSeed, seed, seed);
   if (!seedNorm) return { urls: [], total: 0, skipped, resolvedSeed };
   discovered.add(seedNorm);
   queue.push(seedNorm);
@@ -286,7 +286,7 @@ async function spider(seedUrl: string, maxUrls: number) {
       const hrefs = extractHrefs(res.html);
 
       for (const href of hrefs) {
-        const norm = normalizeUrl(href, baseUrl);
+        const norm = normalizeUrl(href, baseUrl, seed);
         if (!norm) continue;
         let parsed: URL;
         try { parsed = new URL(norm); } catch { continue; }

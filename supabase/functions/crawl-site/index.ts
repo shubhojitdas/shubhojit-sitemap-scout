@@ -142,11 +142,7 @@ async function fetchWithFallback(url: string, timeoutMs: number, redirect: Reque
 }
 
 async function fetchWithFallbackUncached(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
-  let attempts = [url];
-  try {
-    const parsed = new URL(url);
-    attempts = originVariants(parsed);
-  } catch { /* keep single attempt */ }
+  const attempts = candidateAttempts(url);
 
   for (const attempt of attempts) {
     try {
@@ -155,6 +151,10 @@ async function fetchWithFallbackUncached(url: string, timeoutMs: number, redirec
         redirect,
         signal: AbortSignal.timeout(timeoutMs),
       });
+      try {
+        const finalUrl = new URL(resp.url || attempt);
+        ORIGIN_HINTS.set(stripWww(finalUrl.hostname), finalUrl.origin);
+      } catch { /* ignore */ }
       return resp;
     } catch (error) {
       console.warn('Fetch failed:', attempt, error instanceof Error ? error.message : error);

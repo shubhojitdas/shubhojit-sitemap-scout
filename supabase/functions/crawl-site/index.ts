@@ -24,6 +24,7 @@ const SITEMAP_TIMEOUT_MS = 3200;
 const SPIDER_TIME_BUDGET_MS = 24000;
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|woff2?|ttf|otf|eot)(\?|#|$)/i;
 const FETCH_CACHE = new Map<string, Promise<Response | null>>();
+const ORIGIN_HINTS = new Map<string, string>();
 
 function stripWww(hostname: string): string {
   return hostname.replace(/^www\./, '');
@@ -66,6 +67,29 @@ function originVariants(input: URL): string[] {
     }
   }
   return Array.from(new Set(variants));
+}
+
+function candidateAttempts(url: string): string[] {
+  try {
+    const parsed = new URL(url);
+    const hostKey = stripWww(parsed.hostname);
+    const attempts: string[] = [];
+    const hintedOrigin = ORIGIN_HINTS.get(hostKey);
+
+    if (hintedOrigin) {
+      const hinted = new URL(url);
+      const hintedBase = new URL(hintedOrigin);
+      hinted.protocol = hintedBase.protocol;
+      hinted.hostname = hintedBase.hostname;
+      attempts.push(hinted.toString());
+    }
+
+    attempts.push(url);
+    if (!hintedOrigin) attempts.push(...originVariants(parsed));
+    return Array.from(new Set(attempts));
+  } catch {
+    return [url];
+  }
 }
 
 function stripHtmlComments(html: string): string {

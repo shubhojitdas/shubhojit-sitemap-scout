@@ -90,7 +90,7 @@
     --popover: 240 14% 12%;
     --popover-foreground: 240 18% 92%;
 
-    --primary: 252 90% 70%;
+    --primary: 199 92% 58%;
     --primary-foreground: 240 14% 8%;
 
     --secondary: 240 10% 16%;
@@ -99,8 +99,8 @@
     --muted: 240 10% 16%;
     --muted-foreground: 240 10% 64%;
 
-    --accent: 252 60% 26%;
-    --accent-foreground: 252 90% 92%;
+    --accent: 200 62% 24%;
+    --accent-foreground: 196 92% 90%;
 
     --destructive: 0 65% 56%;
     --destructive-foreground: 0 0% 100%;
@@ -113,18 +113,18 @@
 
     --border: 240 10% 22%;
     --input: 240 10% 22%;
-    --ring: 265 70% 66%;
+    --ring: 199 92% 58%;
 
     --sidebar-background: 240 12% 9%;
     --sidebar-foreground: 240 18% 90%;
-    --sidebar-primary: 252 90% 70%;
+    --sidebar-primary: 199 92% 58%;
     --sidebar-primary-foreground: 240 14% 8%;
-    --sidebar-accent: 252 60% 26%;
-    --sidebar-accent-foreground: 252 90% 92%;
+    --sidebar-accent: 200 62% 24%;
+    --sidebar-accent-foreground: 196 92% 90%;
     --sidebar-border: 240 10% 22%;
-    --sidebar-ring: 265 70% 66%;
+    --sidebar-ring: 199 92% 58%;
 
-    --highlight: 280 95% 72%;
+    --highlight: 176 82% 56%;
     --highlight-foreground: 0 0% 100%;
 
     --coral: 14 92% 64%;
@@ -135,15 +135,15 @@
     --glass-shadow: 240 30% 2% / 0.5;
     --gradient-iridescent: linear-gradient(
       135deg,
-      hsl(255 80% 68%) 0%,
-      hsl(285 75% 68%) 40%,
-      hsl(315 80% 68%) 70%,
-      hsl(200 80% 65%) 100%
+      hsl(199 92% 60%) 0%,
+      hsl(186 84% 54%) 42%,
+      hsl(166 70% 48%) 72%,
+      hsl(215 84% 62%) 100%
     );
     --gradient-coral: linear-gradient(135deg, hsl(14 88% 60%), hsl(355 80% 62%));
     --gradient-ambient:
-      radial-gradient(56rem 40rem at 8% -10%, hsl(260 70% 40% / 0.18), transparent 60%),
-      radial-gradient(50rem 36rem at 100% 5%, hsl(310 70% 42% / 0.14), transparent 60%),
+      radial-gradient(56rem 40rem at 8% -10%, hsl(205 78% 40% / 0.18), transparent 60%),
+      radial-gradient(50rem 36rem at 100% 5%, hsl(178 70% 38% / 0.14), transparent 60%),
       radial-gradient(48rem 36rem at 50% 115%, hsl(200 70% 40% / 0.12), transparent 60%);
   }
 }

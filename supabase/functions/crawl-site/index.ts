@@ -19,9 +19,9 @@ const FETCH_HEADERS = {
 
 const MAX_URLS = 50000;
 const CONCURRENCY = 5;
-const FETCH_TIMEOUT_MS = 9000;
-const SITEMAP_TIMEOUT_MS = 7000;
-const SPIDER_TIME_BUDGET_MS = 42000;
+const FETCH_TIMEOUT_MS = 6500;
+const SITEMAP_TIMEOUT_MS = 4500;
+const SPIDER_TIME_BUDGET_MS = 26000;
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|woff2?|ttf|otf|eot)(\?|#|$)/i;
 
 function stripWww(hostname: string): string {
@@ -34,6 +34,7 @@ function sameSite(a: URL, b: URL): boolean {
 
 function normalizeUrl(raw: string, base: URL): string | null {
   try {
+    if (isLikelyTemplateUrl(raw)) return null;
     const u = new URL(raw, base);
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
     u.hash = '';
@@ -44,6 +45,26 @@ function normalizeUrl(raw: string, base: URL): string | null {
   } catch {
     return null;
   }
+}
+
+function isLikelyTemplateUrl(raw: string): boolean {
+  return /\$\{|\{\{|\}\}|<%|%>|\+\s*['"]|['"]\s*\+|\[["'][^\]]+["']\]|\bundefined\b|\bnull\b/i.test(raw);
+}
+
+function originVariants(input: URL): string[] {
+  const host = stripWww(input.hostname);
+  const hosts = input.hostname.startsWith('www.') ? [input.hostname, host] : [input.hostname, `www.${host}`];
+  const protocols = input.protocol === 'http:' ? ['http:', 'https:'] : ['https:', 'http:'];
+  const variants: string[] = [];
+  for (const protocol of protocols) {
+    for (const hostname of hosts) {
+      const u = new URL(input.toString());
+      u.protocol = protocol;
+      u.hostname = hostname;
+      variants.push(u.toString());
+    }
+  }
+  return Array.from(new Set(variants));
 }
 
 function stripHtmlComments(html: string): string {

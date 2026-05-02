@@ -18,11 +18,13 @@ const FETCH_HEADERS = {
 };
 
 const MAX_URLS = 50000;
-const CONCURRENCY = 5;
-const FETCH_TIMEOUT_MS = 6500;
-const SITEMAP_TIMEOUT_MS = 4500;
-const SPIDER_TIME_BUDGET_MS = 26000;
+const CONCURRENCY = 4;
+const FETCH_TIMEOUT_MS = 5200;
+const SITEMAP_TIMEOUT_MS = 3200;
+const SPIDER_TIME_BUDGET_MS = 24000;
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|woff2?|ttf|otf|eot)(\?|#|$)/i;
+const FETCH_CACHE = new Map<string, Promise<Response | null>>();
+const ORIGIN_HINTS = new Map<string, string>();
 
 function stripWww(hostname: string): string {
   return hostname.replace(/^www\./, '');
@@ -32,11 +34,16 @@ function sameSite(a: URL, b: URL): boolean {
   return stripWww(a.hostname) === stripWww(b.hostname);
 }
 
-function normalizeUrl(raw: string, base: URL): string | null {
+function normalizeUrl(raw: string, base: URL, preferredOrigin?: URL): string | null {
   try {
     if (isLikelyTemplateUrl(raw)) return null;
     const u = new URL(raw, base);
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (preferredOrigin && sameSite(u, preferredOrigin)) {
+      u.protocol = preferredOrigin.protocol;
+      u.hostname = preferredOrigin.hostname;
+      u.port = preferredOrigin.port;
+    }
     u.hash = '';
     if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
       u.pathname = u.pathname.slice(0, -1);
@@ -65,6 +72,29 @@ function originVariants(input: URL): string[] {
     }
   }
   return Array.from(new Set(variants));
+}
+
+function candidateAttempts(url: string): string[] {
+  try {
+    const parsed = new URL(url);
+    const hostKey = stripWww(parsed.hostname);
+    const attempts: string[] = [];
+    const hintedOrigin = ORIGIN_HINTS.get(hostKey);
+
+    if (hintedOrigin) {
+      const hinted = new URL(url);
+      const hintedBase = new URL(hintedOrigin);
+      hinted.protocol = hintedBase.protocol;
+      hinted.hostname = hintedBase.hostname;
+      attempts.push(hinted.toString());
+    }
+
+    attempts.push(url);
+    if (!hintedOrigin) attempts.push(...originVariants(parsed));
+    return Array.from(new Set(attempts));
+  } catch {
+    return [url];
+  }
 }
 
 function stripHtmlComments(html: string): string {
@@ -106,11 +136,18 @@ function extractLocValues(xml: string, wrapperTag: 'url' | 'sitemap'): string[] 
 }
 
 async function fetchWithFallback(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
-  let attempts = [url];
-  try {
-    const parsed = new URL(url);
-    attempts = originVariants(parsed);
-  } catch { /* keep single attempt */ }
+  const cacheKey = `${redirect}:${timeoutMs}:${url}`;
+  const cached = FETCH_CACHE.get(cacheKey);
+  if (cached) return cached;
+
+  const promise = fetchWithFallbackUncached(url, timeoutMs, redirect);
+  FETCH_CACHE.set(cacheKey, promise);
+  if (FETCH_CACHE.size > 600) FETCH_CACHE.delete(FETCH_CACHE.keys().next().value);
+  return promise;
+}
+
+async function fetchWithFallbackUncached(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
+  const attempts = candidateAttempts(url);
 
   for (const attempt of attempts) {
     try {
@@ -119,6 +156,10 @@ async function fetchWithFallback(url: string, timeoutMs: number, redirect: Reque
         redirect,
         signal: AbortSignal.timeout(timeoutMs),
       });
+      try {
+        const finalUrl = new URL(resp.url || attempt);
+        ORIGIN_HINTS.set(stripWww(finalUrl.hostname), finalUrl.origin);
+      } catch { /* ignore */ }
       return resp;
     } catch (error) {
       console.warn('Fetch failed:', attempt, error instanceof Error ? error.message : error);
@@ -182,7 +223,7 @@ async function parseSitemap(url: string, seed: URL, visited: Set<string>, out: S
   const pageUrls = extractLocValues(xml, 'url');
   for (const loc of pageUrls) {
     if (out.size >= maxUrls) break;
-    const norm = normalizeUrl(loc, seed);
+    const norm = normalizeUrl(loc, seed, seed);
     if (!norm) continue;
     try {
       const parsed = new URL(norm);
@@ -213,7 +254,7 @@ async function spider(seedUrl: string, maxUrls: number) {
   const queue: string[] = [];
   const skipped = { nonHtml: 0, offSite: 0, errors: 0, timedOut: false, sitemapSeeded: 0 };
 
-  const seedNorm = normalizeUrl(resolvedSeed, seed);
+  const seedNorm = normalizeUrl(resolvedSeed, seed, seed);
   if (!seedNorm) return { urls: [], total: 0, skipped, resolvedSeed };
   discovered.add(seedNorm);
   queue.push(seedNorm);
@@ -245,7 +286,7 @@ async function spider(seedUrl: string, maxUrls: number) {
       const hrefs = extractHrefs(res.html);
 
       for (const href of hrefs) {
-        const norm = normalizeUrl(href, baseUrl);
+        const norm = normalizeUrl(href, baseUrl, seed);
         if (!norm) continue;
         let parsed: URL;
         try { parsed = new URL(norm); } catch { continue; }

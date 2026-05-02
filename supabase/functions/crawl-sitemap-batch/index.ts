@@ -687,7 +687,8 @@ async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> 
 // ─── Phase 1 redirect detector (HTTP + meta-refresh, max 10 hops) ────────────
 
 const MAX_HOPS = 10;
-const FETCH_TIMEOUT_MS = 15000;
+const FETCH_TIMEOUT_MS = 9000;
+const RETRYABLE_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 SitemapScout/1.0 (+https://shubhojit-sitemap-scout.lovable.app)',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -695,6 +696,39 @@ const FETCH_HEADERS = {
   'Accept-Encoding': 'gzip, deflate, br',
   'Cache-Control': 'no-cache',
 };
+
+function retryDelayMs(status: number, attempt: number, resp?: Response): number {
+  const retryAfter = resp?.headers.get('retry-after');
+  if (retryAfter) {
+    const asSeconds = Number(retryAfter);
+    if (Number.isFinite(asSeconds)) return Math.min(asSeconds * 1000, 3500);
+    const asDate = new Date(retryAfter).getTime();
+    if (!Number.isNaN(asDate)) return Math.min(Math.max(asDate - Date.now(), 0), 3500);
+  }
+  const base = status === 429 ? 900 : 450;
+  return Math.min(base * Math.pow(2, attempt), 3200) + Math.floor(Math.random() * 180);
+}
+
+async function fetchWithRetries(url: string, redirect: RequestRedirect, maxAttempts = 3): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        headers: FETCH_HEADERS,
+        redirect,
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!RETRYABLE_STATUSES.has(resp.status) || attempt === maxAttempts - 1) return resp;
+      try { await resp.body?.cancel(); } catch { /* ignore */ }
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs(resp.status, attempt, resp)));
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts - 1) break;
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs(0, attempt)));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Fetch failed');
+}
 
 interface DetectionResult {
   initialUrl: string;
@@ -728,11 +762,7 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
 
     let resp: Response;
     try {
-      resp = await fetch(current, {
-        headers: FETCH_HEADERS,
-        redirect: 'manual',
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
+      resp = await fetchWithRetries(current, 'manual', 3);
     } catch (e) {
       chain.push({
         url: current,
@@ -966,11 +996,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Balanced concurrency: 8 simultaneous fetches (4 for JS-rendered).
-    // The rolling pool keeps Deno responsive without hammering the target
-    // site or saturating outbound sockets — a tested sweet spot between the
-    // original 5-wide serial loop (too slow) and 12-wide pool (too aggressive).
-    const concurrency = jsRenderedLinks ? 4 : 8;
+    // Screaming-Frog-style politeness: steady rolling workers, not huge bursts.
+    // Lower concurrency reduces 429s and keeps metadata reliable while the
+    // smaller client batches keep the crawl feeling responsive.
+    const concurrency = jsRenderedLinks ? 2 : 5;
     const results: CrawlResult[] = new Array(urls.length);
     let cursor = 0;
 

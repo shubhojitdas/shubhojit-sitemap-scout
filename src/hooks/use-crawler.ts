@@ -333,11 +333,10 @@ export function useCrawler() {
     existingResults: CrawlResult[] = [],
   ) => {
     const allResults: CrawlResult[] = [...existingResults];
-    // Balanced batch size: large enough to amortize round-trip latency,
-    // small enough that progress updates feel responsive and we never
-    // overwhelm a target site's server. Pairs with the edge function's
-    // 8-wide concurrent pool (4 for JS-rendered).
-    const BATCH_SIZE = 16;
+    // Keep batches compact so progress stays responsive and each backend
+    // request only opens a polite number of target-site connections.
+    // Pairs with the edge function's 5-wide pool (2 for JS-rendered).
+    const BATCH_SIZE = 10;
 
     // ── Redirect-dedup bookkeeping ───────────────────────────────────────────
     // Track every URL we've already represented in the crawl (either because

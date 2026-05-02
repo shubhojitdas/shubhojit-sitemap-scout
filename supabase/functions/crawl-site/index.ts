@@ -106,13 +106,10 @@ function extractLocValues(xml: string, wrapperTag: 'url' | 'sitemap'): string[] 
 }
 
 async function fetchWithFallback(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
-  const attempts = [url];
+  let attempts = [url];
   try {
     const parsed = new URL(url);
-    if (parsed.protocol === 'https:') {
-      parsed.protocol = 'http:';
-      attempts.push(parsed.toString());
-    }
+    attempts = originVariants(parsed);
   } catch { /* keep single attempt */ }
 
   for (const attempt of attempts) {
@@ -145,15 +142,11 @@ async function resolveSeed(seedUrl: string): Promise<string> {
 }
 
 function candidateSitemaps(seed: URL): string[] {
-  const origin = seed.origin;
-  return [
-    `${origin}/sitemap.xml`,
-    `${origin}/sitemap_index.xml`,
-    `${origin}/wp-sitemap.xml`,
-    `${origin}/sitemap-index.xml`,
-    `${origin}/post-sitemap.xml`,
-    `${origin}/page-sitemap.xml`,
-  ];
+  const paths = ['/sitemap.xml', '/sitemap_index.xml', '/wp-sitemap.xml', '/sitemap-index.xml', '/post-sitemap.xml', '/page-sitemap.xml'];
+  return originVariants(seed).flatMap((originLike) => {
+    const u = new URL(originLike);
+    return paths.map((path) => `${u.protocol}//${u.host}${path}`);
+  });
 }
 
 async function discoverSitemaps(seed: URL): Promise<string[]> {

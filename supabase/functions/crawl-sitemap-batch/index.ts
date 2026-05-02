@@ -996,11 +996,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Balanced concurrency: 8 simultaneous fetches (4 for JS-rendered).
-    // The rolling pool keeps Deno responsive without hammering the target
-    // site or saturating outbound sockets — a tested sweet spot between the
-    // original 5-wide serial loop (too slow) and 12-wide pool (too aggressive).
-    const concurrency = jsRenderedLinks ? 4 : 8;
+    // Screaming-Frog-style politeness: steady rolling workers, not huge bursts.
+    // Lower concurrency reduces 429s and keeps metadata reliable while the
+    // smaller client batches keep the crawl feeling responsive.
+    const concurrency = jsRenderedLinks ? 2 : 5;
     const results: CrawlResult[] = new Array(urls.length);
     let cursor = 0;
 

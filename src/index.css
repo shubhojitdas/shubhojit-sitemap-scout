@@ -27,8 +27,8 @@
     --muted: 240 18% 90%;
     --muted-foreground: 235 14% 38%;
 
-    --accent: 205 90% 94%;
-    --accent-foreground: 211 88% 30%;
+    --accent: 203 72% 92%;
+    --accent-foreground: 205 74% 28%;
 
     --destructive: 0 78% 52%;
     --destructive-foreground: 0 0% 100%;
@@ -55,7 +55,7 @@
     --sidebar-ring: 211 88% 44%;
 
     /* Iridescent accent (violet → pink) used for highlights */
-    --highlight: 188 84% 42%;
+    --highlight: 199 78% 40%;
     --highlight-foreground: 0 0% 100%;
 
     /* Warm coral accent inspired by image-30 */
@@ -99,8 +99,8 @@
     --muted: 240 10% 16%;
     --muted-foreground: 240 10% 64%;
 
-    --accent: 200 62% 24%;
-    --accent-foreground: 196 92% 90%;
+    --accent: 202 48% 22%;
+    --accent-foreground: 194 86% 88%;
 
     --destructive: 0 65% 56%;
     --destructive-foreground: 0 0% 100%;
@@ -124,7 +124,7 @@
     --sidebar-border: 240 10% 22%;
     --sidebar-ring: 199 92% 58%;
 
-    --highlight: 176 82% 56%;
+    --highlight: 191 78% 52%;
     --highlight-foreground: 0 0% 100%;
 
     --coral: 14 92% 64%;

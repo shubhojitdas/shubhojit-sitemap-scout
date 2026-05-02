@@ -18,11 +18,12 @@ const FETCH_HEADERS = {
 };
 
 const MAX_URLS = 50000;
-const CONCURRENCY = 5;
-const FETCH_TIMEOUT_MS = 6500;
-const SITEMAP_TIMEOUT_MS = 4500;
-const SPIDER_TIME_BUDGET_MS = 26000;
+const CONCURRENCY = 4;
+const FETCH_TIMEOUT_MS = 5200;
+const SITEMAP_TIMEOUT_MS = 3200;
+const SPIDER_TIME_BUDGET_MS = 24000;
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|woff2?|ttf|otf|eot)(\?|#|$)/i;
+const FETCH_CACHE = new Map<string, Promise<Response | null>>();
 
 function stripWww(hostname: string): string {
   return hostname.replace(/^www\./, '');
@@ -106,6 +107,17 @@ function extractLocValues(xml: string, wrapperTag: 'url' | 'sitemap'): string[] 
 }
 
 async function fetchWithFallback(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
+  const cacheKey = `${redirect}:${timeoutMs}:${url}`;
+  const cached = FETCH_CACHE.get(cacheKey);
+  if (cached) return cached;
+
+  const promise = fetchWithFallbackUncached(url, timeoutMs, redirect);
+  FETCH_CACHE.set(cacheKey, promise);
+  if (FETCH_CACHE.size > 600) FETCH_CACHE.delete(FETCH_CACHE.keys().next().value);
+  return promise;
+}
+
+async function fetchWithFallbackUncached(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
   let attempts = [url];
   try {
     const parsed = new URL(url);

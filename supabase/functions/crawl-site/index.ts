@@ -34,11 +34,16 @@ function sameSite(a: URL, b: URL): boolean {
   return stripWww(a.hostname) === stripWww(b.hostname);
 }
 
-function normalizeUrl(raw: string, base: URL): string | null {
+function normalizeUrl(raw: string, base: URL, preferredOrigin?: URL): string | null {
   try {
     if (isLikelyTemplateUrl(raw)) return null;
     const u = new URL(raw, base);
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (preferredOrigin && sameSite(u, preferredOrigin)) {
+      u.protocol = preferredOrigin.protocol;
+      u.hostname = preferredOrigin.hostname;
+      u.port = preferredOrigin.port;
+    }
     u.hash = '';
     if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
       u.pathname = u.pathname.slice(0, -1);

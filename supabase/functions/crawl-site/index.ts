@@ -166,18 +166,35 @@ async function fetchWithOriginFallback(url: string, timeoutMs: number, redirect:
   return null;
 }
 
-async function fetchPageHtml(url: string): Promise<{ html: string; finalUrl: string } | null> {
-  const resp = await fetchWithOriginFallback(url, FETCH_TIMEOUT_MS, 'follow');
-  if (!resp || !resp.ok) return null;
+async function fetchPageHtml(url: string, useVariants = false): Promise<{ html: string; finalUrl: string } | null> {
+  const resp = useVariants
+    ? await fetchWithOriginFallback(url, FETCH_TIMEOUT_MS, 'follow')
+    : await fetchUrl(resolvedOrigin ? normalizeToOrigin(url) : url, FETCH_TIMEOUT_MS, 'follow');
+  if (!resp || !resp.ok) {
+    // Drain body to avoid resource leaks
+    try { await resp?.text(); } catch { /* drain */ }
+    return null;
+  }
   const ct = resp.headers.get('content-type') ?? '';
-  if (!/text\/html|application\/xhtml/i.test(ct)) return null;
+  if (!/text\/html|application\/xhtml/i.test(ct)) {
+    try { await resp.text(); } catch { /* drain */ }
+    return null;
+  }
   const html = await resp.text();
   return { html, finalUrl: resp.url || url };
 }
 
-async function resolveSeed(seedUrl: string): Promise<string> {
-  const resp = await fetchWithOriginFallback(seedUrl, FETCH_TIMEOUT_MS, 'follow');
-  return resp?.url || seedUrl;
+function normalizeToOrigin(url: string): string {
+  if (!resolvedOrigin) return url;
+  try {
+    const u = new URL(url);
+    if (sameSite(u, resolvedOrigin)) {
+      u.protocol = resolvedOrigin.protocol;
+      u.hostname = resolvedOrigin.hostname;
+      u.port = resolvedOrigin.port;
+    }
+    return u.toString();
+  } catch { return url; }
 }
 
 // --- Sitemap discovery (runs in background, feeds URLs into shared set) ---

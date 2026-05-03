@@ -688,45 +688,288 @@ async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> 
 
 const MAX_HOPS = 10;
 const FETCH_TIMEOUT_MS = 9000;
-const RETRYABLE_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const MAX_FETCH_ATTEMPTS = 4;
+const RETRYABLE_STATUSES = new Set([403, 408, 425, 429, 500, 502, 503, 504]);
+const GLOBAL_CONCURRENCY_LIMIT = 10;
+const DOMAIN_CONCURRENCY_LIMIT = 2;
+const DEFAULT_DOMAIN_INTERVAL_MS = 1000;
+const FAST_DOMAIN_INTERVAL_MS = 500;
+const SLOW_DOMAIN_INTERVAL_MS = 3000;
+const RETRY_BACKOFF_MS = [2000, 5000, 10000, 15000];
+const COOLDOWN_BACKOFF_MS = [30000, 60000, 120000];
+const MAX_FETCH_CACHE_ENTRIES = 256;
+const FETCH_CACHE = new Map<string, Promise<FetchSnapshot>>();
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 SitemapScout/1.0 (+https://shubhojit-sitemap-scout.lovable.app)',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
   'Accept-Language': 'en-US,en;q=0.9',
   'Accept-Encoding': 'gzip, deflate, br',
   'Cache-Control': 'no-cache',
+  'Connection': 'keep-alive',
 };
 
-function retryDelayMs(status: number, attempt: number, resp?: Response): number {
-  const retryAfter = resp?.headers.get('retry-after');
-  if (retryAfter) {
-    const asSeconds = Number(retryAfter);
-    if (Number.isFinite(asSeconds)) return Math.min(asSeconds * 1000, 3500);
-    const asDate = new Date(retryAfter).getTime();
-    if (!Number.isNaN(asDate)) return Math.min(Math.max(asDate - Date.now(), 0), 3500);
-  }
-  const base = status === 429 ? 900 : 450;
-  return Math.min(base * Math.pow(2, attempt), 3200) + Math.floor(Math.random() * 180);
+interface FetchSnapshot {
+  status: number;
+  statusText: string;
+  url: string;
+  headers: Record<string, string>;
+  body: string;
+  blocked: boolean;
 }
 
-async function fetchWithRetries(url: string, redirect: RequestRedirect, maxAttempts = 3): Promise<Response> {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      const resp = await fetch(url, {
-        headers: FETCH_HEADERS,
-        redirect,
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+interface DomainState {
+  queue: Array<() => void>;
+  active: number;
+  nextAllowedAt: number;
+  cooldownUntil: number;
+  minIntervalMs: number;
+  successStreak: number;
+  blockStreak: number;
+  recentStatuses: number[];
+}
+
+function getDomainKey(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return url;
+  }
+}
+
+function parseRetryAfterMs(value?: string | null): number | null {
+  if (!value) return null;
+  const asSeconds = Number(value);
+  if (Number.isFinite(asSeconds)) return Math.max(0, asSeconds * 1000);
+  const asDate = new Date(value).getTime();
+  if (!Number.isNaN(asDate)) return Math.max(0, asDate - Date.now());
+  return null;
+}
+
+function isBlockedResponse(status: number, body: string, contentType: string): boolean {
+  if (status === 429 || status === 403) return true;
+  if (!/text\/html|application\/xhtml/i.test(contentType)) return false;
+  const html = body.toLowerCase();
+  if (/checking your browser|verify you are human|captcha|cf-chl|cloudflare ray id|attention required|access denied|bot detection/i.test(html)) {
+    return true;
+  }
+  const visibleText = html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const scriptCount = (html.match(/<script\b/gi) ?? []).length;
+  return visibleText.length < 48 && scriptCount >= 3;
+}
+
+class DomainRequestScheduler {
+  private domains = new Map<string, DomainState>();
+  private domainOrder: string[] = [];
+  private roundRobinIndex = 0;
+  private globalActive = 0;
+  private wakeTimer: number | null = null;
+
+  private ensureDomain(domain: string): DomainState {
+    let state = this.domains.get(domain);
+    if (!state) {
+      state = {
+        queue: [],
+        active: 0,
+        nextAllowedAt: 0,
+        cooldownUntil: 0,
+        minIntervalMs: DEFAULT_DOMAIN_INTERVAL_MS,
+        successStreak: 0,
+        blockStreak: 0,
+        recentStatuses: [],
+      };
+      this.domains.set(domain, state);
+      this.domainOrder.push(domain);
+    }
+    return state;
+  }
+
+  schedule<T>(url: string, task: () => Promise<T>): Promise<T> {
+    const domain = getDomainKey(url);
+    const state = this.ensureDomain(domain);
+
+    return new Promise<T>((resolve, reject) => {
+      state.queue.push(async () => {
+        this.globalActive++;
+        state.active++;
+        state.nextAllowedAt = Math.max(state.nextAllowedAt, Date.now()) + state.minIntervalMs;
+
+        try {
+          resolve(await task());
+        } catch (error) {
+          reject(error);
+        } finally {
+          state.active = Math.max(0, state.active - 1);
+          this.globalActive = Math.max(0, this.globalActive - 1);
+          this.pump();
+        }
       });
-      if (!RETRYABLE_STATUSES.has(resp.status) || attempt === maxAttempts - 1) return resp;
-      try { await resp.body?.cancel(); } catch { /* ignore */ }
-      await new Promise((resolve) => setTimeout(resolve, retryDelayMs(resp.status, attempt, resp)));
+      this.pump();
+    });
+  }
+
+  recordOutcome(url: string, status: number, blocked: boolean, retryAfter?: string | null) {
+    const state = this.ensureDomain(getDomainKey(url));
+    state.recentStatuses.push(status);
+    if (state.recentStatuses.length > 12) state.recentStatuses.shift();
+
+    const retryAfterMs = parseRetryAfterMs(retryAfter);
+    const rateLimitedCount = state.recentStatuses.filter((code) => code === 429).length;
+    const rateLimitedRatio = state.recentStatuses.length > 0 ? rateLimitedCount / state.recentStatuses.length : 0;
+
+    if (blocked || status === 429 || status === 403) {
+      state.successStreak = 0;
+      state.blockStreak += 1;
+      state.minIntervalMs = Math.max(state.minIntervalMs, SLOW_DOMAIN_INTERVAL_MS);
+
+      const immediateDelay = retryAfterMs
+        ?? (status === 429 ? Math.min(10000, 3000 + (state.blockStreak - 1) * 2000) : 3000);
+      state.nextAllowedAt = Math.max(state.nextAllowedAt, Date.now() + immediateDelay);
+
+      if (status === 429 && (state.blockStreak >= 2 || rateLimitedRatio > 0.2)) {
+        const cooldown = retryAfterMs
+          ?? COOLDOWN_BACKOFF_MS[Math.min(state.blockStreak - 1, COOLDOWN_BACKOFF_MS.length - 1)];
+        state.cooldownUntil = Math.max(state.cooldownUntil, Date.now() + cooldown);
+      }
+    } else if (status >= 200 && status < 300) {
+      state.successStreak += 1;
+      state.blockStreak = 0;
+      if (state.successStreak >= 5) {
+        state.minIntervalMs = FAST_DOMAIN_INTERVAL_MS;
+      } else {
+        state.minIntervalMs = DEFAULT_DOMAIN_INTERVAL_MS;
+      }
+      if (Date.now() >= state.cooldownUntil) state.cooldownUntil = 0;
+    } else {
+      state.successStreak = 0;
+      state.blockStreak = 0;
+      state.minIntervalMs = DEFAULT_DOMAIN_INTERVAL_MS;
+    }
+
+    this.pump();
+  }
+
+  private pickReadyDomain(now: number): DomainState | null {
+    if (this.domainOrder.length === 0) return null;
+    for (let step = 0; step < this.domainOrder.length; step++) {
+      const index = (this.roundRobinIndex + step) % this.domainOrder.length;
+      const state = this.domains.get(this.domainOrder[index]);
+      if (!state || state.queue.length === 0) continue;
+      if (state.active >= DOMAIN_CONCURRENCY_LIMIT) continue;
+      const readyAt = Math.max(state.nextAllowedAt, state.cooldownUntil);
+      if (readyAt > now) continue;
+      this.roundRobinIndex = (index + 1) % this.domainOrder.length;
+      return state;
+    }
+    return null;
+  }
+
+  private getNextWakeAt(): number | null {
+    let nextAt: number | null = null;
+    for (const domain of this.domainOrder) {
+      const state = this.domains.get(domain);
+      if (!state || state.queue.length === 0 || state.active >= DOMAIN_CONCURRENCY_LIMIT) continue;
+      const candidate = Math.max(state.nextAllowedAt, state.cooldownUntil);
+      nextAt = nextAt === null ? candidate : Math.min(nextAt, candidate);
+    }
+    return nextAt;
+  }
+
+  private armWakeTimer(targetAt: number | null) {
+    if (this.wakeTimer !== null) clearTimeout(this.wakeTimer);
+    if (targetAt === null) {
+      this.wakeTimer = null;
+      return;
+    }
+    this.wakeTimer = setTimeout(() => {
+      this.wakeTimer = null;
+      this.pump();
+    }, Math.max(0, targetAt - Date.now())) as unknown as number;
+  }
+
+  private pump() {
+    this.armWakeTimer(null);
+    while (this.globalActive < GLOBAL_CONCURRENCY_LIMIT) {
+      const ready = this.pickReadyDomain(Date.now());
+      if (!ready) {
+        this.armWakeTimer(this.getNextWakeAt());
+        return;
+      }
+      const task = ready.queue.shift();
+      if (!task) continue;
+      void task();
+    }
+  }
+}
+
+const REQUEST_SCHEDULER = new DomainRequestScheduler();
+
+function rememberFetch(cacheKey: string, promise: Promise<FetchSnapshot>) {
+  FETCH_CACHE.set(cacheKey, promise);
+  if (FETCH_CACHE.size > MAX_FETCH_CACHE_ENTRIES) {
+    FETCH_CACHE.delete(FETCH_CACHE.keys().next().value);
+  }
+  return promise;
+}
+
+function retryDelayMs(status: number, attempt: number, retryAfter?: string | null, blocked = false): number {
+  const exactRetryAfter = parseRetryAfterMs(retryAfter);
+  if (exactRetryAfter !== null) return exactRetryAfter;
+  if (status === 429 || blocked) return RETRY_BACKOFF_MS[Math.min(attempt, RETRY_BACKOFF_MS.length - 1)];
+  if (status === 403) return RETRY_BACKOFF_MS[Math.min(attempt + 1, RETRY_BACKOFF_MS.length - 1)];
+  return Math.min(1200 * Math.pow(2, attempt), 8000);
+}
+
+async function fetchOnce(url: string, redirect: RequestRedirect): Promise<FetchSnapshot> {
+  return REQUEST_SCHEDULER.schedule(url, async () => {
+    const resp = await fetch(url, {
+      headers: FETCH_HEADERS,
+      redirect,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+
+    const headers = Object.fromEntries(Array.from(resp.headers.entries(), ([key, value]) => [key.toLowerCase(), value]));
+    const body = await resp.text().catch(() => '');
+    const blocked = isBlockedResponse(resp.status, body, headers['content-type'] ?? '');
+    REQUEST_SCHEDULER.recordOutcome(url, resp.status, blocked, headers['retry-after']);
+
+    return {
+      status: resp.status,
+      statusText: resp.statusText,
+      url: resp.url || url,
+      headers,
+      body,
+      blocked,
+    };
+  });
+}
+
+async function fetchWithRetries(url: string, redirect: RequestRedirect, maxAttempts = MAX_FETCH_ATTEMPTS): Promise<FetchSnapshot> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const cacheKey = `${redirect}:${url}`;
+    try {
+      const snapshot = await (FETCH_CACHE.get(cacheKey) ?? rememberFetch(cacheKey, fetchOnce(url, redirect)));
+      if ((!RETRYABLE_STATUSES.has(snapshot.status) && !snapshot.blocked) || attempt === maxAttempts - 1) {
+        return snapshot;
+      }
+
+      FETCH_CACHE.delete(cacheKey);
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs(snapshot.status, attempt, snapshot.headers['retry-after'], snapshot.blocked)));
     } catch (error) {
       lastError = error;
+      FETCH_CACHE.delete(cacheKey);
       if (attempt === maxAttempts - 1) break;
       await new Promise((resolve) => setTimeout(resolve, retryDelayMs(0, attempt)));
     }
   }
+
   throw lastError instanceof Error ? lastError : new Error('Fetch failed');
 }
 
@@ -760,9 +1003,9 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     }
     visited.add(current);
 
-    let resp: Response;
+    let resp: FetchSnapshot;
     try {
-      resp = await fetchWithRetries(current, 'manual', 3);
+      resp = await fetchWithRetries(current, 'manual', MAX_FETCH_ATTEMPTS);
     } catch (e) {
       chain.push({
         url: current,
@@ -775,9 +1018,8 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     }
 
     if (resp.status >= 300 && resp.status < 400) {
-      const location = resp.headers.get('location');
+      const location = resp.headers['location'];
       chain.push({ url: current, status: resp.status, type: 'http' });
-      try { await resp.text(); } catch { /* ignore */ }
 
       if (!location) { finalStatus = resp.status; break; }
 
@@ -793,17 +1035,17 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
 
     finalStatus = resp.status;
     // Capture Last-Modified header (RFC 1123) → ISO-8601 string for sitemap <lastmod>.
-    const lmHeader = resp.headers.get('last-modified');
+    const lmHeader = resp.headers['last-modified'];
     if (lmHeader) {
       const parsed = new Date(lmHeader);
       if (!isNaN(parsed.getTime())) lastModified = parsed.toISOString();
     }
-    try { finalHtml = await resp.text(); } catch { finalHtml = ''; }
+    finalHtml = resp.body;
 
     // Some servers send an HTTP `Refresh` response header instead of a meta tag.
     // Browsers honor it identically, so we follow it as a meta-refresh hop.
     if (resp.status >= 200 && resp.status < 300) {
-      const refreshHeader = resp.headers.get('refresh');
+      const refreshHeader = resp.headers['refresh'];
       if (refreshHeader) {
         const parts = refreshHeader.split(';');
         const delay = parseFloat(parts[0]) || 0;

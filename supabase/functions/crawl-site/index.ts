@@ -1,7 +1,6 @@
-// Breadth-first website spider — discovers internal URLs starting from a seed
-// homepage URL by parsing real HTML links, with sitemap seeding and strict time
-// budgets so slow WordPress / PHP / page-builder sites return usable results
-// instead of timing out the Edge Function.
+// Breadth-first website spider — discovers internal URLs like Screaming Frog:
+// parse HTML <a> tags from the homepage, follow every internal link recursively.
+// Sitemap seeding runs in parallel (not blocking HTML discovery).
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -18,13 +17,11 @@ const FETCH_HEADERS = {
 };
 
 const MAX_URLS = 50000;
-const CONCURRENCY = 4;
-const FETCH_TIMEOUT_MS = 5200;
-const SITEMAP_TIMEOUT_MS = 3200;
-const SPIDER_TIME_BUDGET_MS = 24000;
+const CONCURRENCY = 3;
+const FETCH_TIMEOUT_MS = 8000;
+const SITEMAP_TIMEOUT_MS = 3000;
+const SPIDER_TIME_BUDGET_MS = 27000; // leave 3s margin for Edge Function 30s limit
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|woff2?|ttf|otf|eot)(\?|#|$)/i;
-const FETCH_CACHE = new Map<string, Promise<Response | null>>();
-const ORIGIN_HINTS = new Map<string, string>();
 
 function stripWww(hostname: string): string {
   return hostname.replace(/^www\./, '');
@@ -74,28 +71,8 @@ function originVariants(input: URL): string[] {
   return Array.from(new Set(variants));
 }
 
-function candidateAttempts(url: string): string[] {
-  try {
-    const parsed = new URL(url);
-    const hostKey = stripWww(parsed.hostname);
-    const attempts: string[] = [];
-    const hintedOrigin = ORIGIN_HINTS.get(hostKey);
-
-    if (hintedOrigin) {
-      const hinted = new URL(url);
-      const hintedBase = new URL(hintedOrigin);
-      hinted.protocol = hintedBase.protocol;
-      hinted.hostname = hintedBase.hostname;
-      attempts.push(hinted.toString());
-    }
-
-    attempts.push(url);
-    if (!hintedOrigin) attempts.push(...originVariants(parsed));
-    return Array.from(new Set(attempts));
-  } catch {
-    return [url];
-  }
-}
+// Once we know which origin works, reuse it for all subsequent fetches
+let resolvedOrigin: URL | null = null;
 
 function stripHtmlComments(html: string): string {
   return html.replace(/<!--[\s\S]*?-->/g, '');
@@ -135,148 +112,212 @@ function extractLocValues(xml: string, wrapperTag: 'url' | 'sitemap'): string[] 
   return results;
 }
 
-async function fetchWithFallback(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
-  const cacheKey = `${redirect}:${timeoutMs}:${url}`;
-  const cached = FETCH_CACHE.get(cacheKey);
-  if (cached) return cached;
-
-  const promise = fetchWithFallbackUncached(url, timeoutMs, redirect);
-  FETCH_CACHE.set(cacheKey, promise);
-  if (FETCH_CACHE.size > 600) FETCH_CACHE.delete(FETCH_CACHE.keys().next().value);
-  return promise;
+async function fetchUrl(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
+  try {
+    const resp = await fetch(url, {
+      headers: FETCH_HEADERS,
+      redirect,
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    // Learn the working origin from the first successful fetch
+    if (!resolvedOrigin) {
+      try {
+        resolvedOrigin = new URL(resp.url || url);
+      } catch { /* ignore */ }
+    }
+    return resp;
+  } catch {
+    return null;
+  }
 }
 
-async function fetchWithFallbackUncached(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
-  const attempts = candidateAttempts(url);
-
-  for (const attempt of attempts) {
-    try {
-      const resp = await fetch(attempt, {
-        headers: FETCH_HEADERS,
-        redirect,
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-      try {
-        const finalUrl = new URL(resp.url || attempt);
-        ORIGIN_HINTS.set(stripWww(finalUrl.hostname), finalUrl.origin);
-      } catch { /* ignore */ }
-      return resp;
-    } catch (error) {
-      console.warn('Fetch failed:', attempt, error instanceof Error ? error.message : error);
-    }
+// Fetch and consume body to avoid resource leaks on probe requests
+async function probeUrl(url: string, timeoutMs: number): Promise<string | null> {
+  const resp = await fetchUrl(url, timeoutMs, 'follow');
+  if (resp) {
+    try { await resp.text(); } catch { /* drain */ }
+    return resp.url || url;
   }
   return null;
 }
 
-async function fetchPageHtml(url: string): Promise<{ html: string; finalUrl: string } | null> {
-  const resp = await fetchWithFallback(url, FETCH_TIMEOUT_MS, 'follow');
-  if (!resp || !resp.ok) return null;
+async function fetchWithOriginFallback(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
+  // If we already know the working origin, just use it
+  if (resolvedOrigin) {
+    try {
+      const u = new URL(url);
+      if (sameSite(u, resolvedOrigin)) {
+        u.protocol = resolvedOrigin.protocol;
+        u.hostname = resolvedOrigin.hostname;
+        u.port = resolvedOrigin.port;
+        const resp = await fetchUrl(u.toString(), timeoutMs, redirect);
+        if (resp) return resp;
+      }
+    } catch { /* fall through */ }
+  }
+
+  // Try origin variants for the seed/first request
+  const parsed = new URL(url);
+  const variants = originVariants(parsed);
+  for (const v of variants) {
+    const resp = await fetchUrl(v, timeoutMs, redirect);
+    if (resp) return resp;
+  }
+  return null;
+}
+
+async function fetchPageHtml(url: string, useVariants = false): Promise<{ html: string; finalUrl: string } | null> {
+  const resp = useVariants
+    ? await fetchWithOriginFallback(url, FETCH_TIMEOUT_MS, 'follow')
+    : await fetchUrl(resolvedOrigin ? normalizeToOrigin(url) : url, FETCH_TIMEOUT_MS, 'follow');
+  if (!resp || !resp.ok) {
+    // Drain body to avoid resource leaks
+    try { await resp?.text(); } catch { /* drain */ }
+    return null;
+  }
   const ct = resp.headers.get('content-type') ?? '';
-  if (!/text\/html|application\/xhtml/i.test(ct)) return null;
+  if (!/text\/html|application\/xhtml/i.test(ct)) {
+    try { await resp.text(); } catch { /* drain */ }
+    return null;
+  }
   const html = await resp.text();
   return { html, finalUrl: resp.url || url };
 }
 
-async function resolveSeed(seedUrl: string): Promise<string> {
-  const resp = await fetchWithFallback(seedUrl, FETCH_TIMEOUT_MS, 'follow');
-  return resp?.url || seedUrl;
+function normalizeToOrigin(url: string): string {
+  if (!resolvedOrigin) return url;
+  try {
+    const u = new URL(url);
+    if (sameSite(u, resolvedOrigin)) {
+      u.protocol = resolvedOrigin.protocol;
+      u.hostname = resolvedOrigin.hostname;
+      u.port = resolvedOrigin.port;
+    }
+    return u.toString();
+  } catch { return url; }
 }
+
+// --- Sitemap discovery (runs in background, feeds URLs into shared set) ---
 
 function candidateSitemaps(seed: URL): string[] {
   const paths = ['/sitemap.xml', '/sitemap_index.xml', '/wp-sitemap.xml', '/sitemap-index.xml', '/post-sitemap.xml', '/page-sitemap.xml'];
-  return originVariants(seed).flatMap((originLike) => {
-    const u = new URL(originLike);
-    return paths.map((path) => `${u.protocol}//${u.host}${path}`);
-  });
+  return paths.map((path) => `${seed.protocol}//${seed.host}${path}`);
 }
 
-async function discoverSitemaps(seed: URL): Promise<string[]> {
-  const urls = new Set<string>(candidateSitemaps(seed));
+async function sitemapWorker(seed: URL, discovered: Set<string>, queue: string[], maxUrls: number, deadline: number): Promise<number> {
+  let count = 0;
+  const visited = new Set<string>();
+
+  // Check robots.txt for sitemaps
+  const sitemapUrls = new Set<string>(candidateSitemaps(seed));
   try {
     const robotsUrl = `${seed.origin}/robots.txt`;
-    const resp = await fetchWithFallback(robotsUrl, SITEMAP_TIMEOUT_MS, 'follow');
+    const resp = await fetchUrl(robotsUrl, SITEMAP_TIMEOUT_MS, 'follow');
     if (resp?.ok) {
       const robots = await resp.text();
       for (const line of robots.split(/\r?\n/)) {
         const match = line.match(/^\s*sitemap\s*:\s*(\S+)/i);
-        if (match?.[1]) urls.add(match[1].trim());
+        if (match?.[1]) sitemapUrls.add(match[1].trim());
       }
     }
-  } catch { /* robots is optional */ }
-  return Array.from(urls);
+  } catch { /* optional */ }
+
+  const parseSitemap = async (url: string): Promise<void> => {
+    if (Date.now() > deadline || visited.has(url) || discovered.size >= maxUrls) return;
+    visited.add(url);
+    const resp = await fetchUrl(url, SITEMAP_TIMEOUT_MS, 'follow');
+    if (!resp || !resp.ok) return;
+    const xml = await resp.text();
+
+    // Recurse into child sitemaps
+    const children = extractLocValues(xml, 'sitemap').slice(0, 50);
+    for (const child of children) {
+      if (Date.now() > deadline || discovered.size >= maxUrls) break;
+      await parseSitemap(child);
+    }
+
+    // Extract page URLs
+    const pageUrls = extractLocValues(xml, 'url');
+    for (const loc of pageUrls) {
+      if (discovered.size >= maxUrls) break;
+      const norm = normalizeUrl(loc, seed, seed);
+      if (!norm) continue;
+      try {
+        const parsed = new URL(norm);
+        if (!sameSite(parsed, seed)) continue;
+        if (NON_HTML_EXTENSIONS.test(parsed.pathname)) continue;
+        if (!discovered.has(norm)) {
+          discovered.add(norm);
+          queue.push(norm);
+          count++;
+        }
+      } catch { /* skip */ }
+    }
+  };
+
+  for (const sm of sitemapUrls) {
+    if (Date.now() > deadline || discovered.size >= maxUrls) break;
+    await parseSitemap(sm);
+  }
+  return count;
 }
 
-async function parseSitemap(url: string, seed: URL, visited: Set<string>, out: Set<string>, maxUrls: number, deadline: number): Promise<void> {
-  if (Date.now() > deadline || visited.has(url) || out.size >= maxUrls) return;
-  visited.add(url);
-
-  const resp = await fetchWithFallback(url, SITEMAP_TIMEOUT_MS, 'follow');
-  if (!resp || !resp.ok) return;
-  const xml = await resp.text();
-
-  const childSitemaps = extractLocValues(xml, 'sitemap').slice(0, 80);
-  for (const child of childSitemaps) {
-    if (Date.now() > deadline || out.size >= maxUrls) break;
-    await parseSitemap(child, seed, visited, out, maxUrls, deadline);
-  }
-
-  const pageUrls = extractLocValues(xml, 'url');
-  for (const loc of pageUrls) {
-    if (out.size >= maxUrls) break;
-    const norm = normalizeUrl(loc, seed, seed);
-    if (!norm) continue;
-    try {
-      const parsed = new URL(norm);
-      if (!sameSite(parsed, seed)) continue;
-      if (NON_HTML_EXTENSIONS.test(parsed.pathname)) continue;
-      out.add(norm);
-    } catch { /* skip */ }
-  }
-}
-
-async function seedFromSitemaps(seed: URL, maxUrls: number, deadline: number): Promise<string[]> {
-  const urls = new Set<string>();
-  const visited = new Set<string>();
-  const sitemaps = await discoverSitemaps(seed);
-  for (const sitemap of sitemaps) {
-    if (Date.now() > deadline || urls.size >= maxUrls) break;
-    await parseSitemap(sitemap, seed, visited, urls, maxUrls, deadline);
-  }
-  return Array.from(urls).slice(0, maxUrls);
-}
+// --- Main spider: breadth-first HTML link crawling (Screaming Frog style) ---
 
 async function spider(seedUrl: string, maxUrls: number) {
   const started = Date.now();
   const deadline = started + SPIDER_TIME_BUDGET_MS;
-  const resolvedSeed = await resolveSeed(seedUrl);
+
+  // Resolve seed by fetching homepage HTML directly (no wasted request)
+  const seedResult = await fetchPageHtml(seedUrl, true);
+  const resolvedSeed = seedResult?.finalUrl || seedUrl;
   const seed = new URL(resolvedSeed);
   const discovered = new Set<string>();
   const queue: string[] = [];
+  const visited = new Set<string>(); // pages we've fetched HTML from
   const skipped = { nonHtml: 0, offSite: 0, errors: 0, timedOut: false, sitemapSeeded: 0 };
 
   const seedNorm = normalizeUrl(resolvedSeed, seed, seed);
   if (!seedNorm) return { urls: [], total: 0, skipped, resolvedSeed };
   discovered.add(seedNorm);
-  queue.push(seedNorm);
+  visited.add(seedNorm);
 
-  // Fast path for CMS / PHP sites: seed with sitemap URLs first, then continue
-  // HTML spidering as time allows. This keeps Domain Crawl useful for sites
-  // with huge menus, slow WooCommerce pages, or expired HTTPS certs.
-  const sitemapUrls = await seedFromSitemaps(seed, maxUrls, Math.min(deadline, started + 16000));
-  for (const u of sitemapUrls) {
-    if (discovered.size >= maxUrls) break;
-    if (!discovered.has(u)) {
-      discovered.add(u);
-      queue.push(u);
+  // Extract links from the homepage immediately (already fetched)
+  if (seedResult) {
+    const baseUrl = new URL(seedResult.finalUrl);
+    const hrefs = extractHrefs(seedResult.html);
+    for (const href of hrefs) {
+      const norm = normalizeUrl(href, baseUrl, seed);
+      if (!norm) continue;
+      let parsed: URL;
+      try { parsed = new URL(norm); } catch { continue; }
+      if (!sameSite(parsed, seed)) { skipped.offSite++; continue; }
+      if (NON_HTML_EXTENSIONS.test(parsed.pathname)) { skipped.nonHtml++; continue; }
+      if (!discovered.has(norm)) {
+        discovered.add(norm);
+        queue.push(norm);
+      }
     }
   }
-  skipped.sitemapSeeded = sitemapUrls.length;
 
-  while (queue.length > 0 && discovered.size < maxUrls) {
-    if (Date.now() > deadline) { skipped.timedOut = true; break; }
+  // Start sitemap discovery in parallel — it adds URLs to the same queue
+  const sitemapPromise = sitemapWorker(seed, discovered, queue, maxUrls, Math.min(deadline, started + 12000))
+    .then(n => { skipped.sitemapSeeded = n; })
+    .catch(() => {});
 
-    const batch = queue.splice(0, CONCURRENCY);
-    const results = await Promise.all(batch.map((u) => fetchPageHtml(u)));
+  // Breadth-first HTML spidering — the core Screaming Frog approach
+  while (Date.now() < deadline && discovered.size < maxUrls) {
+    if (queue.length === 0) {
+      // Wait briefly for sitemap worker to feed URLs, then check again
+      await new Promise(r => setTimeout(r, 100));
+      if (queue.length === 0) break;
+    }
+
+    const batch = queue.splice(0, CONCURRENCY).filter(u => !visited.has(u));
+    if (batch.length === 0) continue;
+    for (const u of batch) visited.add(u);
+
+    const results = await Promise.all(batch.map(u => fetchPageHtml(u)));
 
     for (let i = 0; i < results.length; i++) {
       if (Date.now() > deadline || discovered.size >= maxUrls) break;
@@ -300,6 +341,11 @@ async function spider(seedUrl: string, maxUrls: number) {
     }
   }
 
+  if (Date.now() >= deadline) skipped.timedOut = true;
+
+  // Ensure sitemap worker finishes
+  await sitemapPromise;
+
   return {
     urls: Array.from(discovered).slice(0, maxUrls),
     total: discovered.size,
@@ -312,6 +358,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Reset per-request state
+  resolvedOrigin = null;
 
   try {
     const { siteUrl, maxUrls } = await req.json();

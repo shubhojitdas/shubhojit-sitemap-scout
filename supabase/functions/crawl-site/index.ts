@@ -267,7 +267,10 @@ async function sitemapWorker(seed: URL, discovered: Set<string>, queue: string[]
 async function spider(seedUrl: string, maxUrls: number) {
   const started = Date.now();
   const deadline = started + SPIDER_TIME_BUDGET_MS;
-  const resolvedSeed = await resolveSeed(seedUrl);
+
+  // Resolve seed by fetching homepage HTML directly (no wasted request)
+  const seedResult = await fetchPageHtml(seedUrl, true);
+  const resolvedSeed = seedResult?.finalUrl || seedUrl;
   const seed = new URL(resolvedSeed);
   const discovered = new Set<string>();
   const queue: string[] = [];
@@ -277,7 +280,25 @@ async function spider(seedUrl: string, maxUrls: number) {
   const seedNorm = normalizeUrl(resolvedSeed, seed, seed);
   if (!seedNorm) return { urls: [], total: 0, skipped, resolvedSeed };
   discovered.add(seedNorm);
-  queue.push(seedNorm);
+  visited.add(seedNorm);
+
+  // Extract links from the homepage immediately (already fetched)
+  if (seedResult) {
+    const baseUrl = new URL(seedResult.finalUrl);
+    const hrefs = extractHrefs(seedResult.html);
+    for (const href of hrefs) {
+      const norm = normalizeUrl(href, baseUrl, seed);
+      if (!norm) continue;
+      let parsed: URL;
+      try { parsed = new URL(norm); } catch { continue; }
+      if (!sameSite(parsed, seed)) { skipped.offSite++; continue; }
+      if (NON_HTML_EXTENSIONS.test(parsed.pathname)) { skipped.nonHtml++; continue; }
+      if (!discovered.has(norm)) {
+        discovered.add(norm);
+        queue.push(norm);
+      }
+    }
+  }
 
   // Start sitemap discovery in parallel — it adds URLs to the same queue
   const sitemapPromise = sitemapWorker(seed, discovered, queue, maxUrls, Math.min(deadline, started + 12000))
@@ -286,11 +307,10 @@ async function spider(seedUrl: string, maxUrls: number) {
 
   // Breadth-first HTML spidering — the core Screaming Frog approach
   while (Date.now() < deadline && discovered.size < maxUrls) {
-    // Grab a batch from the queue
     if (queue.length === 0) {
       // Wait briefly for sitemap worker to feed URLs, then check again
       await new Promise(r => setTimeout(r, 100));
-      if (queue.length === 0) break; // truly empty
+      if (queue.length === 0) break;
     }
 
     const batch = queue.splice(0, CONCURRENCY).filter(u => !visited.has(u));

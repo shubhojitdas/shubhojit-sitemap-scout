@@ -17,8 +17,8 @@ const FETCH_HEADERS = {
 };
 
 const MAX_URLS = 50000;
-const CONCURRENCY = 6;
-const FETCH_TIMEOUT_MS = 6000;
+const CONCURRENCY = 3;
+const FETCH_TIMEOUT_MS = 8000;
 const SITEMAP_TIMEOUT_MS = 3000;
 const SPIDER_TIME_BUDGET_MS = 27000; // leave 3s margin for Edge Function 30s limit
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|woff2?|ttf|otf|eot)(\?|#|$)/i;

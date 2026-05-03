@@ -131,6 +131,16 @@ async function fetchUrl(url: string, timeoutMs: number, redirect: RequestRedirec
   }
 }
 
+// Fetch and consume body to avoid resource leaks on probe requests
+async function probeUrl(url: string, timeoutMs: number): Promise<string | null> {
+  const resp = await fetchUrl(url, timeoutMs, 'follow');
+  if (resp) {
+    try { await resp.text(); } catch { /* drain */ }
+    return resp.url || url;
+  }
+  return null;
+}
+
 async function fetchWithOriginFallback(url: string, timeoutMs: number, redirect: RequestRedirect = 'follow'): Promise<Response | null> {
   // If we already know the working origin, just use it
   if (resolvedOrigin) {

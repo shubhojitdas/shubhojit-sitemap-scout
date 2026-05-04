@@ -255,7 +255,7 @@ async function sitemapWorker(seed: URL, discovered: Set<string>, queue: string[]
       try {
         const parsed = new URL(norm);
         if (!sameSite(parsed, seed)) continue;
-        if (NON_HTML_EXTENSIONS.test(parsed.pathname)) continue;
+        if (!isCrawlablePageUrl(parsed)) continue;
         if (!discovered.has(norm)) {
           discovered.add(norm);
           queue.push(norm);
@@ -302,7 +302,7 @@ async function spider(seedUrl: string, maxUrls: number) {
       let parsed: URL;
       try { parsed = new URL(norm); } catch { continue; }
       if (!sameSite(parsed, seed)) { skipped.offSite++; continue; }
-      if (NON_HTML_EXTENSIONS.test(parsed.pathname)) { skipped.nonHtml++; continue; }
+      if (!isCrawlablePageUrl(parsed)) { skipped.nonHtml++; continue; }
       if (!discovered.has(norm)) {
         discovered.add(norm);
         queue.push(norm);
@@ -342,7 +342,7 @@ async function spider(seedUrl: string, maxUrls: number) {
         let parsed: URL;
         try { parsed = new URL(norm); } catch { continue; }
         if (!sameSite(parsed, seed)) { skipped.offSite++; continue; }
-        if (NON_HTML_EXTENSIONS.test(parsed.pathname)) { skipped.nonHtml++; continue; }
+        if (!isCrawlablePageUrl(parsed)) { skipped.nonHtml++; continue; }
         if (discovered.has(norm)) continue;
         discovered.add(norm);
         queue.push(norm);

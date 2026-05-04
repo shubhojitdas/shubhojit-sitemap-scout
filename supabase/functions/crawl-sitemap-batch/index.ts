@@ -688,15 +688,15 @@ async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> 
 
 const MAX_HOPS = 10;
 const FETCH_TIMEOUT_MS = 9000;
-const MAX_FETCH_ATTEMPTS = 4;
+const MAX_FETCH_ATTEMPTS = 2;
 const RETRYABLE_STATUSES = new Set([403, 408, 425, 429, 500, 502, 503, 504]);
-const GLOBAL_CONCURRENCY_LIMIT = 10;
+const GLOBAL_CONCURRENCY_LIMIT = 6;
 const DOMAIN_CONCURRENCY_LIMIT = 2;
-const DEFAULT_DOMAIN_INTERVAL_MS = 1000;
-const FAST_DOMAIN_INTERVAL_MS = 500;
-const SLOW_DOMAIN_INTERVAL_MS = 3000;
-const RETRY_BACKOFF_MS = [2000, 5000, 10000, 15000];
-const COOLDOWN_BACKOFF_MS = [30000, 60000, 120000];
+const DEFAULT_DOMAIN_INTERVAL_MS = 350;
+const FAST_DOMAIN_INTERVAL_MS = 150;
+const SLOW_DOMAIN_INTERVAL_MS = 1200;
+const RETRY_BACKOFF_MS = [800, 2200];
+const COOLDOWN_BACKOFF_MS = [5000, 15000];
 const MAX_FETCH_CACHE_ENTRIES = 256;
 const FETCH_CACHE = new Map<string, Promise<FetchSnapshot>>();
 const FETCH_HEADERS = {
@@ -746,7 +746,7 @@ function parseRetryAfterMs(value?: string | null): number | null {
 }
 
 function isBlockedResponse(status: number, body: string, contentType: string): boolean {
-  if (status === 429 || status === 403) return true;
+  if (status === 429) return true;
   if (!/text\/html|application\/xhtml/i.test(contentType)) return false;
   const html = body.toLowerCase();
   if (/checking your browser|verify you are human|captcha|cf-chl|cloudflare ray id|attention required|access denied|bot detection/i.test(html)) {
@@ -822,7 +822,7 @@ class DomainRequestScheduler {
     const rateLimitedCount = state.recentStatuses.filter((code) => code === 429).length;
     const rateLimitedRatio = state.recentStatuses.length > 0 ? rateLimitedCount / state.recentStatuses.length : 0;
 
-    if (blocked || status === 429 || status === 403) {
+    if (blocked || status === 429) {
       state.successStreak = 0;
       state.blockStreak += 1;
       state.minIntervalMs = Math.max(state.minIntervalMs, SLOW_DOMAIN_INTERVAL_MS);

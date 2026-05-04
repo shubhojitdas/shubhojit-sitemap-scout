@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ResultsSidebar, type ResultsView } from "@/components/ResultsSidebar";
 import { StatsCards } from "@/components/StatsCards";
@@ -18,9 +18,6 @@ import { LinkAttributesPanel } from "@/components/LinkAttributesPanel";
 import { LinkEquityPanel } from "@/components/LinkEquityPanel";
 import { SocialTagGenerator } from "@/components/SocialTagGenerator";
 import { HreflangGenerator } from "@/components/HreflangGenerator";
-import { AnchorAuditPanel } from "@/components/AnchorAuditPanel";
-import { ContentSimilarityPanel } from "@/components/ContentSimilarityPanel";
-import { ContentLinkRatioPanel } from "@/components/ContentLinkRatioPanel";
 import type { CrawlResult } from "@/lib/crawl-api";
 import type { LastCrawlInput } from "@/hooks/use-crawler";
 
@@ -129,36 +126,14 @@ const SECTION_VIS_VIEWS = new Set<ResultsView>([
   "internal", "response-codes",
 ]);
 
-const RESULTS_VIEW_STORAGE_KEY = "sitemap-scout-ui-results-view";
-const RESULT_VIEWS = new Set<ResultsView>([
-  "overview", "internal", "response-codes", "seo-issues", "combined",
-  "page-titles", "meta-description", "h1", "h2", "h3", "images",
-  "canonicals", "hreflang", "schema", "meta-robots", "social",
-  "internal-links", "link-graph", "internal-link-graph", "sitemap",
-  "robots-txt", "og-generator", "hreflang-generator",
-]);
-
-function loadSavedView(): ResultsView {
-  try {
-    const saved = localStorage.getItem(RESULTS_VIEW_STORAGE_KEY) as ResultsView | null;
-    return saved && RESULT_VIEWS.has(saved) ? saved : "overview";
-  } catch {
-    return "overview";
-  }
-}
-
 export function ResultsShell({
   results, domain, parsedUrls, crawlSource, lastInput, flags,
   isLoading, isPaused,
   onClearCrawl, onOpenConfig, onOpenNewCrawl, onPause, onResume,
   crawlStartedAt, crawlCompletedAt, lastCrawledAt,
 }: Props) {
-  const [view, setView] = useState<ResultsView>(() => loadSavedView());
+  const [view, setView] = useState<ResultsView>("overview");
   const cfg = viewConfig(view, flags);
-
-  useEffect(() => {
-    try { localStorage.setItem(RESULTS_VIEW_STORAGE_KEY, view); } catch { /* ignore */ }
-  }, [view]);
 
   return (
     <SidebarProvider defaultOpen>
@@ -251,11 +226,7 @@ export function ResultsShell({
               )}
 
               {view === "seo-issues" && (
-                <>
-                  <SeoIssuesView results={results} flags={flags} />
-                  <ContentSimilarityPanel results={results} mode="similarity" />
-                  <ContentSimilarityPanel results={results} mode="cannibalization" />
-                </>
+                <SeoIssuesView results={results} flags={flags} />
               )}
 
               {view === "og-generator" && (
@@ -290,21 +261,13 @@ export function ResultsShell({
                         <>
                           <DuplicatesPanel results={results} field="h1" />
                           <ThinContentPanel results={results} />
-                          <ContentSimilarityPanel results={results} mode="similarity" />
-                          <ContentSimilarityPanel results={results} mode="cannibalization" />
-                          <ContentLinkRatioPanel results={results} />
                         </>
                       )}
                       {view === "internal-links" && (
                         <>
                           <LinkEquityPanel results={results} />
-                          <AnchorAuditPanel results={results} />
-                          <ContentLinkRatioPanel results={results} />
                           <LinkAttributesPanel results={results} />
                         </>
-                      )}
-                      {view === "response-codes" && (
-                        <></>
                       )}
                     </>
                   )}

@@ -24,8 +24,6 @@ interface CrawlState {
   lastInput: LastCrawlInput | null;
   /** Tracks every flag that has been crawled at least once on the current dataset. */
   crawledFlags: CrawlOptions;
-  /** Tracks the full field selection for the current/restored crawl session. */
-  selectedOptions: CrawlOptions;
   /** True when running an incremental extract (extendCrawl), so progress UI can label it. */
   incremental: boolean;
   /** Wall-clock ISO of when the current crawl was started. */
@@ -34,6 +32,64 @@ interface CrawlState {
   crawlCompletedAt: string | null;
   /** ISO of the most recent crawl activity (start, completion, or extension) in this dataset. */
   lastCrawledAt: string | null;
+}
+
+const INITIAL_STATE: CrawlState = {
+  phase: "idle",
+  crawlSource: null,
+  results: [],
+  totalUrls: 0,
+  processedUrls: 0,
+  error: null,
+  includeTitle: true,
+  includeDesc: true,
+  includeH2: false,
+  includeH3: false,
+  parsedUrls: [],
+  lastInput: null,
+  crawledFlags: {
+    includeTitle: false, includeDesc: false, includeH1: false, includeH2: false, includeH3: false,
+    includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false,
+    includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
+  },
+  incremental: false,
+  crawlStartedAt: null,
+  crawlCompletedAt: null,
+  lastCrawledAt: null,
+};
+
+const STORAGE_KEY = "sitemap-scout-crawl-data";
+
+const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const, hreflangs: [], internalLinks: [] };
+
+function loadPersistedState(): CrawlState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as CrawlState;
+    if (data.results && data.results.length > 0) {
+      data.crawlSource = data.crawlSource ?? null;
+      data.lastInput = data.lastInput ?? null;
+      data.crawledFlags = data.crawledFlags ?? INITIAL_STATE.crawledFlags;
+      data.incremental = false;
+      data.crawlStartedAt = data.crawlStartedAt ?? null;
+      data.crawlCompletedAt = data.crawlCompletedAt ?? null;
+      data.lastCrawledAt = data.lastCrawledAt ?? data.crawlCompletedAt ?? data.crawlStartedAt ?? null;
+      if (data.phase === "crawling" || data.phase === "parsing") {
+        data.phase = "done";
+      }
+      return data;
+    }
+  } catch { /* ignore corrupt data */ }
+  return null;
+}
+
+function persistState(state: CrawlState) {
+  try {
+    if (state.results.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+  } catch { /* storage full or unavailable */ }
 }
 
 export interface CrawlOptions {
@@ -52,181 +108,7 @@ export interface CrawlOptions {
   includeSocialTags: boolean;
 }
 
-const EMPTY_CRAWL_OPTIONS: CrawlOptions = {
-  includeTitle: false, includeDesc: false, includeH1: false, includeH2: false, includeH3: false,
-  includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false,
-  includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
-};
-
-const DEFAULT_OPTS: CrawlOptions = {
-  includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false,
-  includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false,
-  includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
-};
-
-const INITIAL_STATE: CrawlState = {
-  phase: "idle",
-  crawlSource: null,
-  results: [],
-  totalUrls: 0,
-  processedUrls: 0,
-  error: null,
-  includeTitle: true,
-  includeDesc: true,
-  includeH2: false,
-  includeH3: false,
-  parsedUrls: [],
-  lastInput: null,
-  crawledFlags: EMPTY_CRAWL_OPTIONS,
-  selectedOptions: EMPTY_CRAWL_OPTIONS,
-  incremental: false,
-  crawlStartedAt: null,
-  crawlCompletedAt: null,
-  lastCrawledAt: null,
-};
-
-const STORAGE_KEY = "sitemap-scout-crawl-data";
-const DB_NAME = "sitemap-scout-crawl-store";
-const DB_VERSION = 1;
-const DB_STORE = "sessions";
-const DB_SESSION_KEY = "current";
-
-const EMPTY_RESULT_FIELDS = { h2s: [] as string[], h3s: [] as string[], images: [], schemas: [] as string[], robots: '', canonical: '', canonicalStatus: 'Missing' as const, hreflangs: [], internalLinks: [] };
-
-function hasAnyOption(options: CrawlOptions) {
-  return Object.values(options).some(Boolean);
-}
-
-function normalizeOptions(options?: Partial<CrawlOptions> | null, fallback: CrawlOptions = EMPTY_CRAWL_OPTIONS): CrawlOptions {
-  return { ...fallback, ...(options ?? {}) };
-}
-
-function inferOptionsFromResults(data: Partial<CrawlState>): CrawlOptions {
-  const results = Array.isArray(data.results) ? data.results : [];
-  const inferred = normalizeOptions(data.crawledFlags, normalizeOptions(data.selectedOptions));
-
-  if (hasAnyOption(inferred)) return inferred;
-
-  return {
-    includeTitle: !!data.includeTitle || results.some((r) => !!r.title),
-    includeDesc: !!data.includeDesc || results.some((r) => !!r.description),
-    includeH1: results.some((r) => Array.isArray(r.h1s) && r.h1s.length > 0),
-    includeH2: !!data.includeH2 || results.some((r) => Array.isArray(r.h2s) && r.h2s.length > 0),
-    includeH3: !!data.includeH3 || results.some((r) => Array.isArray(r.h3s) && r.h3s.length > 0),
-    includeImages: results.some((r) => Array.isArray(r.images) && r.images.length > 0),
-    includeSchemas: results.some((r) => Array.isArray(r.schemas) && r.schemas.length > 0),
-    includeRobots: results.some((r) => typeof r.robots === "string" && r.robots.length > 0),
-    includeCanonical: results.some((r) => typeof r.canonical === "string" && r.canonical.length > 0),
-    includeHreflangs: results.some((r) => Array.isArray(r.hreflangs) && r.hreflangs.length > 0),
-    includeInternalLinks: results.some((r) => Array.isArray(r.internalLinks) && r.internalLinks.length > 0),
-    jsRenderedLinks: false,
-    includeSocialTags: results.some((r) => !!r.socialTags),
-  };
-}
-
-function normalizePersistedState(data: Partial<CrawlState> | null): CrawlState | null {
-  if (!data) return null;
-  const results = Array.isArray(data.results) ? data.results : [];
-  const parsedUrls = Array.isArray(data.parsedUrls) ? data.parsedUrls : [];
-  const hasSession = results.length > 0 || parsedUrls.length > 0 || !!data.lastInput;
-  if (!hasSession) return null;
-
-  const inferredOptions = inferOptionsFromResults(data);
-  const selectedOptions = normalizeOptions(data.selectedOptions, inferredOptions);
-  const crawledFlags = normalizeOptions(data.crawledFlags, hasAnyOption(inferredOptions) ? inferredOptions : selectedOptions);
-
-  return {
-    ...INITIAL_STATE,
-    ...data,
-    results,
-    parsedUrls,
-    crawlSource: data.crawlSource ?? null,
-    lastInput: data.lastInput ?? null,
-    crawledFlags,
-    selectedOptions,
-    incremental: false,
-    crawlStartedAt: data.crawlStartedAt ?? null,
-    crawlCompletedAt: data.crawlCompletedAt ?? null,
-    lastCrawledAt: data.lastCrawledAt ?? data.crawlCompletedAt ?? data.crawlStartedAt ?? null,
-    phase: data.phase === "crawling" || data.phase === "parsing" || data.phase === "paused" ? "done" : data.phase ?? "done",
-  };
-}
-
-function shouldPersistSession(state: CrawlState) {
-  return state.results.length > 0 || state.parsedUrls.length > 0 || !!state.lastInput || state.phase !== "idle";
-}
-
-function loadPersistedState(): CrawlState | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return normalizePersistedState(JSON.parse(raw) as Partial<CrawlState>);
-  } catch { /* ignore corrupt data */ }
-  return null;
-}
-
-function persistState(state: CrawlState) {
-  try {
-    if (shouldPersistSession(state)) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-  } catch { /* storage full or unavailable */ }
-}
-
-function openSessionDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function loadPersistedStateFromDb(): Promise<CrawlState | null> {
-  try {
-    const db = await openSessionDb();
-    return await new Promise<CrawlState | null>((resolve) => {
-      const tx = db.transaction(DB_STORE, "readonly");
-      const request = tx.objectStore(DB_STORE).get(DB_SESSION_KEY);
-      request.onsuccess = () => resolve(normalizePersistedState(request.result as Partial<CrawlState> | null));
-      request.onerror = () => resolve(null);
-      tx.oncomplete = () => db.close();
-      tx.onerror = () => db.close();
-    });
-  } catch {
-    return null;
-  }
-}
-
-async function persistStateToDb(state: CrawlState) {
-  if (!shouldPersistSession(state)) return;
-  try {
-    const db = await openSessionDb();
-    await new Promise<void>((resolve) => {
-      const tx = db.transaction(DB_STORE, "readwrite");
-      tx.objectStore(DB_STORE).put(state, DB_SESSION_KEY);
-      tx.oncomplete = () => { db.close(); resolve(); };
-      tx.onerror = () => { db.close(); resolve(); };
-      tx.onabort = () => { db.close(); resolve(); };
-    });
-  } catch { /* IndexedDB unavailable */ }
-}
-
-async function clearPersistedStateFromDb() {
-  try {
-    const db = await openSessionDb();
-    await new Promise<void>((resolve) => {
-      const tx = db.transaction(DB_STORE, "readwrite");
-      tx.objectStore(DB_STORE).delete(DB_SESSION_KEY);
-      tx.oncomplete = () => { db.close(); resolve(); };
-      tx.onerror = () => { db.close(); resolve(); };
-      tx.onabort = () => { db.close(); resolve(); };
-    });
-  } catch { /* IndexedDB unavailable */ }
-}
+const DEFAULT_OPTS: CrawlOptions = { includeTitle: true, includeDesc: true, includeH1: false, includeH2: false, includeH3: false, includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false, includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false };
 
 /** Merge an incremental batch into existing results: keep existing fields, only overwrite the
  *  ones the user requested in this incremental crawl. Uses URL as join key. */
@@ -255,60 +137,11 @@ function mergeResults(existing: CrawlResult[], fresh: CrawlResult[], opts: Crawl
 export function useCrawler() {
   const [state, setState] = useState<CrawlState>(() => loadPersistedState() || INITIAL_STATE);
 
-  useEffect(() => {
-    let cancelled = false;
-    loadPersistedStateFromDb().then((stored) => {
-      if (!cancelled && stored && stored.results.length >= state.results.length) {
-        setState(stored);
-      }
-    });
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { persistState(state); }, [state]);
 
-  useEffect(() => {
-    persistState(state);
-    persistStateToDb(state);
-  }, [state]);
-
-  // Tab/window close protection — when the user has crawl data, warn them
-  // before leaving. If the navigation actually proceeds (the tab is being
-  // discarded), clear the persisted crawl session so the next visit starts
-  // fresh. If they cancel the prompt, nothing is cleared and state is preserved.
-  useEffect(() => {
-    const hasData = state.results.length > 0 || state.parsedUrls.length > 0;
-    if (!hasData) return;
-
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Modern browsers ignore custom strings, but setting returnValue is
-      // what triggers the native confirmation dialog cross-browser.
-      e.preventDefault();
-      const msg = "You are about to leave. Your crawl data will be cleared if you continue.";
-      e.returnValue = msg;
-      return msg;
-    };
-
-    const onPageHide = (e: PageTransitionEvent) => {
-      // pagehide fires when navigation actually proceeds (tab close / refresh).
-      // If persisted=false, the page is being unloaded → wipe crawl storage.
-      if (e.persisted) return;
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem("sitemap-scout-ui-results-view");
-        localStorage.removeItem("sitemap-scout-ui-table-state");
-        sessionStorage.clear();
-      } catch { /* ignore */ }
-      // Best-effort IDB clear (may not flush before unload, but safe to try).
-      void clearPersistedStateFromDb();
-    };
-
-    window.addEventListener("beforeunload", onBeforeUnload);
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      window.removeEventListener("pagehide", onPageHide);
-    };
-  }, [state.results.length, state.parsedUrls.length]);
+  // Crawl state must survive page reloads and tab refreshes — never clear
+  // localStorage on unload. Only an explicit user action (clear/new crawl)
+  // should wipe it.
 
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);
@@ -333,10 +166,11 @@ export function useCrawler() {
     existingResults: CrawlResult[] = [],
   ) => {
     const allResults: CrawlResult[] = [...existingResults];
-    // Keep batches compact so progress stays responsive and each backend
-    // request only opens a polite number of target-site connections.
-    // Pairs with the edge function's 5-wide pool (2 for JS-rendered).
-    const BATCH_SIZE = 10;
+    // Balanced batch size: large enough to amortize round-trip latency,
+    // small enough that progress updates feel responsive and we never
+    // overwhelm a target site's server. Pairs with the edge function's
+    // 8-wide concurrent pool (4 for JS-rendered).
+    const BATCH_SIZE = 16;
 
     // ── Redirect-dedup bookkeeping ───────────────────────────────────────────
     // Track every URL we've already represented in the crawl (either because
@@ -417,21 +251,6 @@ export function useCrawler() {
           jsRenderedLinks: s.crawledFlags.jsRenderedLinks || opts.jsRenderedLinks,
           includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
         },
-        selectedOptions: {
-          includeTitle: s.selectedOptions.includeTitle || opts.includeTitle,
-          includeDesc: s.selectedOptions.includeDesc || opts.includeDesc,
-          includeH1: s.selectedOptions.includeH1 || opts.includeH1,
-          includeH2: s.selectedOptions.includeH2 || opts.includeH2,
-          includeH3: s.selectedOptions.includeH3 || opts.includeH3,
-          includeImages: s.selectedOptions.includeImages || opts.includeImages,
-          includeSchemas: s.selectedOptions.includeSchemas || opts.includeSchemas,
-          includeRobots: s.selectedOptions.includeRobots || opts.includeRobots,
-          includeCanonical: s.selectedOptions.includeCanonical || opts.includeCanonical,
-          includeHreflangs: s.selectedOptions.includeHreflangs || opts.includeHreflangs,
-          includeInternalLinks: s.selectedOptions.includeInternalLinks || opts.includeInternalLinks,
-          jsRenderedLinks: s.selectedOptions.jsRenderedLinks || opts.jsRenderedLinks,
-          includeSocialTags: s.selectedOptions.includeSocialTags || opts.includeSocialTags,
-        },
         incremental: false,
         crawlCompletedAt: completedAt,
         lastCrawledAt: completedAt,
@@ -462,7 +281,7 @@ export function useCrawler() {
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     const startedAt = new Date().toISOString();
-    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "sitemap", lastInput: { source: "sitemap", display: sitemapUrl }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
+    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "sitemap", lastInput: { source: "sitemap", display: sitemapUrl }, includeTitle, includeDesc, includeH2, includeH3, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
       const urls = await parseSitemapUrls(sitemapUrl);
@@ -512,7 +331,7 @@ export function useCrawler() {
     accumulatedResultsRef.current = [];
     const display = urls.length === 1 ? urls[0] : `${urls.length} URLs`;
     const startedAt = new Date().toISOString();
-    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: urls.length, parsedUrls: urls, lastInput: { source: "urls", display, urls }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
+    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: urls.length, parsedUrls: urls, lastInput: { source: "urls", display, urls }, includeTitle, includeDesc, includeH2, includeH3, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
       await runBatches(urls, signal, opts);
@@ -551,7 +370,7 @@ export function useCrawler() {
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     const startedAt = new Date().toISOString();
-    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "site", lastInput: { source: "site", display: siteUrl }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
+    setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "site", lastInput: { source: "site", display: siteUrl }, includeTitle, includeDesc, includeH2, includeH3, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
       const urls = await spiderSiteUrls(siteUrl);
@@ -602,21 +421,6 @@ export function useCrawler() {
       processedUrls: 0,
       error: null,
       incremental: true,
-        selectedOptions: {
-          includeTitle: s.selectedOptions.includeTitle || opts.includeTitle,
-          includeDesc: s.selectedOptions.includeDesc || opts.includeDesc,
-          includeH1: s.selectedOptions.includeH1 || opts.includeH1,
-          includeH2: s.selectedOptions.includeH2 || opts.includeH2,
-          includeH3: s.selectedOptions.includeH3 || opts.includeH3,
-          includeImages: s.selectedOptions.includeImages || opts.includeImages,
-          includeSchemas: s.selectedOptions.includeSchemas || opts.includeSchemas,
-          includeRobots: s.selectedOptions.includeRobots || opts.includeRobots,
-          includeCanonical: s.selectedOptions.includeCanonical || opts.includeCanonical,
-          includeHreflangs: s.selectedOptions.includeHreflangs || opts.includeHreflangs,
-          includeInternalLinks: s.selectedOptions.includeInternalLinks || opts.includeInternalLinks,
-          jsRenderedLinks: s.selectedOptions.jsRenderedLinks || opts.jsRenderedLinks,
-          includeSocialTags: s.selectedOptions.includeSocialTags || opts.includeSocialTags,
-        },
       crawlStartedAt: startedAt,
       crawlCompletedAt: null,
       lastCrawledAt: startedAt,
@@ -659,21 +463,6 @@ export function useCrawler() {
           jsRenderedLinks: s.crawledFlags.jsRenderedLinks || opts.jsRenderedLinks,
           includeSocialTags: s.crawledFlags.includeSocialTags || opts.includeSocialTags,
         },
-        selectedOptions: {
-          includeTitle: s.selectedOptions.includeTitle || opts.includeTitle,
-          includeDesc: s.selectedOptions.includeDesc || opts.includeDesc,
-          includeH1: s.selectedOptions.includeH1 || opts.includeH1,
-          includeH2: s.selectedOptions.includeH2 || opts.includeH2,
-          includeH3: s.selectedOptions.includeH3 || opts.includeH3,
-          includeImages: s.selectedOptions.includeImages || opts.includeImages,
-          includeSchemas: s.selectedOptions.includeSchemas || opts.includeSchemas,
-          includeRobots: s.selectedOptions.includeRobots || opts.includeRobots,
-          includeCanonical: s.selectedOptions.includeCanonical || opts.includeCanonical,
-          includeHreflangs: s.selectedOptions.includeHreflangs || opts.includeHreflangs,
-          includeInternalLinks: s.selectedOptions.includeInternalLinks || opts.includeInternalLinks,
-          jsRenderedLinks: s.selectedOptions.jsRenderedLinks || opts.jsRenderedLinks,
-          includeSocialTags: s.selectedOptions.includeSocialTags || opts.includeSocialTags,
-        },
         crawlCompletedAt: completedAt,
         lastCrawledAt: completedAt,
       }));
@@ -710,12 +499,6 @@ export function useCrawler() {
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    try {
-      localStorage.removeItem("sitemap-scout-ui-results-view");
-      localStorage.removeItem("sitemap-scout-ui-table-state");
-    } catch {}
-    clearPersistedStateFromDb();
     setState(INITIAL_STATE);
   }, []);
 
@@ -729,11 +512,6 @@ export function useCrawler() {
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
-    try {
-      localStorage.removeItem("sitemap-scout-ui-results-view");
-      localStorage.removeItem("sitemap-scout-ui-table-state");
-    } catch {}
-    clearPersistedStateFromDb();
     setState(INITIAL_STATE);
   }, []);
 

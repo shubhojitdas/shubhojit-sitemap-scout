@@ -13,7 +13,7 @@ const Index = () => {
   const {
     phase, crawlSource, results, totalUrls, processedUrls, error,
     crawl, crawlUrls, spiderSite, extendCrawl, pause, resume, reset, clearCrawl,
-    parsedUrls, lastInput, crawledFlags, selectedOptions,
+    parsedUrls, lastInput, crawledFlags,
     crawlStartedAt, crawlCompletedAt, lastCrawledAt,
   } = useCrawler();
 
@@ -40,26 +40,14 @@ const Index = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const extractDomain = (url: string) => {
+  const setDomainFromUrl = (url: string) => {
     try {
       const parsed = new URL(url.startsWith("http") ? url : "https://" + url);
-      return parsed.hostname;
+      setDomain(parsed.hostname);
     } catch {
-      return "unknown";
+      setDomain("unknown");
     }
   };
-
-  const setDomainFromUrl = (url: string) => setDomain(extractDomain(url));
-
-  useEffect(() => {
-    if (results.length === 0) return;
-    setActiveConfig(selectedOptions);
-    setConfig(selectedOptions);
-    if (!domain) {
-      const restoredUrl = lastInput?.source === "urls" ? lastInput.urls?.[0] : lastInput?.display;
-      setDomain(extractDomain(restoredUrl || results[0]?.finalUrl || results[0]?.url || ""));
-    }
-  }, [results, selectedOptions, domain, lastInput]);
 
   const handleCrawl = (url: string, c: CrawlConfig) => {
     setDomainFromUrl(url);

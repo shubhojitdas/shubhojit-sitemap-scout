@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import { CrawlResult, generateCSV, generateTSV, rowsToTSV, downloadCSV } from "@/lib/crawl-api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -36,32 +36,6 @@ type SortKey = "url" | "title" | "description" | "status";
 type SortDir = "asc" | "desc";
 type Filter = "all" | "errors" | "missing-title" | "missing-desc" | "title-long" | "multi-h1" | "missing-h1" | "has-robots" | "no-robots" | "noindex" | "nofollow" | "2xx" | "3xx" | "4xx" | "5xx";
 type ImageFilter = "all" | "missing-alt" | "no-images" | "has-images";
-type TableTab = "meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks" | "social";
-
-const TABLE_STATE_STORAGE_KEY = "sitemap-scout-ui-table-state";
-
-interface PersistedTableState {
-  activeView?: TableTab;
-  metaFilter?: Filter;
-  metaSortKey?: SortKey;
-  metaSortDir?: SortDir;
-  imgFilter?: ImageFilter;
-  schemaFilter?: "all" | "has-schema" | "no-schema";
-  canonicalFilter?: "all" | "self-referencing" | "canonicalised" | "missing";
-  hreflangFilter?: "all" | "has-hreflang" | "no-hreflang" | "has-x-default";
-  internalLinksFilter?: "all" | "has-internal" | "has-external" | "no-links";
-  universalSearch?: string;
-  universalAdvancedFilter?: AdvancedFilter;
-}
-
-function loadTableState(): PersistedTableState {
-  try {
-    const raw = localStorage.getItem(TABLE_STATE_STORAGE_KEY);
-    return raw ? JSON.parse(raw) as PersistedTableState : {};
-  } catch {
-    return {};
-  }
-}
 
 interface ResultsTableProps {
   results: CrawlResult[];
@@ -160,31 +134,21 @@ function matchesFieldSearch<T>(
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export function ResultsTable({ results, domain, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, includeSocialTags, forceTab }: ResultsTableProps) {
-  const persisted = useMemo(() => loadTableState(), []);
-  const [activeView, setActiveView] = useState<TableTab>(forceTab ?? persisted.activeView ?? "meta");
+  const [activeView, setActiveView] = useState<"meta" | "images" | "schemas" | "canonical" | "hreflangs" | "internalLinks" | "social">(forceTab ?? "meta");
 
   // Universal filter state shared across all tabs
-  const [metaFilter, setMetaFilter] = useState<Filter>(persisted.metaFilter ?? "all");
-  const [metaSortKey, setMetaSortKey] = useState<SortKey>(persisted.metaSortKey ?? "url");
-  const [metaSortDir, setMetaSortDir] = useState<SortDir>(persisted.metaSortDir ?? "asc");
-  const [imgFilter, setImgFilter] = useState<ImageFilter>(persisted.imgFilter ?? "all");
-  const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">(persisted.schemaFilter ?? "all");
-  const [canonicalFilter, setCanonicalFilter] = useState<"all" | "self-referencing" | "canonicalised" | "missing">(persisted.canonicalFilter ?? "all");
-  const [hreflangFilter, setHreflangFilter] = useState<"all" | "has-hreflang" | "no-hreflang" | "has-x-default">(persisted.hreflangFilter ?? "all");
-  const [internalLinksFilter, setInternalLinksFilter] = useState<"all" | "has-internal" | "has-external" | "no-links">(persisted.internalLinksFilter ?? "all");
+  const [metaFilter, setMetaFilter] = useState<Filter>("all");
+  const [metaSortKey, setMetaSortKey] = useState<SortKey>("url");
+  const [metaSortDir, setMetaSortDir] = useState<SortDir>("asc");
+  const [imgFilter, setImgFilter] = useState<ImageFilter>("all");
+  const [schemaFilter, setSchemaFilter] = useState<"all" | "has-schema" | "no-schema">("all");
+  const [canonicalFilter, setCanonicalFilter] = useState<"all" | "self-referencing" | "canonicalised" | "missing">("all");
+  const [hreflangFilter, setHreflangFilter] = useState<"all" | "has-hreflang" | "no-hreflang" | "has-x-default">("all");
+  const [internalLinksFilter, setInternalLinksFilter] = useState<"all" | "has-internal" | "has-external" | "no-links">("all");
 
   // Shared search & advanced filter across all tabs
-  const [universalSearch, setUniversalSearch] = useState(persisted.universalSearch ?? "");
-  const [universalAdvancedFilter, setUniversalAdvancedFilter] = useState<AdvancedFilter>(() => persisted.universalAdvancedFilter ?? createEmptyFilter("url"));
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(TABLE_STATE_STORAGE_KEY, JSON.stringify({
-        activeView, metaFilter, metaSortKey, metaSortDir, imgFilter, schemaFilter,
-        canonicalFilter, hreflangFilter, internalLinksFilter, universalSearch, universalAdvancedFilter,
-      } satisfies PersistedTableState));
-    } catch { /* ignore */ }
-  }, [activeView, metaFilter, metaSortKey, metaSortDir, imgFilter, schemaFilter, canonicalFilter, hreflangFilter, internalLinksFilter, universalSearch, universalAdvancedFilter]);
+  const [universalSearch, setUniversalSearch] = useState("");
+  const [universalAdvancedFilter, setUniversalAdvancedFilter] = useState<AdvancedFilter>(() => createEmptyFilter("url"));
 
   if (results.length === 0) return null;
 

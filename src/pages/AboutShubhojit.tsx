@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import {
   BarChart3, FileCode, Wrench, Heart, Zap, Layout, Database, Shield, Cpu,
   Terminal, Link as LinkIconLucide, Settings, Monitor, Smartphone, Server, Cloud,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   useAboutProfile, useAboutSkills, useAboutExperience, useAboutFeaturedPosts,
 } from "@/hooks/use-about-cms";
@@ -47,14 +49,22 @@ const AboutShubhojit = () => {
       <div className="fixed inset-0 grid-bg fade-mask pointer-events-none" />
 
       <div className="relative z-10">
-        <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border">
+        <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-between">
-            <a href="/" target="_blank" rel="noopener noreferrer">
+            <Link to="/">
               <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground text-xs">
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Back to Tool
               </Button>
-            </a>
+            </Link>
+            <div className="flex items-center gap-0.5">
+              <ThemeToggle />
+              <a href={linkedinUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground">
+                  <Linkedin className="h-3.5 w-3.5" />
+                </Button>
+              </a>
+            </div>
           </div>
         </header>
 

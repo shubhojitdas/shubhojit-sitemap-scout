@@ -43,6 +43,18 @@ function stripWww(hostname: string): string {
   return hostname.replace(/^www\./, '');
 }
 
+function isCrawlablePageUrl(u: URL): boolean {
+  const path = u.pathname.toLowerCase();
+  if (/^\/wp-json(?:\/|$)/.test(path)) return false;
+  if (/^\/wp-admin(?:\/|$)/.test(path)) return false;
+  if (/^\/wp-content(?:\/|$)/.test(path)) return false;
+  if (/^\/wp-includes(?:\/|$)/.test(path)) return false;
+  if (/\/feed\/?$/.test(path) || path === '/feed' || path === '/comments/feed') return false;
+  if (path === '/xmlrpc.php' || path === '/wp-login.php') return false;
+  if (u.searchParams.has('rest_route')) return false;
+  return true;
+}
+
 async function parseSitemap(url: string, domain: string, visited: Set<string>): Promise<string[]> {
   if (visited.has(url)) return [];
   visited.add(url);
@@ -74,7 +86,7 @@ async function parseSitemap(url: string, domain: string, visited: Set<string>): 
     try {
       const parsed = new URL(loc);
       const locDomain = stripWww(parsed.hostname);
-      if (locDomain === baseDomain || locDomain.endsWith('.' + baseDomain)) {
+      if ((locDomain === baseDomain || locDomain.endsWith('.' + baseDomain)) && isCrawlablePageUrl(parsed)) {
         urls.push(loc);
       }
     } catch { /* skip */ }

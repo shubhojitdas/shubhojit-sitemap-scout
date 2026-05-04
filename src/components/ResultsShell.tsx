@@ -19,12 +19,8 @@ import { LinkEquityPanel } from "@/components/LinkEquityPanel";
 import { SocialTagGenerator } from "@/components/SocialTagGenerator";
 import { HreflangGenerator } from "@/components/HreflangGenerator";
 import { AnchorAuditPanel } from "@/components/AnchorAuditPanel";
-import { RedirectChainPanel } from "@/components/RedirectChainPanel";
 import { ContentSimilarityPanel } from "@/components/ContentSimilarityPanel";
-import { SeoScorePanel } from "@/components/SeoScorePanel";
 import { ContentLinkRatioPanel } from "@/components/ContentLinkRatioPanel";
-import { AnomalyPanel } from "@/components/AnomalyPanel";
-import { PageTypePanel } from "@/components/PageTypePanel";
 import type { CrawlResult } from "@/lib/crawl-api";
 import type { LastCrawlInput } from "@/hooks/use-crawler";
 
@@ -222,8 +218,6 @@ export function ResultsShell({
                     includeHreflangs={flags.includeHreflangs}
                   />
                   <CrawlOverview results={results} domain={domain} flags={flags} />
-                  <SeoScorePanel results={results} />
-                  <PageTypePanel results={results} />
                   {(crawlSource === "site" || crawlSource === "sitemap") && (
                     <SitemapGenerator results={results} domain={domain} />
                   )}
@@ -259,8 +253,6 @@ export function ResultsShell({
               {view === "seo-issues" && (
                 <>
                   <SeoIssuesView results={results} flags={flags} />
-                  <AnomalyPanel results={results} />
-                  <RedirectChainPanel results={results} />
                   <ContentSimilarityPanel results={results} mode="similarity" />
                   <ContentSimilarityPanel results={results} mode="cannibalization" />
                 </>
@@ -312,7 +304,7 @@ export function ResultsShell({
                         </>
                       )}
                       {view === "response-codes" && (
-                        <RedirectChainPanel results={results} />
+                        <></>
                       )}
                     </>
                   )}

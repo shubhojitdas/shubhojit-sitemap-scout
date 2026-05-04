@@ -1,7 +1,6 @@
 import type { CrawlResult } from "./crawl-api";
 import {
-  auditAnchors, analyzeRedirects, analyzeSimilarity,
-  detectAnomalies, contentLinkRatio,
+  auditAnchors, analyzeSimilarity, contentLinkRatio,
 } from "./seo-advanced";
 
 /**
@@ -612,28 +611,6 @@ function runAdvancedRules(results: CrawlResult[], flags: FieldFlags): SeoIssue[]
     }
   }
 
-  const redirects = analyzeRedirects(results);
-  const chains = redirects.filter((r) => r.warning === "Redirect Chain");
-  const loops = redirects.filter((r) => r.warning === "Redirect Loop");
-  if (chains.length) {
-    issues.push({
-      id: "redirect-chain", flag: "includeTitle", group: "Redirects",
-      title: `${chains.length} URL${chains.length === 1 ? "" : "s"} go through multi-hop redirect chains`,
-      why: "Each redirect hop adds latency and slightly dilutes link equity. Chains also waste crawl budget and can break entirely if a middle hop fails.",
-      fix: "Update internal links and server rules to point directly at the final destination so each redirected URL has only one hop.",
-      severity: "warning", urls: chains.map((c) => c.originalUrl), count: chains.length,
-    });
-  }
-  if (loops.length) {
-    issues.push({
-      id: "redirect-loop", flag: "includeTitle", group: "Redirects",
-      title: `${loops.length} redirect loop${loops.length === 1 ? "" : "s"} detected`,
-      why: "A redirect loop traps both crawlers and users — the page can never load. Google drops looping URLs from its index and you lose any rankings tied to them.",
-      fix: "Trace the loop in your server config / CMS redirect rules and break the cycle. Each URL must end at a final 200 OK destination.",
-      severity: "critical", urls: loops.map((c) => c.originalUrl), count: loops.length,
-    });
-  }
-
   if (results.length >= 3) {
     const sim = analyzeSimilarity(results);
     const dupes = sim.pairs.filter((p) => p.similarity >= 0.85);
@@ -681,21 +658,6 @@ function runAdvancedRules(results: CrawlResult[], flags: FieldFlags): SeoIssue[]
         severity: "info", urls: underlinked.map((r) => r.url), count: underlinked.length,
       });
     }
-  }
-
-  const anomalies = detectAnomalies(results);
-  const highAnoms = anomalies.filter(
-    (a) => a.severity === "high" && a.type !== "Missing Title" && a.type !== "HTTP Error",
-  );
-  if (highAnoms.length) {
-    const urls = Array.from(new Set(highAnoms.map((a) => a.url)));
-    issues.push({
-      id: "crawl-anomaly-high", flag: "includeTitle", group: "Crawl Anomalies",
-      title: `${urls.length} page${urls.length === 1 ? "" : "s"} show unusual crawl behavior`,
-      why: "Unexpected crawl patterns (zero word count, redirect loops, etc.) usually indicate broken templates, render issues, or misconfigured pages — silent killers for organic traffic.",
-      fix: "Open each affected URL and verify it renders the expected content for both users and a basic HTML crawler. Look for JS-only rendering, blocked resources, or template bugs.",
-      severity: "critical", urls, count: urls.length,
-    });
   }
 
   return issues;

@@ -42,13 +42,23 @@ function normalizeUrl(raw: string, base: URL, preferredOrigin?: URL): string | n
       u.port = preferredOrigin.port;
     }
     u.hash = '';
-    if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
-      u.pathname = u.pathname.slice(0, -1);
-    }
     return u.toString();
   } catch {
     return null;
   }
+}
+
+function isCrawlablePageUrl(u: URL): boolean {
+  const path = u.pathname.toLowerCase();
+  if (NON_HTML_EXTENSIONS.test(path)) return false;
+  if (/^\/wp-json(?:\/|$)/.test(path)) return false;
+  if (/^\/wp-admin(?:\/|$)/.test(path)) return false;
+  if (/^\/wp-content(?:\/|$)/.test(path)) return false;
+  if (/^\/wp-includes(?:\/|$)/.test(path)) return false;
+  if (/\/feed\/?$/.test(path) || path === '/feed' || path === '/comments/feed') return false;
+  if (path === '/xmlrpc.php' || path === '/wp-login.php') return false;
+  if (u.searchParams.has('rest_route')) return false;
+  return true;
 }
 
 function isLikelyTemplateUrl(raw: string): boolean {
@@ -245,7 +255,7 @@ async function sitemapWorker(seed: URL, discovered: Set<string>, queue: string[]
       try {
         const parsed = new URL(norm);
         if (!sameSite(parsed, seed)) continue;
-        if (NON_HTML_EXTENSIONS.test(parsed.pathname)) continue;
+        if (!isCrawlablePageUrl(parsed)) continue;
         if (!discovered.has(norm)) {
           discovered.add(norm);
           queue.push(norm);
@@ -292,7 +302,7 @@ async function spider(seedUrl: string, maxUrls: number) {
       let parsed: URL;
       try { parsed = new URL(norm); } catch { continue; }
       if (!sameSite(parsed, seed)) { skipped.offSite++; continue; }
-      if (NON_HTML_EXTENSIONS.test(parsed.pathname)) { skipped.nonHtml++; continue; }
+      if (!isCrawlablePageUrl(parsed)) { skipped.nonHtml++; continue; }
       if (!discovered.has(norm)) {
         discovered.add(norm);
         queue.push(norm);
@@ -332,7 +342,7 @@ async function spider(seedUrl: string, maxUrls: number) {
         let parsed: URL;
         try { parsed = new URL(norm); } catch { continue; }
         if (!sameSite(parsed, seed)) { skipped.offSite++; continue; }
-        if (NON_HTML_EXTENSIONS.test(parsed.pathname)) { skipped.nonHtml++; continue; }
+        if (!isCrawlablePageUrl(parsed)) { skipped.nonHtml++; continue; }
         if (discovered.has(norm)) continue;
         discovered.add(norm);
         queue.push(norm);

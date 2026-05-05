@@ -561,8 +561,9 @@ export function useCrawler() {
     setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "site", lastInput: { source: "site", display: siteUrl }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
-      const urls = await spiderSiteUrls(siteUrl);
+      const rawUrls = await spiderSiteUrls(siteUrl);
       if (signal.aborted) return;
+      const urls = sanitizeUrlList(rawUrls);
 
       if (urls.length === 0) {
         if (!signal.aborted) setState((s) => ({ ...s, phase: "error", error: "No internal URLs discovered. The site may block crawlers or have no internal links." }));

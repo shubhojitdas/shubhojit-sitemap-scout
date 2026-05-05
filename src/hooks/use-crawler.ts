@@ -512,16 +512,17 @@ export function useCrawler() {
   ) => {
     const signal = startController();
     const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
+    const cleanUrls = sanitizeUrlList(urls);
     crawlOptionsRef.current = opts;
-    pendingUrlsRef.current = urls;
+    pendingUrlsRef.current = cleanUrls;
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    const display = urls.length === 1 ? urls[0] : `${urls.length} URLs`;
+    const display = cleanUrls.length === 1 ? cleanUrls[0] : `${cleanUrls.length} URLs`;
     const startedAt = new Date().toISOString();
-    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: urls.length, parsedUrls: urls, lastInput: { source: "urls", display, urls }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
+    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: cleanUrls.length, parsedUrls: cleanUrls, lastInput: { source: "urls", display, urls: cleanUrls }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
-      await runBatches(urls, signal, opts);
+      await runBatches(cleanUrls, signal, opts);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({

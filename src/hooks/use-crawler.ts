@@ -97,6 +97,36 @@ function hasAnyOption(options: CrawlOptions) {
   return Object.values(options).some(Boolean);
 }
 
+/**
+ * Sanitize a list of URLs: trim whitespace, reject obviously malformed entries
+ * (e.g. two URLs concatenated together — a common WordPress sitemap bug),
+ * and deduplicate.
+ */
+function sanitizeUrlList(urls: string[]): string[] {
+  const seen = new Set<string>();
+  const clean: string[] = [];
+  for (const raw of urls) {
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    // Detect concatenated URLs: if the string contains "http" after position 8
+    // it likely has two URLs jammed together (e.g. ".../page/https://...")
+    const secondHttp = trimmed.indexOf("http", 8);
+    if (secondHttp > 0) {
+      // Split into the two individual URLs
+      const first = trimmed.slice(0, secondHttp).trim();
+      const second = trimmed.slice(secondHttp).trim();
+      for (const u of [first, second]) {
+        try { new URL(u); } catch { continue; }
+        if (!seen.has(u)) { seen.add(u); clean.push(u); }
+      }
+      continue;
+    }
+    try { new URL(trimmed); } catch { continue; }
+    if (!seen.has(trimmed)) { seen.add(trimmed); clean.push(trimmed); }
+  }
+  return clean;
+}
+
 function normalizeOptions(options?: Partial<CrawlOptions> | null, fallback: CrawlOptions = EMPTY_CRAWL_OPTIONS): CrawlOptions {
   return { ...fallback, ...(options ?? {}) };
 }
@@ -271,9 +301,18 @@ export function useCrawler() {
     persistStateToDb(state);
   }, [state]);
 
-  // Crawl state must survive page reloads and tab refreshes — never clear
-  // localStorage on unload. Only an explicit user action (clear/new crawl)
-  // should wipe it.
+  // Warn the user before closing/refreshing the tab while a crawl is active
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (state.phase === "crawling" || state.phase === "parsing" || state.phase === "paused") {
+        e.preventDefault();
+        // Legacy browsers need returnValue
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [state.phase]);
 
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);
@@ -431,8 +470,9 @@ export function useCrawler() {
     setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "sitemap", lastInput: { source: "sitemap", display: sitemapUrl }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
-      const urls = await parseSitemapUrls(sitemapUrl);
+      const rawUrls = await parseSitemapUrls(sitemapUrl);
       if (signal.aborted) return;
+      const urls = sanitizeUrlList(rawUrls);
 
       if (urls.length === 0) {
         if (!signal.aborted) setState((s) => ({ ...s, phase: "error", error: "No URLs found in sitemap" }));
@@ -472,16 +512,17 @@ export function useCrawler() {
   ) => {
     const signal = startController();
     const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
+    const cleanUrls = sanitizeUrlList(urls);
     crawlOptionsRef.current = opts;
-    pendingUrlsRef.current = urls;
+    pendingUrlsRef.current = cleanUrls;
     pendingIndexRef.current = 0;
     accumulatedResultsRef.current = [];
-    const display = urls.length === 1 ? urls[0] : `${urls.length} URLs`;
+    const display = cleanUrls.length === 1 ? cleanUrls[0] : `${cleanUrls.length} URLs`;
     const startedAt = new Date().toISOString();
-    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: urls.length, parsedUrls: urls, lastInput: { source: "urls", display, urls }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
+    setState({ ...INITIAL_STATE, phase: "crawling", crawlSource: "urls", totalUrls: cleanUrls.length, parsedUrls: cleanUrls, lastInput: { source: "urls", display, urls: cleanUrls }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
-      await runBatches(urls, signal, opts);
+      await runBatches(cleanUrls, signal, opts);
     } catch (err) {
       if (!signal.aborted) {
         setState((s) => ({
@@ -520,8 +561,9 @@ export function useCrawler() {
     setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "site", lastInput: { source: "site", display: siteUrl }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
-      const urls = await spiderSiteUrls(siteUrl);
+      const rawUrls = await spiderSiteUrls(siteUrl);
       if (signal.aborted) return;
+      const urls = sanitizeUrlList(rawUrls);
 
       if (urls.length === 0) {
         if (!signal.aborted) setState((s) => ({ ...s, phase: "error", error: "No internal URLs discovered. The site may block crawlers or have no internal links." }));

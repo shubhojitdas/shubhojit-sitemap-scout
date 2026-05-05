@@ -124,12 +124,24 @@ export function extractJsRedirectTarget(html: string, baseUrl: string): string |
       if (/\{\{[^}]*\}\}/.test(raw)) continue;
       if (/\$\{|%24%7B|%7B[^/]*%7D/i.test(raw)) continue;
 
-      // Skip assignments inside event-handler bodies — those fire on user action,
-      // not page load, so they aren't crawl-time redirects.
-      const ctxStart = Math.max(0, m.index - 200);
+      // Skip assignments inside event-handler bodies, named functions, jQuery
+      // handlers, conditionals, etc. — those fire on user action or conditionally,
+      // not as unconditional page-load redirects.
+      const ctxStart = Math.max(0, m.index - 600);
       const ctx = cleanedBody.slice(ctxStart, m.index);
-      if (/addEventListener\s*\(\s*['"`](?:click|submit|change|input|keydown|keyup|mousedown|mouseup|touchstart|touchend)['"`]/i.test(ctx)) continue;
+
+      // Native DOM event listeners
+      if (/addEventListener\s*\(\s*['"`](?:click|submit|change|input|keydown|keyup|mousedown|mouseup|touchstart|touchend|focus|blur|pointerdown|pointerup)['"`]/i.test(ctx)) continue;
+      // Inline on* handlers
       if (/\bon(?:click|submit|change|input|keydown|keyup|mousedown|mouseup|touchstart|touchend)\s*[:=]\s*(?:function|\([^)]*\)\s*=>)/i.test(ctx)) continue;
+      // jQuery / WordPress event binding: .click(, .on('click', .submit(, .bind('click'
+      if (/\.\s*(?:click|submit|on|bind|delegate|one|live)\s*\(\s*(?:['"`](?:click|submit|change|mousedown|touchstart)['"`]\s*,\s*)?(?:function|\([^)]*\)\s*=>)/i.test(ctx)) continue;
+      // Named function declarations (not IIFE) — these aren't auto-executed
+      if (/function\s+\w+\s*\([^)]*\)\s*\{[^}]*$/i.test(ctx)) continue;
+      // Inside if/else blocks — conditional, not guaranteed page-load redirect
+      if (/\bif\s*\([^)]*\)\s*\{[^}]*$/i.test(ctx)) continue;
+      // Inside setTimeout/setInterval callbacks (often conditional or delayed)
+      if (/\b(?:setTimeout|setInterval)\s*\(\s*(?:function|\([^)]*\)\s*=>)/i.test(ctx)) continue;
 
       let resolved: string;
       try {

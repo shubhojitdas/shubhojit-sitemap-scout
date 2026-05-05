@@ -470,8 +470,9 @@ export function useCrawler() {
     setState({ ...INITIAL_STATE, phase: "parsing", crawlSource: "sitemap", lastInput: { source: "sitemap", display: sitemapUrl }, includeTitle, includeDesc, includeH2, includeH3, selectedOptions: opts, crawlStartedAt: startedAt, crawlCompletedAt: null, lastCrawledAt: startedAt });
 
     try {
-      const urls = await parseSitemapUrls(sitemapUrl);
+      const rawUrls = await parseSitemapUrls(sitemapUrl);
       if (signal.aborted) return;
+      const urls = sanitizeUrlList(rawUrls);
 
       if (urls.length === 0) {
         if (!signal.aborted) setState((s) => ({ ...s, phase: "error", error: "No URLs found in sitemap" }));

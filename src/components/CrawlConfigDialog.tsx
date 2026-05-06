@@ -30,7 +30,18 @@ export interface CrawlConfig {
   includeInternalLinks: boolean;
   jsRenderedLinks: boolean;
   includeSocialTags: boolean;
+  userAgent: string;
 }
+
+export const USER_AGENT_PRESETS: { label: string; value: string }[] = [
+  { label: "Sitemap Scout (Default)", value: "Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)" },
+  { label: "Googlebot Desktop", value: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+  { label: "Googlebot Mobile", value: "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+  { label: "Bingbot", value: "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)" },
+  { label: "Chrome Desktop", value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36" },
+  { label: "Chrome Mobile", value: "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" },
+  { label: "Safari Desktop", value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },
+];
 
 export const DEFAULT_CRAWL_CONFIG: CrawlConfig = {
   includeTitle: false,
@@ -46,6 +57,7 @@ export const DEFAULT_CRAWL_CONFIG: CrawlConfig = {
   includeInternalLinks: false,
   jsRenderedLinks: false,
   includeSocialTags: false,
+  userAgent: USER_AGENT_PRESETS[0].value,
 };
 
 interface Props {

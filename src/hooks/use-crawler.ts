@@ -50,6 +50,7 @@ export interface CrawlOptions {
   includeInternalLinks: boolean;
   jsRenderedLinks: boolean;
   includeSocialTags: boolean;
+  userAgent?: string;
 }
 
 const EMPTY_CRAWL_OPTIONS: CrawlOptions = {

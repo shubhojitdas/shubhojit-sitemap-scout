@@ -132,6 +132,7 @@ const EMPTY_FLAGS: CrawlConfig = {
   includeTitle: false, includeDesc: false, includeH1: false, includeH2: false, includeH3: false,
   includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false,
   includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
+  userAgent: USER_AGENT_PRESETS[0].value,
 };
 
 export function CrawlConfigDialog({

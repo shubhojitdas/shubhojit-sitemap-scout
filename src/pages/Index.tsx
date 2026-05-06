@@ -53,8 +53,8 @@ const Index = () => {
 
   useEffect(() => {
     if (results.length === 0) return;
-    setActiveConfig(selectedOptions);
-    setConfig(selectedOptions);
+    setActiveConfig((prev) => ({ ...selectedOptions, userAgent: prev.userAgent }));
+    setConfig((prev) => ({ ...selectedOptions, userAgent: prev.userAgent }));
     if (!domain) {
       const restoredUrl = lastInput?.source === "urls" ? lastInput.urls?.[0] : lastInput?.display;
       setDomain(extractDomain(restoredUrl || results[0]?.finalUrl || results[0]?.url || ""));

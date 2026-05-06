@@ -70,8 +70,6 @@ interface CrawlResult {
   hopCount?: number;
   /** ISO-8601 Last-Modified from the final HTTP response, when provided. */
   lastModified?: string;
-  /** Approximate visible main-content word count (used for thin-content detection). */
-  wordCount?: number;
   fetchTime: string;
 }
 

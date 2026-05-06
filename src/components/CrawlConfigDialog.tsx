@@ -246,6 +246,30 @@ export function CrawlConfigDialog({
               {overwriteCount} previously-crawled field{overwriteCount === 1 ? "" : "s"} will be refreshed and overwritten for the same URL set.
             </motion.div>
           )}
+
+          {/* User-Agent selector — only for initial crawls */}
+          {!isIncremental && (
+            <div>
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Crawler Identity
+              </h4>
+              <select
+                value={USER_AGENT_PRESETS.some((p) => p.value === config.userAgent) ? config.userAgent : "__custom__"}
+                onChange={(e) => {
+                  if (e.target.value === "__custom__") return;
+                  onChange({ ...config, userAgent: e.target.value });
+                }}
+                className="w-full h-9 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {USER_AGENT_PRESETS.map((p) => (
+                  <option key={p.label} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Choose how the crawler identifies itself. Use Googlebot to see what Google sees, or a browser UA to bypass basic bot detection.
+              </p>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2 flex-col-reverse sm:flex-row">

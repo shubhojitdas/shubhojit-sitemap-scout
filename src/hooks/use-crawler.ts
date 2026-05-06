@@ -519,9 +519,10 @@ export function useCrawler() {
     includeInternalLinks = false,
     jsRenderedLinks = false,
     includeSocialTags = false,
+    userAgent?: string,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags, userAgent };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;

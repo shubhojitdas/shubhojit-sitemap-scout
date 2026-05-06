@@ -920,9 +920,6 @@ async function fetchMeta(
         ? (jsRenderedLinks ? await extractJsRenderedLinks(finalUrl) : extractInternalLinks(html, finalUrl))
         : [],
       socialTags: includeSocialTags ? extractSocialTags(html, finalUrl) : [],
-      // Word count is cheap (single regex pass over already-extracted main body)
-      // and powers thin-content detection without needing a new flag.
-      wordCount: computeWordCount(html),
       status: 'OK',
       statusCode: detection.finalStatus,
       ...baseFields,

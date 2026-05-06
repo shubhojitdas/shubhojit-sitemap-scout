@@ -65,21 +65,21 @@ const Index = () => {
     setDomainFromUrl(url);
     setActiveConfig(c);
     setNewCrawlOpen(false);
-    crawl(url, c.includeTitle, c.includeDesc, c.includeH1, c.includeH2, c.includeH3, c.includeImages, c.includeSchemas, c.includeRobots, c.includeCanonical, c.includeHreflangs, c.includeInternalLinks, c.jsRenderedLinks, c.includeSocialTags);
+    crawl(url, c.includeTitle, c.includeDesc, c.includeH1, c.includeH2, c.includeH3, c.includeImages, c.includeSchemas, c.includeRobots, c.includeCanonical, c.includeHreflangs, c.includeInternalLinks, c.jsRenderedLinks, c.includeSocialTags, c.userAgent);
   };
 
   const handleSpiderSite = (url: string, c: CrawlConfig) => {
     setDomainFromUrl(url);
     setActiveConfig(c);
     setNewCrawlOpen(false);
-    spiderSite(url, c.includeTitle, c.includeDesc, c.includeH1, c.includeH2, c.includeH3, c.includeImages, c.includeSchemas, c.includeRobots, c.includeCanonical, c.includeHreflangs, c.includeInternalLinks, c.jsRenderedLinks, c.includeSocialTags);
+    spiderSite(url, c.includeTitle, c.includeDesc, c.includeH1, c.includeH2, c.includeH3, c.includeImages, c.includeSchemas, c.includeRobots, c.includeCanonical, c.includeHreflangs, c.includeInternalLinks, c.jsRenderedLinks, c.includeSocialTags, c.userAgent);
   };
 
   const handleCrawlUrls = (urls: string[], c: CrawlConfig) => {
     if (urls[0]) setDomainFromUrl(urls[0]);
     setActiveConfig(c);
     setNewCrawlOpen(false);
-    crawlUrls(urls, c.includeTitle, c.includeDesc, c.includeH1, c.includeH2, c.includeH3, c.includeImages, c.includeSchemas, c.includeRobots, c.includeCanonical, c.includeHreflangs, c.includeInternalLinks, c.jsRenderedLinks, c.includeSocialTags);
+    crawlUrls(urls, c.includeTitle, c.includeDesc, c.includeH1, c.includeH2, c.includeH3, c.includeImages, c.includeSchemas, c.includeRobots, c.includeCanonical, c.includeHreflangs, c.includeInternalLinks, c.jsRenderedLinks, c.includeSocialTags, c.userAgent);
   };
 
   const handleExtend = (extra: Partial<CrawlConfig>) => {

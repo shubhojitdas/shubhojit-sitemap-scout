@@ -348,7 +348,7 @@ export function useCrawler() {
         continue;
       }
       try {
-        const batchResults = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags);
+        const batchResults = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags, opts.userAgent);
         if (signal.aborted) return;
         if (pausedRef.current) {
           for (const r of batchResults) { seenUrls.add(norm(r.url)); if (r.finalUrl) seenUrls.add(norm(r.finalUrl)); }
@@ -602,7 +602,7 @@ export function useCrawler() {
       if (signal.aborted) return;
       const batch = targetUrls.slice(i, i + BATCH_SIZE);
       try {
-        const fresh = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags);
+        const fresh = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags, opts.userAgent);
         if (signal.aborted) return;
         merged = mergeResults(merged, fresh, opts);
         setState((s) => ({ ...s, results: merged, processedUrls: Math.min(i + BATCH_SIZE, targetUrls.length) }));

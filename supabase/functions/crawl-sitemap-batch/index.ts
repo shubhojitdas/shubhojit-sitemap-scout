@@ -552,18 +552,6 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
 }
 
 /** Approximate visible word count from main content — strips tags, collapses whitespace. */
-function computeWordCount(html: string): number {
-  const main = extractMainContent(html);
-  const text = main
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!text) return 0;
-  // Count whitespace-delimited tokens with at least one letter/digit.
-  const tokens = text.split(' ').filter((t) => /[\p{L}\p{N}]/u.test(t));
-  return tokens.length;
-}
 
 // ─── JS-rendered link extraction via Jina Reader ──────────────────────────────
 

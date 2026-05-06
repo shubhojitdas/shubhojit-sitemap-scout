@@ -265,39 +265,6 @@ const RULES: Partial<Record<keyof FieldFlags, Rule>> = {
       });
     }
 
-    // Thin / very thin content (uses wordCount populated by the crawler)
-    const withWc = list.filter((r) => typeof r.wordCount === "number");
-    if (withWc.length) {
-      const veryThin = withWc.filter((r) => (r.wordCount ?? 0) < 100);
-      const thin = withWc.filter((r) => (r.wordCount ?? 0) >= 100 && (r.wordCount ?? 0) < 300);
-      if (veryThin.length) {
-        issues.push({
-          id: "content-very-thin",
-          flag: "includeH1",
-          group: "Content Quality",
-          title: `${veryThin.length} page${veryThin.length === 1 ? "" : "s"} have very thin content (<100 words)`,
-          why: "Pages with almost no body text struggle to rank because search engines can't determine relevance. They also frustrate users who land on near-empty pages.",
-          fix: "Expand each page with substantive, original content (300+ words) that fully answers the user's intent. Or merge/redirect ultra-thin pages into a richer parent page.",
-          severity: "warning",
-          urls: veryThin.map((r) => r.url),
-          count: veryThin.length,
-        });
-      }
-      if (thin.length) {
-        issues.push({
-          id: "content-thin",
-          flag: "includeH1",
-          group: "Content Quality",
-          title: `${thin.length} page${thin.length === 1 ? "" : "s"} have thin content (100–300 words)`,
-          why: "Short pages can rank but usually for narrow long-tail queries only. Competitors with deeper content typically outperform them on commercial keywords.",
-          fix: "Add depth — examples, FAQs, supporting media, and internal links — until each important page comfortably exceeds 300 words of original content.",
-          severity: "info",
-          urls: thin.map((r) => r.url),
-          count: thin.length,
-        });
-      }
-    }
-
     return issues;
   },
 

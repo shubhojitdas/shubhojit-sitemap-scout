@@ -70,8 +70,6 @@ interface CrawlResult {
   hopCount?: number;
   /** ISO-8601 Last-Modified from the final HTTP response, when provided. */
   lastModified?: string;
-  /** Approximate visible main-content word count (used for thin-content detection). */
-  wordCount?: number;
   fetchTime: string;
 }
 
@@ -552,18 +550,6 @@ function extractInternalLinks(html: string, pageUrl: string): InternalLinkData[]
 }
 
 /** Approximate visible word count from main content — strips tags, collapses whitespace. */
-function computeWordCount(html: string): number {
-  const main = extractMainContent(html);
-  const text = main
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!text) return 0;
-  // Count whitespace-delimited tokens with at least one letter/digit.
-  const tokens = text.split(' ').filter((t) => /[\p{L}\p{N}]/u.test(t));
-  return tokens.length;
-}
 
 // ─── JS-rendered link extraction via Jina Reader ──────────────────────────────
 
@@ -688,11 +674,18 @@ async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> 
 
 const MAX_HOPS = 10;
 const FETCH_TIMEOUT_MS = 15000;
-const FETCH_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'en-US,en;q=0.5',
-};
+const DEFAULT_UA = 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)';
+
+function makeFetchHeaders(userAgent?: string) {
+  return {
+    'User-Agent': userAgent || DEFAULT_UA,
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+  };
+}
+
+// Shared mutable ref set per request — avoids threading through every function
+let FETCH_HEADERS: Record<string, string> = makeFetchHeaders();
 
 interface DetectionResult {
   initialUrl: string;
@@ -927,9 +920,6 @@ async function fetchMeta(
         ? (jsRenderedLinks ? await extractJsRenderedLinks(finalUrl) : extractInternalLinks(html, finalUrl))
         : [],
       socialTags: includeSocialTags ? extractSocialTags(html, finalUrl) : [],
-      // Word count is cheap (single regex pass over already-extracted main body)
-      // and powers thin-content detection without needing a new flag.
-      wordCount: computeWordCount(html),
       status: 'OK',
       statusCode: detection.finalStatus,
       ...baseFields,
@@ -962,7 +952,11 @@ Deno.serve(async (req) => {
       includeInternalLinks = false,
       jsRenderedLinks = false,
       includeSocialTags = false,
+      userAgent,
     } = await req.json();
+
+    // Set the User-Agent for this request batch
+    FETCH_HEADERS = makeFetchHeaders(userAgent);
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return new Response(

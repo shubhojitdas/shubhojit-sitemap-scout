@@ -30,7 +30,18 @@ export interface CrawlConfig {
   includeInternalLinks: boolean;
   jsRenderedLinks: boolean;
   includeSocialTags: boolean;
+  userAgent: string;
 }
+
+export const USER_AGENT_PRESETS: { label: string; value: string }[] = [
+  { label: "Sitemap Scout (Default)", value: "Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)" },
+  { label: "Googlebot Desktop", value: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+  { label: "Googlebot Mobile", value: "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+  { label: "Bingbot", value: "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)" },
+  { label: "Chrome Desktop", value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36" },
+  { label: "Chrome Mobile", value: "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36" },
+  { label: "Safari Desktop", value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },
+];
 
 export const DEFAULT_CRAWL_CONFIG: CrawlConfig = {
   includeTitle: false,
@@ -46,6 +57,7 @@ export const DEFAULT_CRAWL_CONFIG: CrawlConfig = {
   includeInternalLinks: false,
   jsRenderedLinks: false,
   includeSocialTags: false,
+  userAgent: USER_AGENT_PRESETS[0].value,
 };
 
 interface Props {
@@ -120,6 +132,7 @@ const EMPTY_FLAGS: CrawlConfig = {
   includeTitle: false, includeDesc: false, includeH1: false, includeH2: false, includeH3: false,
   includeImages: false, includeSchemas: false, includeRobots: false, includeCanonical: false,
   includeHreflangs: false, includeInternalLinks: false, jsRenderedLinks: false, includeSocialTags: false,
+  userAgent: USER_AGENT_PRESETS[0].value,
 };
 
 export function CrawlConfigDialog({
@@ -232,6 +245,30 @@ export function CrawlConfigDialog({
             >
               {overwriteCount} previously-crawled field{overwriteCount === 1 ? "" : "s"} will be refreshed and overwritten for the same URL set.
             </motion.div>
+          )}
+
+          {/* User-Agent selector — only for initial crawls */}
+          {!isIncremental && (
+            <div>
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Crawler Identity
+              </h4>
+              <select
+                value={USER_AGENT_PRESETS.some((p) => p.value === config.userAgent) ? config.userAgent : "__custom__"}
+                onChange={(e) => {
+                  if (e.target.value === "__custom__") return;
+                  onChange({ ...config, userAgent: e.target.value });
+                }}
+                className="w-full h-9 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                {USER_AGENT_PRESETS.map((p) => (
+                  <option key={p.label} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Choose how the crawler identifies itself. Use Googlebot to see what Google sees, or a browser UA to bypass basic bot detection.
+              </p>
+            </div>
           )}
         </div>
 

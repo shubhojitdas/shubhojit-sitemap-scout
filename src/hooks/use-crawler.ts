@@ -50,6 +50,7 @@ export interface CrawlOptions {
   includeInternalLinks: boolean;
   jsRenderedLinks: boolean;
   includeSocialTags: boolean;
+  userAgent?: string;
 }
 
 const EMPTY_CRAWL_OPTIONS: CrawlOptions = {
@@ -271,9 +272,16 @@ export function useCrawler() {
     persistStateToDb(state);
   }, [state]);
 
-  // Crawl state must survive page reloads and tab refreshes — never clear
-  // localStorage on unload. Only an explicit user action (clear/new crawl)
-  // should wipe it.
+  // Warn user before closing tab/browser during active crawl
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (state.phase === "crawling" || state.phase === "parsing" || state.phase === "paused") {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [state.phase]);
 
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);
@@ -340,7 +348,7 @@ export function useCrawler() {
         continue;
       }
       try {
-        const batchResults = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags);
+        const batchResults = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags, opts.userAgent);
         if (signal.aborted) return;
         if (pausedRef.current) {
           for (const r of batchResults) { seenUrls.add(norm(r.url)); if (r.finalUrl) seenUrls.add(norm(r.finalUrl)); }
@@ -420,9 +428,10 @@ export function useCrawler() {
     includeInternalLinks = false,
     jsRenderedLinks = false,
     includeSocialTags = false,
+    userAgent?: string,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags, userAgent };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
@@ -469,9 +478,10 @@ export function useCrawler() {
     includeInternalLinks = false,
     jsRenderedLinks = false,
     includeSocialTags = false,
+    userAgent?: string,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags, userAgent };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = urls;
     pendingIndexRef.current = 0;
@@ -509,9 +519,10 @@ export function useCrawler() {
     includeInternalLinks = false,
     jsRenderedLinks = false,
     includeSocialTags = false,
+    userAgent?: string,
   ) => {
     const signal = startController();
-    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
+    const opts: CrawlOptions = { includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags, userAgent };
     crawlOptionsRef.current = opts;
     pendingUrlsRef.current = [];
     pendingIndexRef.current = 0;
@@ -594,7 +605,7 @@ export function useCrawler() {
       if (signal.aborted) return;
       const batch = targetUrls.slice(i, i + BATCH_SIZE);
       try {
-        const fresh = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags);
+        const fresh = await fetchMetaBatch(batch, opts.includeTitle, opts.includeDesc, opts.includeH1, opts.includeH2, opts.includeH3, opts.includeImages, opts.includeSchemas, opts.includeRobots, opts.includeCanonical, opts.includeHreflangs, opts.includeInternalLinks, opts.jsRenderedLinks, opts.includeSocialTags, opts.userAgent);
         if (signal.aborted) return;
         merged = mergeResults(merged, fresh, opts);
         setState((s) => ({ ...s, results: merged, processedUrls: Math.min(i + BATCH_SIZE, targetUrls.length) }));

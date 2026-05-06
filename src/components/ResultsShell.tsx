@@ -13,7 +13,7 @@ import { SectionVisualization, type SectionKey } from "@/components/SectionVisua
 import { SectionIssues } from "@/components/SectionIssues";
 import { SeoIssuesView } from "@/components/SeoIssuesView";
 import { DuplicatesPanel } from "@/components/DuplicatesPanel";
-import { ThinContentPanel } from "@/components/ThinContentPanel";
+
 import { LinkAttributesPanel } from "@/components/LinkAttributesPanel";
 import { LinkEquityPanel } from "@/components/LinkEquityPanel";
 import { SocialTagGenerator } from "@/components/SocialTagGenerator";
@@ -280,10 +280,7 @@ export function ResultsShell({
                         <DuplicatesPanel results={results} field="description" />
                       )}
                       {view === "h1" && (
-                        <>
-                          <DuplicatesPanel results={results} field="h1" />
-                          <ThinContentPanel results={results} />
-                        </>
+                        <DuplicatesPanel results={results} field="h1" />
                       )}
                       {view === "internal-links" && (
                         <>

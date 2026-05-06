@@ -70,8 +70,6 @@ export interface CrawlResult {
   hopCount?: number;
   /** ISO-8601 Last-Modified header from the final HTTP response, when present. */
   lastModified?: string;
-  /** Approximate main-content word count (used for thin-content detection). */
-  wordCount?: number;
   fetchTime: string;
 }
 
@@ -110,10 +108,11 @@ export async function fetchMetaBatch(
   includeInternalLinks = false,
   jsRenderedLinks = false,
   includeSocialTags = false,
+  userAgent?: string,
 ): Promise<CrawlResult[]> {
-  const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", {
-    body: { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags },
-  });
+  const body: Record<string, unknown> = { urls, includeTitle, includeDesc, includeH1, includeH2, includeH3, includeImages, includeSchemas, includeRobots, includeCanonical, includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags };
+  if (userAgent) body.userAgent = userAgent;
+  const { data, error } = await supabase.functions.invoke("crawl-sitemap-batch", { body });
 
   if (error) throw new Error(error.message);
   if (data.error) throw new Error(data.error);

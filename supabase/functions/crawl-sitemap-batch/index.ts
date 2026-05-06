@@ -969,7 +969,11 @@ Deno.serve(async (req) => {
       includeInternalLinks = false,
       jsRenderedLinks = false,
       includeSocialTags = false,
+      userAgent,
     } = await req.json();
+
+    // Set the User-Agent for this request batch
+    FETCH_HEADERS = makeFetchHeaders(userAgent);
 
     if (!urls || !Array.isArray(urls) || urls.length === 0) {
       return new Response(

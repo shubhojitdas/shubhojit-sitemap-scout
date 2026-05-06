@@ -271,9 +271,16 @@ export function useCrawler() {
     persistStateToDb(state);
   }, [state]);
 
-  // Crawl state must survive page reloads and tab refreshes — never clear
-  // localStorage on unload. Only an explicit user action (clear/new crawl)
-  // should wipe it.
+  // Warn user before closing tab/browser during active crawl
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (state.phase === "crawling" || state.phase === "parsing" || state.phase === "paused") {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [state.phase]);
 
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);

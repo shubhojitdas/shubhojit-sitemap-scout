@@ -47,18 +47,32 @@ function buildOgTags(e: SocialEntry): string {
   return parts.join("\n");
 }
 
+function hasTwitterData(e: SocialEntry): boolean {
+  return Boolean(
+    (e.twitterTitle && e.twitterTitle.trim()) ||
+    (e.twitterDescription && e.twitterDescription.trim()) ||
+    (e.twitterImage && e.twitterImage.trim())
+  );
+}
+
 function buildTwitterTags(e: SocialEntry): string {
+  if (!hasTwitterData(e)) return "";
   const parts: string[] = [];
   parts.push(`<meta name="twitter:card" content="${e.cardType}" />`);
-  parts.push(`<meta name="twitter:title" content="${escAttr(e.twitterTitle)}" />`);
-  parts.push(`<meta name="twitter:description" content="${escAttr(e.twitterDescription)}" />`);
+  if (e.twitterTitle.trim())
+    parts.push(`<meta name="twitter:title" content="${escAttr(e.twitterTitle)}" />`);
+  if (e.twitterDescription.trim())
+    parts.push(`<meta name="twitter:description" content="${escAttr(e.twitterDescription)}" />`);
   parts.push(`<meta name="twitter:url" content="${escAttr(e.url)}" />`);
-  if (e.twitterImage) parts.push(`<meta name="twitter:image" content="${escAttr(e.twitterImage)}" />`);
+  if (e.twitterImage.trim())
+    parts.push(`<meta name="twitter:image" content="${escAttr(e.twitterImage)}" />`);
   return parts.join("\n");
 }
 
 function buildAllTags(e: SocialEntry): string {
-  return `${buildOgTags(e)}\n${buildTwitterTags(e)}`;
+  const og = buildOgTags(e);
+  const tw = buildTwitterTags(e);
+  return tw ? `${og}\n${tw}` : og;
 }
 
 function validate(e: SocialEntry): { ok: boolean; warnings: string[] } {
@@ -82,9 +96,9 @@ function entryFromResult(r: CrawlResult, defaults: { image: string; cardType: So
     ogTitle: r.title || fallbackTitle,
     ogDescription: r.description || "",
     ogImage: defaults.image,
-    twitterTitle: r.title || fallbackTitle,
-    twitterDescription: r.description || "",
-    twitterImage: defaults.image,
+    twitterTitle: "",
+    twitterDescription: "",
+    twitterImage: "",
     cardType: defaults.cardType,
   };
 }

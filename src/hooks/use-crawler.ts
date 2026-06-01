@@ -272,16 +272,21 @@ export function useCrawler() {
     persistStateToDb(state);
   }, [state]);
 
-  // Warn user before closing tab/browser during active crawl
+  // Warn user before closing tab/browser when crawl data exists in memory
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (state.phase === "crawling" || state.phase === "parsing" || state.phase === "paused") {
-        e.preventDefault();
-      }
+      const hasActive =
+        state.phase === "crawling" || state.phase === "parsing" || state.phase === "paused";
+      const hasData = state.results.length > 0 || state.parsedUrls.length > 0;
+      if (!hasActive && !hasData) return;
+      // Browsers require both preventDefault AND returnValue to show the prompt
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
     };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [state.phase]);
+    window.addEventListener("beforeunload", handler, { capture: true });
+    return () => window.removeEventListener("beforeunload", handler, { capture: true } as any);
+  }, [state.phase, state.results.length, state.parsedUrls.length]);
 
   const controllerRef = useRef<AbortController | null>(null);
   const pausedRef = useRef(false);

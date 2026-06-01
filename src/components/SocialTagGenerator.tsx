@@ -96,9 +96,9 @@ function entryFromResult(r: CrawlResult, defaults: { image: string; cardType: So
     ogTitle: r.title || fallbackTitle,
     ogDescription: r.description || "",
     ogImage: defaults.image,
-    twitterTitle: r.title || fallbackTitle,
-    twitterDescription: r.description || "",
-    twitterImage: defaults.image,
+    twitterTitle: "",
+    twitterDescription: "",
+    twitterImage: "",
     cardType: defaults.cardType,
   };
 }

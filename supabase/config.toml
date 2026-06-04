@@ -1,16 +1,1 @@
 project_id = "fqbpnhwygrblcjowjrwx"
-
-# Edge functions require unrestricted outbound network access to crawl
-# arbitrary user-provided sites. verify_jwt is disabled so the public crawler
-# tool can call them without authentication.
-[functions.crawl-site]
-verify_jwt = false
-
-[functions.crawl-sitemap]
-verify_jwt = false
-
-[functions.crawl-sitemap-batch]
-verify_jwt = false
-
-[functions.fetch-robots]
-verify_jwt = false

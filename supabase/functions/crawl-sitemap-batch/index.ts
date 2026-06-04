@@ -674,20 +674,13 @@ async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> 
 
 const MAX_HOPS = 10;
 const FETCH_TIMEOUT_MS = 15000;
-const DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const DEFAULT_UA = 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)';
 
 function makeFetchHeaders(userAgent?: string) {
   return {
     'User-Agent': userAgent || DEFAULT_UA,
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
-    'Upgrade-Insecure-Requests': '1',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
   };
 }
 
@@ -972,6 +965,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Balanced concurrency: 8 simultaneous fetches (4 for JS-rendered).
+    // The rolling pool keeps Deno responsive without hammering the target
+    // site or saturating outbound sockets — a tested sweet spot between the
+    // original 5-wide serial loop (too slow) and 12-wide pool (too aggressive).
     const concurrency = jsRenderedLinks ? 4 : 8;
     const results: CrawlResult[] = new Array(urls.length);
     let cursor = 0;

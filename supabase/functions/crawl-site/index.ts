@@ -329,7 +329,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ urls: outcome.urls, total: outcome.urls.length, partial: outcome.blocked || undefined }),
+      JSON.stringify({ urls: mergedUrls, total: mergedUrls.length, partial: outcome.blocked || undefined }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

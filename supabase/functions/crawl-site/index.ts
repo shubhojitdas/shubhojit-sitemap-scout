@@ -9,7 +9,7 @@ const USER_AGENT = 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)';
 const MAX_URLS = 50000;
 const CONCURRENCY = 8;
 const FETCH_TIMEOUT_MS = 15000;
-const SPIDER_TIMEOUT_MS = 25000;
+const SPIDER_TIMEOUT_MS = 55000;
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|xml|woff2?|ttf|otf|eot)(\?|#|$)/i;
 
 function stripWww(hostname: string): string {
@@ -147,6 +147,107 @@ async function spider(seedUrl: string, maxUrls: number, deadline: number): Promi
   return { urls: Array.from(discovered).slice(0, maxUrls), blocked, blockedSample };
 }
 
+// ─── Sitemap discovery ────────────────────────────────────────────────────────
+
+async function fetchText(url: string): Promise<string | null> {
+  try {
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': USER_AGENT },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!resp.ok) return null;
+    return await resp.text();
+  } catch (err) {
+    console.warn(`[sitemap] fetch failed for ${url}:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+function extractLocValues(xml: string, wrapperTag: string): string[] {
+  const results: string[] = [];
+  const wrapperRegex = new RegExp(`<${wrapperTag}[^>]*>[\\s\\S]*?<\\/${wrapperTag}>`, 'gi');
+  const locRegex = /<loc[^>]*>\s*(?:<!\[CDATA\[)?\s*([\s\S]*?)\s*(?:\]\]>)?\s*<\/loc>/i;
+  let m: RegExpExecArray | null;
+  while ((m = wrapperRegex.exec(xml)) !== null) {
+    const locMatch = m[0].match(locRegex);
+    if (locMatch && locMatch[1]) {
+      const loc = locMatch[1].replace(/&amp;/g, '&').replace(/\s+/g, '').trim();
+      if (loc) results.push(loc);
+    }
+  }
+  return results;
+}
+
+async function parseSitemap(
+  url: string,
+  seed: URL,
+  visited: Set<string>,
+  out: Set<string>,
+  deadline: number,
+): Promise<void> {
+  if (visited.has(url) || out.size >= MAX_URLS || Date.now() > deadline) return;
+  visited.add(url);
+
+  const xml = await fetchText(url);
+  if (!xml) return;
+
+  const children = extractLocValues(xml, 'sitemap');
+  if (children.length > 0) {
+    for (let i = 0; i < children.length; i += CONCURRENCY) {
+      if (Date.now() > deadline || out.size >= MAX_URLS) return;
+      await Promise.all(
+        children.slice(i, i + CONCURRENCY).map((c) => parseSitemap(c, seed, visited, out, deadline)),
+      );
+    }
+    return;
+  }
+
+  for (const loc of extractLocValues(xml, 'url')) {
+    const norm = normalizeUrl(loc, seed);
+    if (!norm) continue;
+    let parsed: URL;
+    try { parsed = new URL(norm); } catch { continue; }
+    if (!sameSite(parsed, seed)) continue;
+    if (NON_HTML_EXTENSIONS.test(parsed.pathname)) continue;
+    out.add(norm);
+    if (out.size >= MAX_URLS) return;
+  }
+}
+
+async function discoverSitemapUrls(seed: URL, deadline: number): Promise<string[]> {
+  const candidates: string[] = [];
+  const robotsUrl = `${seed.origin}/robots.txt`;
+  const robots = await fetchText(robotsUrl);
+  if (robots) {
+    const re = /^\s*sitemap\s*:\s*(\S+)/gim;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(robots)) !== null) candidates.push(m[1].trim());
+  }
+  if (candidates.length === 0) {
+    const indexUrl = `${seed.origin}/sitemap_index.xml`;
+    if (await fetchText(indexUrl)) candidates.push(indexUrl);
+  }
+  if (candidates.length === 0) {
+    const smUrl = `${seed.origin}/sitemap.xml`;
+    if (await fetchText(smUrl)) candidates.push(smUrl);
+  }
+
+  if (candidates.length === 0) {
+    console.log('[sitemap] no sitemap discovered');
+    return [];
+  }
+  console.log(`[sitemap] discovered ${candidates.length} sitemap entrypoint(s):`, candidates);
+
+  const out = new Set<string>();
+  const visited = new Set<string>();
+  for (const c of candidates) {
+    if (Date.now() > deadline || out.size >= MAX_URLS) break;
+    await parseSitemap(c, seed, visited, out, deadline);
+  }
+  return Array.from(out);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -180,9 +281,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Discovered ${outcome.urls.length} URLs (blocked=${outcome.blocked})`);
+    console.log(`Discovered ${outcome.urls.length} URLs via link-following (blocked=${outcome.blocked})`);
 
-    if (outcome.urls.length === 0 && outcome.blocked) {
+    // Step 1-2: Auto-discover & parse sitemap (merge with spider results)
+    let sitemapUrls: string[] = [];
+    try {
+      const seed = new URL(formatted);
+      sitemapUrls = await discoverSitemapUrls(seed, deadline);
+      console.log(`[sitemap] parsed ${sitemapUrls.length} URLs from sitemap(s)`);
+    } catch (err) {
+      console.warn('[sitemap] discovery failed:', err instanceof Error ? err.message : err);
+    }
+
+    // Step 3-4: Merge & log orphans
+    const spiderSet = new Set(outcome.urls);
+    const merged = new Set(outcome.urls);
+    for (const u of sitemapUrls) {
+      if (!spiderSet.has(u)) {
+        console.log(`sitemap-only URL (possible orphan): ${u}`);
+      }
+      merged.add(u);
+      if (merged.size >= cap) break;
+    }
+    const mergedUrls = Array.from(merged).slice(0, cap);
+    console.log(`Merged total: ${mergedUrls.length} URLs (spider=${outcome.urls.length}, sitemap=${sitemapUrls.length})`);
+
+    if (mergedUrls.length === 0 && outcome.blocked) {
       return new Response(
         JSON.stringify({
           error: 'This site is blocked by the crawler\'s network policy. The hosting environment does not allow outbound requests to this host. Please try a sitemap URL instead, or contact support.',
@@ -193,7 +317,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (outcome.urls.length === 0) {
+    if (mergedUrls.length === 0) {
       return new Response(
         JSON.stringify({
           error: 'No crawlable pages found. The site may be blocking bots, requiring JavaScript, or returning non-HTML responses. Try providing a sitemap URL instead.',
@@ -205,7 +329,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ urls: outcome.urls, total: outcome.urls.length, partial: outcome.blocked || undefined }),
+      JSON.stringify({ urls: mergedUrls, total: mergedUrls.length, partial: outcome.blocked || undefined }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

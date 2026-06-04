@@ -674,13 +674,20 @@ async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> 
 
 const MAX_HOPS = 10;
 const FETCH_TIMEOUT_MS = 15000;
-const DEFAULT_UA = 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)';
+const DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 function makeFetchHeaders(userAgent?: string) {
   return {
     'User-Agent': userAgent || DEFAULT_UA,
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Upgrade-Insecure-Requests': '1',
   };
 }
 
@@ -965,9 +972,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Reduced concurrency: 3 simultaneous fetches (2 for JS-rendered) to
-    // avoid bot-detection and rapid-request blocking from target websites.
-    const concurrency = jsRenderedLinks ? 2 : 3;
+    const concurrency = jsRenderedLinks ? 4 : 8;
     const results: CrawlResult[] = new Array(urls.length);
     let cursor = 0;
 
@@ -980,8 +985,6 @@ Deno.serve(async (req) => {
           includeImages, includeSchemas, includeRobots, includeCanonical,
           includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags,
         );
-        // Small delay between URLs to reduce risk of bot-detection blocks.
-        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     };
 

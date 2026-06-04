@@ -9,6 +9,7 @@ const USER_AGENT = 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)';
 const MAX_URLS = 50000;
 const CONCURRENCY = 8;
 const FETCH_TIMEOUT_MS = 15000;
+const SPIDER_TIMEOUT_MS = 25000;
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|xml|woff2?|ttf|otf|eot)(\?|#|$)/i;
 
 function stripWww(hostname: string): string {
@@ -24,7 +25,6 @@ function normalizeUrl(raw: string, base: URL): string | null {
     const u = new URL(raw, base);
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
     u.hash = '';
-    // Strip trailing slash for consistency, except root
     if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
       u.pathname = u.pathname.slice(0, -1);
     }
@@ -52,46 +52,87 @@ function extractHrefs(html: string): string[] {
   return hrefs;
 }
 
-async function fetchPageHtml(url: string): Promise<string | null> {
+interface FetchResult {
+  html: string | null;
+  error?: string;
+  blocked?: boolean;
+}
+
+async function fetchPageHtml(url: string): Promise<FetchResult> {
   try {
     const resp = await fetch(url, {
       headers: { 'User-Agent': USER_AGENT, 'Accept': 'text/html,application/xhtml+xml' },
       redirect: 'follow',
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      return { html: null, error: `HTTP ${resp.status}` };
+    }
     const ct = resp.headers.get('content-type') ?? '';
-    if (!/text\/html|application\/xhtml/i.test(ct)) return null;
-    return await resp.text();
-  } catch {
-    return null;
+    if (!/text\/html|application\/xhtml/i.test(ct)) {
+      return { html: null, error: `non-html content-type: ${ct}` };
+    }
+    return { html: await resp.text() };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const blocked = /not in allowlist|host not allowed|forbidden host|network.*denied/i.test(msg);
+    console.error(`[spider] fetch failed for ${url}: ${msg}`);
+    return { html: null, error: msg, blocked };
   }
 }
 
-async function spider(seedUrl: string, maxUrls: number): Promise<string[]> {
+interface SpiderOutcome {
+  urls: string[];
+  blocked: boolean;
+  blockedSample?: string;
+}
+
+async function spider(seedUrl: string, maxUrls: number, deadline: number): Promise<SpiderOutcome> {
   const seed = new URL(seedUrl);
   const discovered = new Set<string>();
   const queue: string[] = [];
+  let blocked = false;
+  let blockedSample: string | undefined;
 
   const seedNorm = normalizeUrl(seedUrl, seed);
-  if (!seedNorm) return [];
+  if (!seedNorm) return { urls: [], blocked: false };
   discovered.add(seedNorm);
   queue.push(seedNorm);
 
   while (queue.length > 0 && discovered.size < maxUrls) {
+    if (Date.now() > deadline) {
+      console.warn('[spider] deadline reached, returning partial results');
+      break;
+    }
     const batch = queue.splice(0, CONCURRENCY);
-    const results = await Promise.all(batch.map((u) => fetchPageHtml(u)));
+    let results: FetchResult[];
+    try {
+      results = await Promise.all(batch.map((u) => fetchPageHtml(u)));
+    } catch (err) {
+      console.error('[spider] batch error:', err);
+      continue;
+    }
 
     for (let i = 0; i < results.length; i++) {
-      const html = results[i];
+      const { html, blocked: b, error } = results[i];
+      if (b) {
+        blocked = true;
+        blockedSample = blockedSample ?? error;
+      }
       if (!html) continue;
-      const baseUrl = new URL(batch[i]);
+      let baseUrl: URL;
+      try {
+        baseUrl = new URL(batch[i]);
+      } catch {
+        continue;
+      }
       const hrefs = extractHrefs(html);
 
       for (const href of hrefs) {
         const norm = normalizeUrl(href, baseUrl);
         if (!norm) continue;
-        const parsed = new URL(norm);
+        let parsed: URL;
+        try { parsed = new URL(norm); } catch { continue; }
         if (!sameSite(parsed, seed)) continue;
         if (NON_HTML_EXTENSIONS.test(parsed.pathname)) continue;
         if (discovered.has(norm)) continue;
@@ -103,7 +144,7 @@ async function spider(seedUrl: string, maxUrls: number): Promise<string[]> {
     }
   }
 
-  return Array.from(discovered).slice(0, maxUrls);
+  return { urls: Array.from(discovered).slice(0, maxUrls), blocked, blockedSample };
 }
 
 Deno.serve(async (req) => {
@@ -121,17 +162,52 @@ Deno.serve(async (req) => {
 
     let formatted = siteUrl.trim();
     if (!formatted.startsWith('http')) formatted = 'https://' + formatted;
-    // Validate
     new URL(formatted);
 
     const cap = Math.min(typeof maxUrls === 'number' && maxUrls > 0 ? maxUrls : MAX_URLS, MAX_URLS);
     console.log('Spidering site:', formatted, 'cap:', cap);
-    const urls = await spider(formatted, cap);
-    console.log(`Discovered ${urls.length} URLs`);
 
-    return new Response(JSON.stringify({ urls, total: urls.length }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    const deadline = Date.now() + SPIDER_TIMEOUT_MS;
+    let outcome: SpiderOutcome = { urls: [], blocked: false };
+    try {
+      outcome = await spider(formatted, cap, deadline);
+    } catch (err) {
+      console.error('[spider] fatal error:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      return new Response(
+        JSON.stringify({ error: `Crawler failed: ${msg}`, urls: [], total: 0 }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Discovered ${outcome.urls.length} URLs (blocked=${outcome.blocked})`);
+
+    if (outcome.urls.length === 0 && outcome.blocked) {
+      return new Response(
+        JSON.stringify({
+          error: 'This site is blocked by the crawler\'s network policy. The hosting environment does not allow outbound requests to this host. Please try a sitemap URL instead, or contact support.',
+          urls: [],
+          total: 0,
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (outcome.urls.length === 0) {
+      return new Response(
+        JSON.stringify({
+          error: 'No crawlable pages found. The site may be blocking bots, requiring JavaScript, or returning non-HTML responses. Try providing a sitemap URL instead.',
+          urls: [],
+          total: 0,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ urls: outcome.urls, total: outcome.urls.length, partial: outcome.blocked || undefined }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Error:', error);
     return new Response(

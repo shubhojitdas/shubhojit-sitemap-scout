@@ -9,7 +9,7 @@ const USER_AGENT = 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)';
 const MAX_URLS = 50000;
 const CONCURRENCY = 8;
 const FETCH_TIMEOUT_MS = 15000;
-const SPIDER_TIMEOUT_MS = 25000;
+const SPIDER_TIMEOUT_MS = 55000;
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|xml|woff2?|ttf|otf|eot)(\?|#|$)/i;
 
 function stripWww(hostname: string): string {

@@ -281,9 +281,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Discovered ${outcome.urls.length} URLs (blocked=${outcome.blocked})`);
+    console.log(`Discovered ${outcome.urls.length} URLs via link-following (blocked=${outcome.blocked})`);
 
-    if (outcome.urls.length === 0 && outcome.blocked) {
+    // Step 1-2: Auto-discover & parse sitemap (merge with spider results)
+    let sitemapUrls: string[] = [];
+    try {
+      const seed = new URL(formatted);
+      sitemapUrls = await discoverSitemapUrls(seed, deadline);
+      console.log(`[sitemap] parsed ${sitemapUrls.length} URLs from sitemap(s)`);
+    } catch (err) {
+      console.warn('[sitemap] discovery failed:', err instanceof Error ? err.message : err);
+    }
+
+    // Step 3-4: Merge & log orphans
+    const spiderSet = new Set(outcome.urls);
+    const merged = new Set(outcome.urls);
+    for (const u of sitemapUrls) {
+      if (!spiderSet.has(u)) {
+        console.log(`sitemap-only URL (possible orphan): ${u}`);
+      }
+      merged.add(u);
+      if (merged.size >= cap) break;
+    }
+    const mergedUrls = Array.from(merged).slice(0, cap);
+    console.log(`Merged total: ${mergedUrls.length} URLs (spider=${outcome.urls.length}, sitemap=${sitemapUrls.length})`);
+
+    if (mergedUrls.length === 0 && outcome.blocked) {
       return new Response(
         JSON.stringify({
           error: 'This site is blocked by the crawler\'s network policy. The hosting environment does not allow outbound requests to this host. Please try a sitemap URL instead, or contact support.',
@@ -294,7 +317,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (outcome.urls.length === 0) {
+    if (mergedUrls.length === 0) {
       return new Response(
         JSON.stringify({
           error: 'No crawlable pages found. The site may be blocking bots, requiring JavaScript, or returning non-HTML responses. Try providing a sitemap URL instead.',

@@ -965,11 +965,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Balanced concurrency: 8 simultaneous fetches (4 for JS-rendered).
-    // The rolling pool keeps Deno responsive without hammering the target
-    // site or saturating outbound sockets — a tested sweet spot between the
-    // original 5-wide serial loop (too slow) and 12-wide pool (too aggressive).
-    const concurrency = jsRenderedLinks ? 4 : 8;
+    // Reduced concurrency: 3 simultaneous fetches (2 for JS-rendered) to
+    // avoid bot-detection and rapid-request blocking from target websites.
+    const concurrency = jsRenderedLinks ? 2 : 3;
     const results: CrawlResult[] = new Array(urls.length);
     let cursor = 0;
 
@@ -982,6 +980,8 @@ Deno.serve(async (req) => {
           includeImages, includeSchemas, includeRobots, includeCanonical,
           includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags,
         );
+        // Small delay between URLs to reduce risk of bot-detection blocks.
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     };
 

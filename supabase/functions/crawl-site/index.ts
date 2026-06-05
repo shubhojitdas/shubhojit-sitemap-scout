@@ -106,6 +106,89 @@ async function spider(seedUrl: string, maxUrls: number): Promise<string[]> {
   return Array.from(discovered).slice(0, maxUrls);
 }
 
+// ─── Sitemap auto-discovery & parsing ────────────────────────────────────
+
+async function fetchText(url: string): Promise<string | null> {
+  try {
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': USER_AGENT, 'Accept': 'text/plain,application/xml,text/xml,*/*' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!resp.ok) return null;
+    return await resp.text();
+  } catch {
+    return null;
+  }
+}
+
+function extractSitemapsFromRobots(robotsTxt: string): string[] {
+  const out: string[] = [];
+  const re = /^\s*Sitemap\s*:\s*(\S+)\s*$/gim;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(robotsTxt)) !== null) out.push(m[1].trim());
+  return out;
+}
+
+function extractLocs(xml: string): string[] {
+  const out: string[] = [];
+  const re = /<loc>\s*([^<\s]+)\s*<\/loc>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml)) !== null) out.push(m[1].trim());
+  return out;
+}
+
+async function discoverSitemapUrls(seed: URL, maxUrls: number): Promise<string[]> {
+  const origin = `${seed.protocol}//${seed.host}`;
+  const candidates: string[] = [];
+
+  // Step 1: robots.txt → Sitemap: lines
+  const robots = await fetchText(`${origin}/robots.txt`);
+  if (robots) candidates.push(...extractSitemapsFromRobots(robots));
+
+  // Fallbacks
+  if (candidates.length === 0) candidates.push(`${origin}/sitemap_index.xml`);
+  candidates.push(`${origin}/sitemap.xml`);
+
+  const collected = new Set<string>();
+  const visitedSitemaps = new Set<string>();
+  const queue: string[] = [];
+  for (const c of candidates) if (!visitedSitemaps.has(c)) { visitedSitemaps.add(c); queue.push(c); }
+
+  let foundAny = false;
+  while (queue.length > 0 && collected.size < maxUrls) {
+    const sm = queue.shift()!;
+    const xml = await fetchText(sm);
+    if (!xml) continue;
+    const isIndex = /<sitemapindex[\s>]/i.test(xml);
+    const locs = extractLocs(xml);
+    if (locs.length === 0) continue;
+    foundAny = true;
+
+    if (isIndex) {
+      for (const loc of locs) {
+        if (visitedSitemaps.has(loc)) continue;
+        visitedSitemaps.add(loc);
+        queue.push(loc);
+      }
+    } else {
+      for (const loc of locs) {
+        const norm = normalizeUrl(loc, seed);
+        if (!norm) continue;
+        const u = new URL(norm);
+        if (!sameSite(u, seed)) continue;
+        if (NON_HTML_EXTENSIONS.test(u.pathname)) continue;
+        collected.add(norm);
+        if (collected.size >= maxUrls) break;
+      }
+    }
+  }
+
+  if (!foundAny) console.log('No sitemap found for', origin);
+  else console.log(`Sitemap discovery yielded ${collected.size} URLs`);
+  return Array.from(collected);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });

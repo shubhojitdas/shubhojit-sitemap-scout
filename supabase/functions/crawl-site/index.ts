@@ -209,8 +209,27 @@ Deno.serve(async (req) => {
 
     const cap = Math.min(typeof maxUrls === 'number' && maxUrls > 0 ? maxUrls : MAX_URLS, MAX_URLS);
     console.log('Spidering site:', formatted, 'cap:', cap);
-    const urls = await spider(formatted, cap);
-    console.log(`Discovered ${urls.length} URLs`);
+    const spideredUrls = await spider(formatted, cap);
+    console.log(`Spider discovered ${spideredUrls.length} URLs via link-following`);
+
+    // Merge with sitemap-discovered URLs (Screaming Frog parity)
+    const seed = new URL(formatted);
+    const sitemapUrls = await discoverSitemapUrls(seed, cap);
+
+    const spideredSet = new Set(spideredUrls);
+    const merged = new Set(spideredUrls);
+    let orphanCount = 0;
+    for (const u of sitemapUrls) {
+      if (merged.size >= cap) break;
+      if (!spideredSet.has(u)) {
+        console.log(`sitemap-only URL (possible orphan): ${u}`);
+        orphanCount++;
+      }
+      merged.add(u);
+    }
+
+    const urls = Array.from(merged).slice(0, cap);
+    console.log(`Final merged total: ${urls.length} (sitemap-only orphans: ${orphanCount})`);
 
     return new Response(JSON.stringify({ urls, total: urls.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -24,10 +24,10 @@ function normalizeUrl(raw: string, base: URL): string | null {
     const u = new URL(raw, base);
     if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
     u.hash = '';
-    // Strip trailing slash for consistency, except root
-    if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
-      u.pathname = u.pathname.slice(0, -1);
-    }
+    // Preserve the site's exact URL form. WordPress and many CMS sites publish
+    // canonical trailing-slash URLs in their sitemaps; stripping the slash causes
+    // every page to add a 301 hop, doubling requests and triggering false errors
+    // on rate-sensitive hosts.
     return u.toString();
   } catch {
     return null;

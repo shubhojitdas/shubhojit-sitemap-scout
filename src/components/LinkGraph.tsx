@@ -9,7 +9,7 @@ import {
 } from "@/lib/graph-utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Maximize2, X, ExternalLink, Download, ExternalLink as OpenIcon } from "lucide-react";
+import { Maximize2, X, ExternalLink, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
@@ -437,7 +437,7 @@ document.getElementById('zoomBtn').addEventListener('click', () => Graph.zoomToF
               <Maximize2 className="h-3 w-3" />
             </Button>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openInNewTab} title="Open in new tab">
-              <OpenIcon className="h-3 w-3" />
+              <ExternalLink className="h-3 w-3" />
             </Button>
           </div>
         </div>

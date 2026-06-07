@@ -674,7 +674,17 @@ async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> 
 
 const MAX_HOPS = 10;
 const FETCH_TIMEOUT_MS = 15000;
+const FETCH_RETRIES = 3;
 const DEFAULT_UA = 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)';
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+
+function shouldRetryStatus(status: number) {
+  return status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+function retryDelayMs(attempt: number) {
+  return 400 * attempt + Math.floor(Math.random() * 250);
+}
 
 function makeFetchHeaders(userAgent?: string) {
   return {
@@ -718,18 +728,38 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     visited.add(current);
 
     let resp: Response;
-    try {
-      resp = await fetch(current, {
-        headers: FETCH_HEADERS,
-        redirect: 'manual',
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
-    } catch (e) {
+    let lastFetchError = '';
+    let lastRetryStatus = 0;
+    for (let attempt = 1; attempt <= FETCH_RETRIES; attempt++) {
+      try {
+        resp = await fetch(current, {
+          headers: attempt === 1 ? FETCH_HEADERS : { ...FETCH_HEADERS, 'User-Agent': BROWSER_UA },
+          redirect: 'manual',
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+        if (attempt < FETCH_RETRIES && shouldRetryStatus(resp.status)) {
+          lastRetryStatus = resp.status;
+          try { await resp.text(); } catch { /* ignore */ }
+          await new Promise((r) => setTimeout(r, retryDelayMs(attempt)));
+          continue;
+        }
+        lastRetryStatus = 0;
+        break;
+      } catch (e) {
+        lastFetchError = e instanceof Error ? e.message : 'Fetch failed';
+        if (attempt < FETCH_RETRIES) {
+          await new Promise((r) => setTimeout(r, retryDelayMs(attempt)));
+          continue;
+        }
+      }
+    }
+
+    if (!resp!) {
       chain.push({
         url: current,
-        status: 0,
+        status: lastRetryStatus || 0,
         type: 'http',
-        statusText: e instanceof Error ? e.message : 'Fetch failed',
+        statusText: lastFetchError || 'Fetch failed',
       });
       networkError = chain.length === 1; // failed on the very first request
       break;

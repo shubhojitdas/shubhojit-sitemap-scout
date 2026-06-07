@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Maximize2, X, ExternalLink, ChevronDown, ChevronUp, AlertTriangle, ArrowDown, ArrowUp, Link as LinkIcon, Download, ExternalLink as OpenIcon } from "lucide-react";
+import { Maximize2, X, ExternalLink, ChevronDown, ChevronUp, AlertTriangle, ArrowDown, ArrowUp, Link as LinkIcon, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
@@ -458,7 +458,7 @@ setTimeout(()=>G.zoomToFit(600,40),800);
               <Maximize2 className="h-3 w-3" />
             </Button>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openInNewTab} title="Open in new tab">
-              <OpenIcon className="h-3 w-3" />
+              <ExternalLink className="h-3 w-3" />
             </Button>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setControlsCollapsed(!controlsCollapsed)}>
               {controlsCollapsed ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}

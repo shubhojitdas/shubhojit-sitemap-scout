@@ -7,11 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import * as XLSX from "xlsx";
 import type { CrawlConfig } from "@/components/CrawlConfigDialog";
 
-type CrawlArgs = [
-  string | string[],
-  CrawlConfig,
-];
-
 interface CrawlFormProps {
   config: CrawlConfig;
   onOpenConfig: () => void;

@@ -108,18 +108,43 @@ async function spider(seedUrl: string, maxUrls: number): Promise<string[]> {
 
 // ─── Sitemap auto-discovery & parsing ────────────────────────────────────
 
-async function fetchText(url: string): Promise<string | null> {
-  try {
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': USER_AGENT, 'Accept': 'text/plain,application/xml,text/xml,*/*' },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!resp.ok) return null;
-    return await resp.text();
-  } catch {
-    return null;
+// Use a real browser User-Agent for sitemap/robots fetches — many hosts
+// (Cloudflare, LiteSpeed/Hostinger, Sucuri, etc.) block requests whose UA
+// contains "bot"/"crawler", returning 403 or HTML challenges even when the
+// resource is public.
+const BROWSER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const SITEMAP_FETCH_TIMEOUT_MS = 30_000;
+const SITEMAP_FETCH_RETRIES = 3;
+
+async function fetchText(url: string, label: string): Promise<string | null> {
+  for (let attempt = 1; attempt <= SITEMAP_FETCH_RETRIES; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        headers: {
+          'User-Agent': BROWSER_UA,
+          'Accept': 'text/plain,application/xml,text/xml,application/xhtml+xml,text/html;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(SITEMAP_FETCH_TIMEOUT_MS),
+      });
+      if (!resp.ok) {
+        console.log(`[${label}] ${url} → HTTP ${resp.status} (attempt ${attempt})`);
+        if (resp.status >= 400 && resp.status < 500 && resp.status !== 429) return null;
+      } else {
+        const text = await resp.text();
+        console.log(`[${label}] ${url} → ${resp.status} ${text.length}b`);
+        return text;
+      }
+    } catch (err) {
+      console.log(`[${label}] ${url} → error attempt ${attempt}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    if (attempt < SITEMAP_FETCH_RETRIES) {
+      await new Promise((r) => setTimeout(r, 500 * attempt));
+    }
   }
+  return null;
 }
 
 function extractSitemapsFromRobots(robotsTxt: string): string[] {
@@ -132,7 +157,8 @@ function extractSitemapsFromRobots(robotsTxt: string): string[] {
 
 function extractLocs(xml: string): string[] {
   const out: string[] = [];
-  const re = /<loc>\s*([^<\s]+)\s*<\/loc>/gi;
+  // Handle <loc>, <loc xmlns:...>, and CDATA-wrapped values.
+  const re = /<loc\b[^>]*>\s*(?:<!\[CDATA\[\s*)?([^<\s\]]+)\s*(?:\]\]>)?\s*<\/loc>/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(xml)) !== null) out.push(m[1].trim());
   return out;
@@ -143,12 +169,22 @@ async function discoverSitemapUrls(seed: URL, maxUrls: number): Promise<string[]
   const candidates: string[] = [];
 
   // Step 1: robots.txt → Sitemap: lines
-  const robots = await fetchText(`${origin}/robots.txt`);
-  if (robots) candidates.push(...extractSitemapsFromRobots(robots));
+  const robots = await fetchText(`${origin}/robots.txt`, 'robots');
+  if (robots) {
+    const fromRobots = extractSitemapsFromRobots(robots);
+    if (fromRobots.length) console.log(`robots.txt declared sitemaps: ${fromRobots.join(', ')}`);
+    candidates.push(...fromRobots);
+  }
 
-  // Fallbacks
-  if (candidates.length === 0) candidates.push(`${origin}/sitemap_index.xml`);
-  candidates.push(`${origin}/sitemap.xml`);
+  // Always probe well-known fallbacks too (covers misconfigured robots.txt)
+  for (const fallback of [
+    `${origin}/sitemap_index.xml`,
+    `${origin}/sitemap.xml`,
+    `${origin}/wp-sitemap.xml`,
+    `${origin}/sitemap-index.xml`,
+  ]) {
+    if (!candidates.includes(fallback)) candidates.push(fallback);
+  }
 
   const collected = new Set<string>();
   const visitedSitemaps = new Set<string>();
@@ -158,10 +194,16 @@ async function discoverSitemapUrls(seed: URL, maxUrls: number): Promise<string[]
   let foundAny = false;
   while (queue.length > 0 && collected.size < maxUrls) {
     const sm = queue.shift()!;
-    const xml = await fetchText(sm);
+    const xml = await fetchText(sm, 'sitemap');
     if (!xml) continue;
+    // Must look like XML/sitemap content
+    if (!/<(sitemapindex|urlset|loc)\b/i.test(xml)) {
+      console.log(`[sitemap] ${sm} did not contain sitemap markup, skipping`);
+      continue;
+    }
     const isIndex = /<sitemapindex[\s>]/i.test(xml);
     const locs = extractLocs(xml);
+    console.log(`[sitemap] ${sm} → ${isIndex ? 'index' : 'urlset'} with ${locs.length} <loc> entries`);
     if (locs.length === 0) continue;
     foundAny = true;
 

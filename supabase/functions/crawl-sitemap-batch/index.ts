@@ -727,7 +727,7 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
     }
     visited.add(current);
 
-    let resp: Response;
+    let resp: Response | null = null;
     let lastFetchError = '';
     let lastRetryStatus = 0;
     for (let attempt = 1; attempt <= FETCH_RETRIES; attempt++) {
@@ -754,7 +754,7 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
       }
     }
 
-    if (!resp!) {
+    if (!resp) {
       chain.push({
         url: current,
         status: lastRetryStatus || 0,
@@ -999,7 +999,7 @@ Deno.serve(async (req) => {
     // The rolling pool keeps Deno responsive without hammering the target
     // site or saturating outbound sockets — a tested sweet spot between the
     // original 5-wide serial loop (too slow) and 12-wide pool (too aggressive).
-    const concurrency = jsRenderedLinks ? 4 : 8;
+    const concurrency = jsRenderedLinks ? 2 : 5;
     const results: CrawlResult[] = new Array(urls.length);
     let cursor = 0;
 

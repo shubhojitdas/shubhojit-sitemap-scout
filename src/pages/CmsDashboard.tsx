@@ -18,20 +18,36 @@ const CmsDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    const verifyAdmin = async (sess: any) => {
+      if (!sess) {
+        navigate("/cms/login");
+        return;
+      }
+      const { data, error } = await supabase.rpc("has_role", {
+        _user_id: sess.user.id,
+        _role: "admin",
+      });
+      if (error || !data) {
+        await supabase.auth.signOut();
+        toast.error("Access denied");
+        navigate("/cms/login");
+        return;
+      }
+      setSession(sess);
       setLoading(false);
-      if (!session) navigate("/cms/login");
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      verifyAdmin(session);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-      if (!session) navigate("/cms/login");
+      verifyAdmin(session);
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

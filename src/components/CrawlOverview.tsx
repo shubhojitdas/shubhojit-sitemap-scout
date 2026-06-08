@@ -169,9 +169,9 @@ export function CrawlOverview({ results, domain, flags }: Props) {
   // ── BYO LLM key panel ──────────────────────────────────────────────────────
   const [showKeyPanel, setShowKeyPanel] = useState(false);
   const [provider, setProvider] = useState<Provider>(
-    () => (localStorage.getItem(PROVIDER_STORAGE) as Provider) || "openai",
+    () => (sessionStorage.getItem(PROVIDER_STORAGE) as Provider) || "openai",
   );
-  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem(KEY_STORAGE) || "");
+  const [apiKey, setApiKey] = useState<string>(() => sessionStorage.getItem(KEY_STORAGE) || "");
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -182,8 +182,9 @@ export function CrawlOverview({ results, domain, flags }: Props) {
     }
     setAiLoading(true);
     setAiSummary(null);
-    localStorage.setItem(KEY_STORAGE, apiKey.trim());
-    localStorage.setItem(PROVIDER_STORAGE, provider);
+    sessionStorage.setItem(KEY_STORAGE, apiKey.trim());
+    sessionStorage.setItem(PROVIDER_STORAGE, provider);
+
 
     const compact = {
       domain,

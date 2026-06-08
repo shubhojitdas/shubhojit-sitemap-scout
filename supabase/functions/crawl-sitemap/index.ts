@@ -43,6 +43,15 @@ function stripWww(hostname: string): string {
   return hostname.replace(/^www\./, '');
 }
 
+function isPrivateHost(host: string): boolean {
+  const h = host.toLowerCase();
+  if (h === 'localhost' || h === '::1' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  if (/^(fc|fd)[0-9a-f]{2}:/i.test(h) || /^fe80:/i.test(h)) return true;
+  return false;
+}
+
 async function parseSitemap(url: string, domain: string, visited: Set<string>): Promise<string[]> {
   if (visited.has(url)) return [];
   visited.add(url);
@@ -103,6 +112,14 @@ Deno.serve(async (req) => {
     if (!formattedUrl.startsWith('http')) formattedUrl = 'https://' + formattedUrl;
 
     const parsedUrl = new URL(formattedUrl);
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return new Response(JSON.stringify({ error: 'Only http/https URLs are allowed' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    if (isPrivateHost(parsedUrl.hostname)) {
+      return new Response(JSON.stringify({ error: 'Private or internal hosts are not allowed' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     const domain = parsedUrl.hostname;
 
     console.log('Parsing sitemap:', formattedUrl, 'domain:', domain);

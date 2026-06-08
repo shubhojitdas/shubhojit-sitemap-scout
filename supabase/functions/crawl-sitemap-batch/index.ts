@@ -4,6 +4,28 @@ const corsHeaders = {
 };
 
 interface ImageData {
+
+// SSRF guard: block private/loopback/link-local/metadata hosts.
+function isPrivateHost(host: string): boolean {
+  const h = host.toLowerCase();
+  if (h === 'localhost' || h === '::1' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  if (/^(fc|fd)[0-9a-f]{2}:/i.test(h) || /^fe80:/i.test(h)) return true;
+  return false;
+}
+
+function isSafeHttpUrl(u: string): boolean {
+  try {
+    const url = new URL(u);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+    if (isPrivateHost(url.hostname)) return false;
+    return true;
+  } catch { return false; }
+}
+
+// (placeholder removed below)
+interface _ImageDataPlaceholder {
   src: string;
   alt: string | null;
 }

@@ -3,8 +3,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-interface ImageData {
-
 // SSRF guard: block private/loopback/link-local/metadata hosts.
 function isPrivateHost(host: string): boolean {
   const h = host.toLowerCase();
@@ -24,8 +22,7 @@ function isSafeHttpUrl(u: string): boolean {
   } catch { return false; }
 }
 
-// (placeholder removed below)
-interface _ImageDataPlaceholder {
+interface ImageData {
   src: string;
   alt: string | null;
 }

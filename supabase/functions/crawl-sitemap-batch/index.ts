@@ -1029,22 +1029,22 @@ Deno.serve(async (req) => {
     // site or saturating outbound sockets — a tested sweet spot between the
     // original 5-wide serial loop (too slow) and 12-wide pool (too aggressive).
     const concurrency = jsRenderedLinks ? 2 : 5;
-    const results: CrawlResult[] = new Array(urls.length);
+    const results: CrawlResult[] = new Array(safeUrls.length);
     let cursor = 0;
 
     const worker = async () => {
       while (true) {
         const i = cursor++;
-        if (i >= urls.length) return;
+        if (i >= safeUrls.length) return;
         results[i] = await fetchMeta(
-          urls[i], includeTitle, includeDesc, includeH1, includeH2, includeH3,
+          safeUrls[i], includeTitle, includeDesc, includeH1, includeH2, includeH3,
           includeImages, includeSchemas, includeRobots, includeCanonical,
           includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags,
         );
       }
     };
 
-    await Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(concurrency, safeUrls.length) }, worker));
 
     return new Response(
       JSON.stringify({ results }),

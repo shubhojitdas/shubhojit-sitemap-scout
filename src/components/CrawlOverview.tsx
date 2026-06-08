@@ -169,9 +169,9 @@ export function CrawlOverview({ results, domain, flags }: Props) {
   // ── BYO LLM key panel ──────────────────────────────────────────────────────
   const [showKeyPanel, setShowKeyPanel] = useState(false);
   const [provider, setProvider] = useState<Provider>(
-    () => (localStorage.getItem(PROVIDER_STORAGE) as Provider) || "openai",
+    () => (sessionStorage.getItem(PROVIDER_STORAGE) as Provider) || "openai",
   );
-  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem(KEY_STORAGE) || "");
+  const [apiKey, setApiKey] = useState<string>(() => sessionStorage.getItem(KEY_STORAGE) || "");
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -182,8 +182,9 @@ export function CrawlOverview({ results, domain, flags }: Props) {
     }
     setAiLoading(true);
     setAiSummary(null);
-    localStorage.setItem(KEY_STORAGE, apiKey.trim());
-    localStorage.setItem(PROVIDER_STORAGE, provider);
+    sessionStorage.setItem(KEY_STORAGE, apiKey.trim());
+    sessionStorage.setItem(PROVIDER_STORAGE, provider);
+
 
     const compact = {
       domain,
@@ -392,7 +393,8 @@ export function CrawlOverview({ results, domain, flags }: Props) {
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
               <KeyRound className="h-3 w-3" />
               Your key never leaves your browser — it's sent directly to your chosen provider and stored only in
-              localStorage.
+              sessionStorage (cleared when you close this tab).
+
             </div>
             <div className="grid sm:grid-cols-[160px_1fr_auto] gap-2 items-end">
               <div>

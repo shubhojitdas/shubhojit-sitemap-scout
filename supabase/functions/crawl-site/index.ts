@@ -11,6 +11,16 @@ const CONCURRENCY = 8;
 const FETCH_TIMEOUT_MS = 15000;
 const NON_HTML_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|ico|bmp|tiff|mp4|mp3|wav|avi|mov|webm|pdf|zip|rar|7z|tar|gz|exe|dmg|pkg|css|js|json|xml|woff2?|ttf|otf|eot)(\?|#|$)/i;
 
+// SSRF guard: block private/loopback/link-local/metadata hosts.
+function isPrivateHost(host: string): boolean {
+  const h = host.toLowerCase();
+  if (h === 'localhost' || h === '::1' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  if (/^(fc|fd)[0-9a-f]{2}:/i.test(h) || /^fe80:/i.test(h)) return true;
+  return false;
+}
+
 function stripWww(hostname: string): string {
   return hostname.replace(/^www\./, '');
 }
@@ -246,8 +256,18 @@ Deno.serve(async (req) => {
 
     let formatted = siteUrl.trim();
     if (!formatted.startsWith('http')) formatted = 'https://' + formatted;
-    // Validate
-    new URL(formatted);
+    // Validate + SSRF guard
+    const seedCheck = new URL(formatted);
+    if (seedCheck.protocol !== 'http:' && seedCheck.protocol !== 'https:') {
+      return new Response(JSON.stringify({ error: 'Only http/https URLs are allowed' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (isPrivateHost(seedCheck.hostname)) {
+      return new Response(JSON.stringify({ error: 'Private or internal hosts are not allowed' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const cap = Math.min(typeof maxUrls === 'number' && maxUrls > 0 ? maxUrls : MAX_URLS, MAX_URLS);
     console.log('Spidering site:', formatted, 'cap:', cap);

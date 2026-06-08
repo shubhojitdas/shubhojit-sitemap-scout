@@ -9,6 +9,15 @@ const corsHeaders = {
 
 const UA = "Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)";
 
+function isPrivateHost(host: string): boolean {
+  const h = host.toLowerCase();
+  if (h === 'localhost' || h === '::1' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  if (/^(fc|fd)[0-9a-f]{2}:/i.test(h) || /^fe80:/i.test(h)) return true;
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,7 +41,16 @@ Deno.serve(async (req) => {
       host = "https://" + host.replace(/\/+$/, "");
     }
 
-    const target = `${host}/robots.txt`;
+    const targetUrl = new URL(`${host}/robots.txt`);
+    if (targetUrl.protocol !== 'https:' && targetUrl.protocol !== 'http:') {
+      return new Response(JSON.stringify({ error: "Only http/https URLs are allowed" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (isPrivateHost(targetUrl.hostname)) {
+      return new Response(JSON.stringify({ error: "Private or internal hosts are not allowed" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const target = targetUrl.toString();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15_000);
 

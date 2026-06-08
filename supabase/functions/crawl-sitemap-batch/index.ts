@@ -3,6 +3,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// SSRF guard: block private/loopback/link-local/metadata hosts.
+function isPrivateHost(host: string): boolean {
+  const h = host.toLowerCase();
+  if (h === 'localhost' || h === '::1' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  if (/^(fc|fd)[0-9a-f]{2}:/i.test(h) || /^fe80:/i.test(h)) return true;
+  return false;
+}
+
+function isSafeHttpUrl(u: string): boolean {
+  try {
+    const url = new URL(u);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+    if (isPrivateHost(url.hostname)) return false;
+    return true;
+  } catch { return false; }
+}
+
 interface ImageData {
   src: string;
   alt: string | null;
@@ -995,27 +1014,37 @@ Deno.serve(async (req) => {
       );
     }
 
+    // SSRF guard: drop any non-http(s) or private/internal URLs before fetching.
+    const safeUrls: string[] = (urls as unknown[])
+      .filter((u): u is string => typeof u === 'string' && isSafeHttpUrl(u));
+    if (safeUrls.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'No valid public http/https URLs supplied' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Balanced concurrency: 8 simultaneous fetches (4 for JS-rendered).
     // The rolling pool keeps Deno responsive without hammering the target
     // site or saturating outbound sockets — a tested sweet spot between the
     // original 5-wide serial loop (too slow) and 12-wide pool (too aggressive).
     const concurrency = jsRenderedLinks ? 2 : 5;
-    const results: CrawlResult[] = new Array(urls.length);
+    const results: CrawlResult[] = new Array(safeUrls.length);
     let cursor = 0;
 
     const worker = async () => {
       while (true) {
         const i = cursor++;
-        if (i >= urls.length) return;
+        if (i >= safeUrls.length) return;
         results[i] = await fetchMeta(
-          urls[i], includeTitle, includeDesc, includeH1, includeH2, includeH3,
+          safeUrls[i], includeTitle, includeDesc, includeH1, includeH2, includeH3,
           includeImages, includeSchemas, includeRobots, includeCanonical,
           includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags,
         );
       }
     };
 
-    await Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(concurrency, safeUrls.length) }, worker));
 
     return new Response(
       JSON.stringify({ results }),

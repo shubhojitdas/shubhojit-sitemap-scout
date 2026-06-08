@@ -1014,6 +1014,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // SSRF guard: drop any non-http(s) or private/internal URLs before fetching.
+    const safeUrls: string[] = (urls as unknown[])
+      .filter((u): u is string => typeof u === 'string' && isSafeHttpUrl(u));
+    if (safeUrls.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'No valid public http/https URLs supplied' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Balanced concurrency: 8 simultaneous fetches (4 for JS-rendered).
     // The rolling pool keeps Deno responsive without hammering the target
     // site or saturating outbound sockets — a tested sweet spot between the

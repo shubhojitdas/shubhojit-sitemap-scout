@@ -1039,11 +1039,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Balanced concurrency: 8 simultaneous fetches (4 for JS-rendered).
-    // The rolling pool keeps Deno responsive without hammering the target
-    // site or saturating outbound sockets — a tested sweet spot between the
-    // original 5-wide serial loop (too slow) and 12-wide pool (too aggressive).
-    const concurrency = jsRenderedLinks ? 2 : 5;
+    // Politeness over speed: 3 simultaneous fetches (1 for JS-rendered) plus
+    // a small jittered gap between requests in each worker. This drastically
+    // reduces 429 / rate-limit responses on shared hosts (LiteSpeed, Cloudflare,
+    // WP Engine, etc.) at the cost of a slower crawl — which is the explicit
+    // tradeoff the user asked for.
+    const concurrency = jsRenderedLinks ? 1 : 3;
+    const PACING_MIN_MS = 250;
+    const PACING_JITTER_MS = 350;
     const results: CrawlResult[] = new Array(safeUrls.length);
     let cursor = 0;
 
@@ -1056,6 +1059,8 @@ Deno.serve(async (req) => {
           includeImages, includeSchemas, includeRobots, includeCanonical,
           includeHreflangs, includeInternalLinks, jsRenderedLinks, includeSocialTags,
         );
+        // Brief pause before this worker picks up the next URL.
+        await new Promise((r) => setTimeout(r, PACING_MIN_MS + Math.floor(Math.random() * PACING_JITTER_MS)));
       }
     };
 

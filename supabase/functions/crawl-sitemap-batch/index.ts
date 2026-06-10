@@ -772,8 +772,9 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
         });
         if (attempt < FETCH_RETRIES && shouldRetryStatus(resp.status)) {
           lastRetryStatus = resp.status;
+          const retryAfter = parseRetryAfter(resp.headers.get('retry-after'));
           try { await resp.text(); } catch { /* ignore */ }
-          await new Promise((r) => setTimeout(r, retryDelayMs(attempt)));
+          await new Promise((r) => setTimeout(r, retryAfter || retryDelayMs(attempt, resp.status)));
           continue;
         }
         lastRetryStatus = 0;

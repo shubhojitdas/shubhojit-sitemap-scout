@@ -126,10 +126,18 @@ export function extractJsRedirectTarget(html: string, baseUrl: string): string |
 
       // Skip assignments inside event-handler bodies — those fire on user action,
       // not page load, so they aren't crawl-time redirects.
-      const ctxStart = Math.max(0, m.index - 200);
+      // Skip assignments inside event-handler bodies — those fire on user/form
+      // action, not page load, so they aren't crawl-time redirects. We match
+      // ANY event name (e.g. WPCF7's custom `wpcf7mailsent`, GA `submit`,
+      // custom widget events), not just a hardcoded whitelist, because every
+      // addEventListener callback is by definition deferred until the event
+      // fires.
+      const ctxStart = Math.max(0, m.index - 400);
       const ctx = cleanedBody.slice(ctxStart, m.index);
-      if (/addEventListener\s*\(\s*['"`](?:click|submit|change|input|keydown|keyup|mousedown|mouseup|touchstart|touchend)['"`]/i.test(ctx)) continue;
-      if (/\bon(?:click|submit|change|input|keydown|keyup|mousedown|mouseup|touchstart|touchend)\s*[:=]\s*(?:function|\([^)]*\)\s*=>)/i.test(ctx)) continue;
+      if (/addEventListener\s*\(\s*['"`][a-zA-Z0-9:_-]+['"`]\s*,/i.test(ctx)) continue;
+      if (/\.(on|one|bind|live|delegate)\s*\(\s*['"`][a-zA-Z0-9:_\s-]+['"`]\s*,/i.test(ctx)) continue;
+      if (/\bon[a-z]+\s*[:=]\s*(?:function|\([^)]*\)\s*=>|async\s+function)/i.test(ctx)) continue;
+      if (/\b(?:function|async\s+function)\s*\([^)]*\b(?:e|ev|evt|event)\b[^)]*\)\s*\{[^}]*$/i.test(ctx)) continue;
 
       let resolved: string;
       try {

@@ -693,7 +693,7 @@ async function extractJsRenderedLinks(url: string): Promise<InternalLinkData[]> 
 
 const MAX_HOPS = 10;
 const FETCH_TIMEOUT_MS = 15000;
-const FETCH_RETRIES = 3;
+const FETCH_RETRIES = 4;
 const DEFAULT_UA = 'Mozilla/5.0 (compatible; SitemapCrawlerPro/1.0)';
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 
@@ -701,8 +701,22 @@ function shouldRetryStatus(status: number) {
   return status === 408 || status === 425 || status === 429 || status >= 500;
 }
 
-function retryDelayMs(attempt: number) {
-  return 400 * attempt + Math.floor(Math.random() * 250);
+// Exponential backoff with jitter. 429/503 get a longer base delay so we
+// actually relieve the upstream server instead of hammering it again.
+function retryDelayMs(attempt: number, status = 0) {
+  const base = (status === 429 || status === 503) ? 1500 : 500;
+  return base * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 400);
+}
+
+// Parse Retry-After (delta-seconds or HTTP-date). Capped to 15s to avoid
+// stalling the whole batch on a single misbehaving response.
+function parseRetryAfter(header: string | null): number {
+  if (!header) return 0;
+  const secs = parseInt(header, 10);
+  if (!isNaN(secs)) return Math.min(secs * 1000, 15000);
+  const ts = Date.parse(header);
+  if (!isNaN(ts)) return Math.min(Math.max(0, ts - Date.now()), 15000);
+  return 0;
 }
 
 function makeFetchHeaders(userAgent?: string) {

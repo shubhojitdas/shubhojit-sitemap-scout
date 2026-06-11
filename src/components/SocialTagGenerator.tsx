@@ -80,6 +80,25 @@ function buildAllTags(e: SocialEntry): string {
   return tw ? `${og}\n${tw}` : og;
 }
 
+function entryToOgPreview(e: SocialEntry): SocialPreviewData {
+  return {
+    title: e.ogTitle,
+    description: e.ogDescription,
+    image: e.ogImage,
+    url: e.url,
+  };
+}
+
+function entryToTwitterPreview(e: SocialEntry): SocialPreviewData {
+  return {
+    title: e.twitterTitle || e.ogTitle,
+    description: e.twitterDescription || e.ogDescription,
+    image: e.twitterImage || e.ogImage,
+    url: e.url,
+    card: e.cardType,
+  };
+}
+
 function validate(e: SocialEntry): { ok: boolean; warnings: string[] } {
   const w: string[] = [];
   try { new URL(e.url); } catch { w.push("Invalid URL"); }

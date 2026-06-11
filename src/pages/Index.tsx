@@ -218,6 +218,9 @@ const Index = () => {
         </section>
       )}
 
+      {/* ── Standalone tools (only when no crawl results yet) ── */}
+      {!hasResults && !isLoading && <StandaloneTools />}
+
       {/* ── Error ── */}
       {error && (
         <section className="container max-w-7xl mx-auto px-4 pb-4">

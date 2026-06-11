@@ -142,7 +142,7 @@ function blankEntry(defaults: { image: string; cardType: SocialEntry["cardType"]
 }
 
 export function SocialTagGenerator({ results }: Props) {
-  const [mode, setMode] = useState<"individual" | "bulk">("individual");
+  const [mode, setMode] = useState<"individual" | "bulk" | "visualizer">("individual");
   const [defaultImage, setDefaultImage] = useState("");
   const [cardType, setCardType] = useState<SocialEntry["cardType"]>("summary_large_image");
   const [entries, setEntries] = useState<SocialEntry[]>([

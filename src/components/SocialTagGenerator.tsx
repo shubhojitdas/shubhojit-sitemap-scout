@@ -524,6 +524,12 @@ export function SocialTagGenerator({ results }: Props) {
                   <pre className="text-[11px] font-mono whitespace-pre-wrap break-all text-foreground/80 bg-muted/20 rounded p-2">
 {buildAllTags(e)}
                   </pre>
+                  <div className="grid gap-2 md:grid-cols-3">
+                    <FacebookPreview data={entryToOgPreview(e)} />
+                    <TwitterPreview data={entryToTwitterPreview(e)} />
+                    <LinkedInPreview data={entryToOgPreview(e)} />
+                  </div>
+
                 </div>
               ))}
             </div>

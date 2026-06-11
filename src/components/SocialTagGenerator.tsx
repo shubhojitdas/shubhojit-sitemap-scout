@@ -355,8 +355,12 @@ export function SocialTagGenerator({ results }: Props) {
               </div>
             </div>
           </TabsContent>
+          <TabsContent value="visualizer" className="mt-3">
+            <CustomVisualizer />
+          </TabsContent>
         </Tabs>
       </div>
+
 
       {/* Per-URL editable rows (individual mode) */}
       {mode === "individual" && (

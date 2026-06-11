@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Share2, Copy, FileDown, AlertTriangle, CheckCircle2, Plus, Trash2,
-  Facebook, Twitter, Wand2, Layers, Image as ImageIcon,
+  Facebook, Twitter, Wand2, Layers, Image as ImageIcon, Eye, Code2, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { rowsToTSV } from "@/lib/crawl-api";
 import type { CrawlResult } from "@/lib/crawl-api";
 import { toast } from "@/hooks/use-toast";
+import {
+  FacebookPreview, TwitterPreview, LinkedInPreview,
+  parseSocialHtml, ogToPreview, twitterToPreview,
+  type SocialPreviewData,
+} from "./SocialPreviews";
 
 interface Props {
   results: CrawlResult[];

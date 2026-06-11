@@ -268,13 +268,16 @@ export function SocialTagGenerator({ results }: Props) {
           </Badge>
         </div>
 
-        <Tabs value={mode} onValueChange={(v) => setMode(v as "individual" | "bulk")}>
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "individual" | "bulk" | "visualizer")}>
           <TabsList className="h-8">
             <TabsTrigger value="individual" className="text-xs h-6 gap-1">
               <Layers className="h-3 w-3" /> Individual
             </TabsTrigger>
             <TabsTrigger value="bulk" className="text-xs h-6 gap-1">
               <Wand2 className="h-3 w-3" /> Bulk
+            </TabsTrigger>
+            <TabsTrigger value="visualizer" className="text-xs h-6 gap-1">
+              <Search className="h-3 w-3" /> Custom Visualizer
             </TabsTrigger>
           </TabsList>
 

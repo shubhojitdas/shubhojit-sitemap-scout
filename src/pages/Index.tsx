@@ -1,5 +1,6 @@
 import { useCrawler } from "@/hooks/use-crawler";
 import { CrawlForm } from "@/components/CrawlForm";
+import { StandaloneTools } from "@/components/StandaloneTools";
 import { CrawlProgress } from "@/components/CrawlProgress";
 import { ResultsShell } from "@/components/ResultsShell";
 import { CrawlConfigDialog, DEFAULT_CRAWL_CONFIG, type CrawlConfig } from "@/components/CrawlConfigDialog";

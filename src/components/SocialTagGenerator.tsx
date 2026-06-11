@@ -459,6 +459,19 @@ export function SocialTagGenerator({ results }: Props) {
                     </div>
                   </div>
 
+                  {/* Live social previews */}
+                  <div className="rounded-md border border-border bg-muted/10 p-3">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80 mb-2">
+                      <Eye className="h-3 w-3 text-warning" /> Live previews
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-3">
+                      <FacebookPreview data={entryToOgPreview(e)} />
+                      <TwitterPreview data={entryToTwitterPreview(e)} />
+                      <LinkedInPreview data={entryToOgPreview(e)} />
+                    </div>
+                  </div>
+
+
                   {!v.ok && (
                     <div className="text-[11px] text-warning flex items-start gap-1.5">
                       <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />

@@ -1,5 +1,6 @@
 import { useCrawler } from "@/hooks/use-crawler";
 import { CrawlForm } from "@/components/CrawlForm";
+import { StandaloneTools } from "@/components/StandaloneTools";
 import { CrawlProgress } from "@/components/CrawlProgress";
 import { ResultsShell } from "@/components/ResultsShell";
 import { CrawlConfigDialog, DEFAULT_CRAWL_CONFIG, type CrawlConfig } from "@/components/CrawlConfigDialog";
@@ -216,6 +217,9 @@ const Index = () => {
           <CrawlProgress phase={phase} source={crawlSource} processed={processedUrls} total={totalUrls} />
         </section>
       )}
+
+      {/* ── Standalone tools (only when no crawl results yet) ── */}
+      {!hasResults && !isLoading && <StandaloneTools />}
 
       {/* ── Error ── */}
       {error && (

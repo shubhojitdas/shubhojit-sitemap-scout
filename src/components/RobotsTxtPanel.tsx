@@ -87,6 +87,8 @@ export function RobotsTxtPanel({ results, domain }: Props) {
   );
   const editorParsed = useMemo(() => parseRobotsTxt(editorText), [editorText]);
   const lineCount = Math.max(1, editorText.split("\n").length);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const gutterRef = useRef<HTMLDivElement>(null);
 
   // ── Tester state ──────────────────────────────────────────────────────────
   const [tab, setTab] = useState<"editor" | "tester">("editor");

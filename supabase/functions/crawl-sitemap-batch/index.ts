@@ -770,6 +770,18 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
           redirect: 'manual',
           signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
+        // Cloudflare bot-mitigation: don't waste budget retrying — the
+        // challenge will never let us through from an edge runtime. Mark
+        // terminal and move on so the batch stays within its deadline.
+        const server = (resp.headers.get('server') || '').toLowerCase();
+        const cfMitigated = resp.headers.get('cf-mitigated');
+        const isCfChallenge =
+          cfMitigated !== null ||
+          ((resp.status === 403 || resp.status === 503) && server.includes('cloudflare'));
+        if (isCfChallenge) {
+          lastRetryStatus = 0;
+          break;
+        }
         if (attempt < FETCH_RETRIES && shouldRetryStatus(resp.status)) {
           lastRetryStatus = resp.status;
           const retryAfter = parseRetryAfter(resp.headers.get('retry-after'));
@@ -1050,10 +1062,30 @@ Deno.serve(async (req) => {
     const results: CrawlResult[] = new Array(safeUrls.length);
     let cursor = 0;
 
+    // Per-batch deadline guard. Supabase Edge Functions hard-stop at 150s.
+    // We leave a 25s safety margin so URLs that haven't been picked up yet
+    // return as a structured "Timed out" row instead of crashing the whole
+    // batch with a 504 IDLE_TIMEOUT.
+    const BATCH_DEADLINE_MS = 125_000;
+    const batchStart = Date.now();
+    const deadlineExceeded = () => Date.now() - batchStart > BATCH_DEADLINE_MS;
+
     const worker = async () => {
       while (true) {
         const i = cursor++;
         if (i >= safeUrls.length) return;
+        if (deadlineExceeded()) {
+          results[i] = {
+            url: safeUrls[i], title: '', description: '', h1s: [], h2s: [], h3s: [],
+            images: [], schemas: [], robots: '', canonical: '', canonicalStatus: 'Missing',
+            hreflangs: [], internalLinks: [], socialTags: [],
+            status: 'Error', statusCode: 0,
+            redirectType: 'none', redirectChain: [], hopCount: 0,
+            initialUrl: safeUrls[i], finalUrl: safeUrls[i],
+            fetchTime: 'skipped (batch deadline)',
+          };
+          continue;
+        }
         results[i] = await fetchMeta(
           safeUrls[i], includeTitle, includeDesc, includeH1, includeH2, includeH3,
           includeImages, includeSchemas, includeRobots, includeCanonical,

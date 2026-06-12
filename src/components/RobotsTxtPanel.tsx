@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -87,6 +87,8 @@ export function RobotsTxtPanel({ results, domain }: Props) {
   );
   const editorParsed = useMemo(() => parseRobotsTxt(editorText), [editorText]);
   const lineCount = Math.max(1, editorText.split("\n").length);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const gutterRef = useRef<HTMLDivElement>(null);
 
   // ── Tester state ──────────────────────────────────────────────────────────
   const [tab, setTab] = useState<"editor" | "tester">("editor");
@@ -200,14 +202,26 @@ export function RobotsTxtPanel({ results, domain }: Props) {
               </div>
             </div>
             <div className="flex">
-              <div className="select-none px-2 py-3 text-right font-mono text-[11px] leading-relaxed text-muted-foreground/60 bg-muted/20 border-r border-border min-w-[2.5rem] max-h-[400px] overflow-hidden">
+              <div
+                ref={gutterRef}
+                className="select-none px-2 py-3 text-right font-mono text-[11px] leading-relaxed text-muted-foreground/60 bg-muted/20 border-r border-border min-w-[2.5rem] max-h-[400px] overflow-hidden"
+              >
                 {Array.from({ length: lineCount }).map((_, i) => (
                   <div key={i}>{i + 1}</div>
                 ))}
               </div>
               <Textarea
+                ref={textareaRef}
                 value={editorText}
                 onChange={(e) => setEditorText(e.target.value)}
+                onScroll={(e) => {
+                  // Keep the line-number gutter in sync with the textarea scroll
+                  // so users always see the correct line numbers next to the
+                  // visible rules.
+                  if (gutterRef.current) {
+                    gutterRef.current.scrollTop = (e.target as HTMLTextAreaElement).scrollTop;
+                  }
+                }}
                 spellCheck={false}
                 placeholder={liveState === "missing"
                   ? "# This site has no live robots.txt yet. Type your rules here, or click 'Insert generated' above to start from the auto-suggested draft."

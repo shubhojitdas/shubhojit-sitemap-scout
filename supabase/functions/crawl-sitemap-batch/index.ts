@@ -770,6 +770,18 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
           redirect: 'manual',
           signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
+        // Cloudflare bot-mitigation: don't waste budget retrying — the
+        // challenge will never let us through from an edge runtime. Mark
+        // terminal and move on so the batch stays within its deadline.
+        const server = (resp.headers.get('server') || '').toLowerCase();
+        const cfMitigated = resp.headers.get('cf-mitigated');
+        const isCfChallenge =
+          cfMitigated !== null ||
+          ((resp.status === 403 || resp.status === 503) && server.includes('cloudflare'));
+        if (isCfChallenge) {
+          lastRetryStatus = 0;
+          break;
+        }
         if (attempt < FETCH_RETRIES && shouldRetryStatus(resp.status)) {
           lastRetryStatus = resp.status;
           const retryAfter = parseRetryAfter(resp.headers.get('retry-after'));

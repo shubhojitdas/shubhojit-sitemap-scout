@@ -4,150 +4,149 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * GSAP-inspired aesthetic:
+ *  - Near-black canvas (#0e100f-ish) with a very subtle green cast
+ *  - Signature bright lime-green accent (#88CE02) as the single hero color
+ *  - Crisp white text, thin borders, minimal chrome
+ *  - Subtle ambient green glow instead of pastel iridescence
+ *  - Smooth, low-key transitions on every interactive element
+ */
+
 @layer base {
   :root {
-    /* Iridescent off-white with a faint lavender cast (ref: image-31) */
-    --background: 240 40% 98%;
-    --foreground: 235 30% 12%;
+    /* Light mode — clean off-white, still professional if the user toggles */
+    --background: 80 15% 97%;
+    --foreground: 150 12% 8%;
 
-    /* Glass surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 235 30% 12%;
+    --card-foreground: 150 12% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 235 30% 12%;
+    --popover-foreground: 150 12% 8%;
 
-    /* Primary = deep indigo violet (replaces near-black) */
-    --primary: 250 55% 22%;
-    --primary-foreground: 240 40% 98%;
+    /* Signature GSAP green */
+    --primary: 78 95% 40%;
+    --primary-foreground: 150 20% 8%;
 
-    --secondary: 240 30% 95%;
-    --secondary-foreground: 235 30% 12%;
+    --secondary: 80 10% 94%;
+    --secondary-foreground: 150 12% 8%;
 
-    --muted: 240 25% 95%;
-    --muted-foreground: 235 14% 42%;
+    --muted: 80 8% 94%;
+    --muted-foreground: 150 8% 38%;
 
-    --accent: 270 60% 94%;
-    --accent-foreground: 250 55% 22%;
+    --accent: 78 90% 92%;
+    --accent-foreground: 150 20% 12%;
 
-    --destructive: 0 78% 58%;
+    --destructive: 0 78% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 158 65% 42%;
+    --success: 78 90% 38%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 32 95% 55%;
+    --warning: 40 95% 52%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 240 25% 89%;
-    --input: 240 25% 89%;
-    --ring: 265 80% 60%;
+    --border: 80 8% 88%;
+    --input: 80 8% 88%;
+    --ring: 78 95% 40%;
 
-    --radius: 0.875rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 240 40% 97%;
-    --sidebar-foreground: 235 22% 28%;
-    --sidebar-primary: 250 55% 22%;
-    --sidebar-primary-foreground: 240 40% 98%;
-    --sidebar-accent: 270 60% 94%;
-    --sidebar-accent-foreground: 250 55% 22%;
-    --sidebar-border: 240 25% 89%;
-    --sidebar-ring: 265 80% 60%;
+    --sidebar-background: 80 15% 97%;
+    --sidebar-foreground: 150 12% 20%;
+    --sidebar-primary: 78 95% 40%;
+    --sidebar-primary-foreground: 150 20% 8%;
+    --sidebar-accent: 78 90% 92%;
+    --sidebar-accent-foreground: 150 20% 12%;
+    --sidebar-border: 80 8% 88%;
+    --sidebar-ring: 78 95% 40%;
 
-    /* Iridescent accent (violet → pink) used for highlights */
-    --highlight: 265 85% 62%;
-    --highlight-foreground: 0 0% 100%;
+    --highlight: 78 95% 40%;
+    --highlight-foreground: 150 20% 8%;
 
-    /* Warm coral accent inspired by image-30 */
-    --coral: 14 92% 60%;
+    --coral: 12 85% 55%;
     --coral-foreground: 0 0% 100%;
 
-    /* Glass + ambient iridescent gradient tokens (ref: image-31, image-32) */
-    --glass-bg: 0 0% 100% / 0.55;
-    --glass-border: 250 60% 80% / 0.45;
-    --glass-shadow: 250 50% 25% / 0.10;
+    /* Glass + ambient tokens */
+    --glass-bg: 0 0% 100% / 0.72;
+    --glass-border: 80 12% 82% / 0.7;
+    --glass-shadow: 150 20% 10% / 0.10;
     --gradient-iridescent: linear-gradient(
       135deg,
-      hsl(265 90% 70%) 0%,
-      hsl(295 85% 72%) 35%,
-      hsl(325 90% 72%) 60%,
-      hsl(195 90% 70%) 100%
+      hsl(78 95% 45%) 0%,
+      hsl(90 80% 55%) 100%
     );
-    --gradient-coral: linear-gradient(135deg, hsl(14 92% 62%), hsl(355 85% 62%));
+    --gradient-coral: linear-gradient(135deg, hsl(12 85% 55%), hsl(0 78% 55%));
     --gradient-ambient:
-      radial-gradient(55rem 38rem at 8% -8%, hsl(265 95% 75% / 0.22), transparent 60%),
-      radial-gradient(48rem 34rem at 100% 5%, hsl(320 95% 78% / 0.18), transparent 60%),
-      radial-gradient(46rem 36rem at 50% 115%, hsl(195 95% 72% / 0.16), transparent 60%),
-      radial-gradient(38rem 28rem at 80% 60%, hsl(285 90% 78% / 0.12), transparent 60%);
+      radial-gradient(60rem 40rem at 12% -10%, hsl(78 95% 55% / 0.10), transparent 60%),
+      radial-gradient(44rem 32rem at 100% 5%, hsl(78 95% 55% / 0.06), transparent 60%);
   }
 
   .dark {
-    /* Deep cosmic indigo, never pure black (ref: image-31 backdrop inverted) */
-    --background: 250 40% 6%;
-    --foreground: 240 30% 95%;
+    /* GSAP-style near-black with faint green undertone */
+    --background: 150 10% 5%;
+    --foreground: 80 12% 96%;
 
-    --card: 250 35% 9%;
-    --card-foreground: 240 30% 95%;
+    --card: 150 8% 8%;
+    --card-foreground: 80 12% 96%;
 
-    --popover: 250 35% 10%;
-    --popover-foreground: 240 30% 95%;
+    --popover: 150 8% 9%;
+    --popover-foreground: 80 12% 96%;
 
-    --primary: 240 30% 96%;
-    --primary-foreground: 250 40% 8%;
+    --primary: 78 95% 50%;
+    --primary-foreground: 150 20% 6%;
 
-    --secondary: 250 28% 14%;
-    --secondary-foreground: 240 30% 95%;
+    --secondary: 150 8% 12%;
+    --secondary-foreground: 80 12% 96%;
 
-    --muted: 250 28% 14%;
-    --muted-foreground: 240 15% 68%;
+    --muted: 150 8% 12%;
+    --muted-foreground: 80 6% 62%;
 
-    --accent: 265 50% 22%;
-    --accent-foreground: 240 30% 95%;
+    --accent: 78 60% 16%;
+    --accent-foreground: 78 95% 70%;
 
-    --destructive: 0 70% 58%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 158 65% 50%;
-    --success-foreground: 0 0% 100%;
+    --success: 78 95% 50%;
+    --success-foreground: 150 20% 6%;
 
-    --warning: 32 95% 60%;
+    --warning: 40 95% 58%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 250 25% 22%;
-    --input: 250 25% 22%;
-    --ring: 280 90% 70%;
+    --border: 150 8% 16%;
+    --input: 150 8% 16%;
+    --ring: 78 95% 50%;
 
-    --sidebar-background: 250 40% 6%;
-    --sidebar-foreground: 240 30% 95%;
-    --sidebar-primary: 240 30% 96%;
-    --sidebar-primary-foreground: 250 40% 8%;
-    --sidebar-accent: 265 50% 22%;
-    --sidebar-accent-foreground: 240 30% 95%;
-    --sidebar-border: 250 25% 22%;
-    --sidebar-ring: 280 90% 70%;
+    --sidebar-background: 150 10% 5%;
+    --sidebar-foreground: 80 12% 96%;
+    --sidebar-primary: 78 95% 50%;
+    --sidebar-primary-foreground: 150 20% 6%;
+    --sidebar-accent: 78 60% 16%;
+    --sidebar-accent-foreground: 78 95% 70%;
+    --sidebar-border: 150 8% 16%;
+    --sidebar-ring: 78 95% 50%;
 
-    --highlight: 280 95% 72%;
-    --highlight-foreground: 0 0% 100%;
+    --highlight: 78 95% 50%;
+    --highlight-foreground: 150 20% 6%;
 
-    --coral: 14 92% 64%;
+    --coral: 12 85% 60%;
     --coral-foreground: 0 0% 100%;
 
-    --glass-bg: 250 35% 11% / 0.55;
-    --glass-border: 270 60% 70% / 0.20;
-    --glass-shadow: 250 60% 2% / 0.55;
+    --glass-bg: 150 8% 9% / 0.72;
+    --glass-border: 78 40% 40% / 0.18;
+    --glass-shadow: 150 40% 2% / 0.6;
     --gradient-iridescent: linear-gradient(
       135deg,
-      hsl(265 95% 70%) 0%,
-      hsl(295 90% 72%) 35%,
-      hsl(325 95% 72%) 60%,
-      hsl(195 95% 70%) 100%
+      hsl(78 95% 55%) 0%,
+      hsl(95 85% 60%) 100%
     );
-    --gradient-coral: linear-gradient(135deg, hsl(14 92% 62%), hsl(355 85% 62%));
+    --gradient-coral: linear-gradient(135deg, hsl(12 85% 58%), hsl(0 78% 58%));
     --gradient-ambient:
-      radial-gradient(60rem 42rem at 8% -10%, hsl(265 95% 55% / 0.32), transparent 60%),
-      radial-gradient(52rem 36rem at 100% 5%, hsl(320 95% 55% / 0.24), transparent 60%),
-      radial-gradient(50rem 40rem at 50% 115%, hsl(195 95% 50% / 0.20), transparent 60%),
-      radial-gradient(40rem 30rem at 80% 55%, hsl(285 90% 60% / 0.18), transparent 60%);
+      radial-gradient(70rem 45rem at 10% -12%, hsl(78 95% 45% / 0.14), transparent 60%),
+      radial-gradient(50rem 34rem at 100% 8%, hsl(78 95% 45% / 0.08), transparent 60%),
+      radial-gradient(46rem 34rem at 50% 115%, hsl(78 95% 40% / 0.06), transparent 60%);
   }
 }
 
@@ -175,11 +174,14 @@
     font-family: 'Geist Mono', 'JetBrains Mono', monospace;
   }
 
-  /* Smoother default motion across interactive elements */
+  /* Smooth, low-key motion — GSAP-signature ease-out feel */
   button, a, [role="button"], input, select, textarea {
-    transition: background-color 0.2s ease, border-color 0.2s ease,
-      color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease,
-      opacity 0.2s ease, backdrop-filter 0.2s ease;
+    transition: background-color 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
@@ -191,7 +193,7 @@
     background-clip: text;
   }
 
-  /* Iridescent text — for hero accents (ref: image-31) */
+  /* GSAP-green accent text */
   .iridescent-text {
     background: var(--gradient-iridescent);
     -webkit-background-clip: text;
@@ -199,68 +201,69 @@
     background-clip: text;
   }
 
-  /* Glassmorphism — Apple-style translucent surface */
   .glass {
     background-color: hsl(var(--glass-bg));
-    backdrop-filter: saturate(180%) blur(16px);
-    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
     border: 1px solid hsl(var(--glass-border));
     box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.55) inset,
+      0 1px 0 hsl(0 0% 100% / 0.04) inset,
       0 8px 28px -14px hsl(var(--glass-shadow));
   }
 
   .dark .glass {
     box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.05) inset,
+      0 1px 0 hsl(0 0% 100% / 0.03) inset,
       0 12px 36px -16px hsl(var(--glass-shadow));
   }
 
   .glass-strong {
     background-color: hsl(var(--glass-bg));
-    backdrop-filter: saturate(200%) blur(24px);
-    -webkit-backdrop-filter: saturate(200%) blur(24px);
+    backdrop-filter: saturate(180%) blur(22px);
+    -webkit-backdrop-filter: saturate(180%) blur(22px);
     border: 1px solid hsl(var(--glass-border));
     box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.6) inset,
+      0 1px 0 hsl(0 0% 100% / 0.05) inset,
       0 18px 52px -22px hsl(var(--glass-shadow));
   }
 
   .card-elevated {
     position: relative;
-    background-color: hsl(var(--card) / 0.7);
-    backdrop-filter: saturate(180%) blur(14px);
-    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    background-color: hsl(var(--card) / 0.75);
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
     box-shadow:
-      0 0 0 1px hsl(var(--border) / 0.7),
-      0 1px 0 hsl(0 0% 100% / 0.55) inset,
+      0 0 0 1px hsl(var(--border) / 0.9),
+      0 1px 0 hsl(0 0% 100% / 0.04) inset,
       0 10px 28px -18px hsl(var(--glass-shadow));
-    transition: box-shadow 0.3s ease, transform 0.25s ease, background-color 0.3s ease;
+    transition: box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .card-elevated:hover {
     box-shadow:
-      0 0 0 1px hsl(265 80% 70% / 0.45),
-      0 1px 0 hsl(0 0% 100% / 0.65) inset,
-      0 18px 44px -20px hsl(265 60% 40% / 0.20);
+      0 0 0 1px hsl(var(--primary) / 0.45),
+      0 1px 0 hsl(0 0% 100% / 0.05) inset,
+      0 18px 44px -22px hsl(var(--primary) / 0.28);
   }
 
   .dark .card-elevated {
-    background-color: hsl(var(--card) / 0.55);
+    background-color: hsl(var(--card) / 0.72);
     box-shadow:
-      0 0 0 1px hsl(var(--border) / 0.8),
-      0 1px 0 hsl(0 0% 100% / 0.05) inset,
+      0 0 0 1px hsl(var(--border) / 0.9),
+      0 1px 0 hsl(0 0% 100% / 0.03) inset,
       0 14px 36px -20px hsl(var(--glass-shadow));
   }
 
   .dark .card-elevated:hover {
     box-shadow:
-      0 0 0 1px hsl(280 80% 60% / 0.45),
-      0 1px 0 hsl(0 0% 100% / 0.07) inset,
-      0 22px 52px -22px hsl(280 80% 30% / 0.45);
+      0 0 0 1px hsl(var(--primary) / 0.55),
+      0 1px 0 hsl(0 0% 100% / 0.04) inset,
+      0 22px 52px -24px hsl(var(--primary) / 0.35);
   }
 
-  /* Iridescent border ring — for emphasized panels */
+  /* Thin GSAP-green border ring for emphasized panels */
   .iridescent-ring {
     position: relative;
   }
@@ -277,63 +280,47 @@
     -webkit-mask-composite: xor;
             mask-composite: exclude;
     pointer-events: none;
-    opacity: 0.7;
+    opacity: 0.55;
   }
 
   .grid-bg {
-    background-size: 64px 64px;
+    background-size: 56px 56px;
     background-image:
-      linear-gradient(to right, hsl(var(--border) / 0.4) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--border) / 0.4) 1px, transparent 1px);
+      linear-gradient(to right, hsl(var(--border) / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.5) 1px, transparent 1px);
   }
 
   .fade-mask {
     mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 40%, transparent 100%);
     -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 40%, transparent 100%);
   }
+
+  /* GSAP-style subtle green glow pulse for hero accents */
+  .glow-primary {
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.35),
+      0 0 24px -4px hsl(var(--primary) / 0.35);
+  }
 }
 
 @keyframes doodle-circle {
-  0% {
-    stroke-dashoffset: 600;
-    opacity: 0;
-  }
-  8% {
-    opacity: 1;
-  }
-  45% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  55% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-  90% {
-    stroke-dashoffset: 600;
-    opacity: 0.3;
-  }
-  100% {
-    stroke-dashoffset: 600;
-    opacity: 0;
-  }
+  0% { stroke-dashoffset: 600; opacity: 0; }
+  8% { opacity: 1; }
+  45% { stroke-dashoffset: 0; opacity: 1; }
+  55% { stroke-dashoffset: 0; opacity: 1; }
+  90% { stroke-dashoffset: 600; opacity: 0.3; }
+  100% { stroke-dashoffset: 600; opacity: 0; }
 }
 
 .animate-doodle-circle {
   animation: doodle-circle 3s ease-in-out infinite;
 }
 
-/* Rich text underline spacing */
 u, .rich-text u {
   text-underline-offset: 4px;
   text-decoration-thickness: 1px;
 }
 
-/* ─── Recharts tooltip — force proper contrast in both themes ─────────────
-   Recharts injects inline styles for the tooltip wrapper and item rows;
-   `contentStyle` only covers the outer wrapper, so labels/items still pick
-   up Recharts' default near-black color which is invisible on dark popovers.
-   These rules override every internal node so text is always readable. */
+/* Recharts tooltip contrast */
 .recharts-default-tooltip,
 .recharts-tooltip-wrapper .recharts-default-tooltip {
   background-color: hsl(var(--popover)) !important;
@@ -363,7 +350,6 @@ u, .rich-text u {
   padding: 2px 0 !important;
 }
 
-/* Recharts legend should also pick up muted-foreground in dark mode. */
 .recharts-legend-item-text {
   color: hsl(var(--muted-foreground)) !important;
 }

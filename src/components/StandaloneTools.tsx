@@ -94,132 +94,163 @@ export function StandaloneTools() {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15, duration: 0.4 }}
-      className="container max-w-5xl mx-auto px-4 pt-6 pb-16"
+      transition={{ delay: 0.15, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      className="container max-w-5xl mx-auto px-4 pt-10 pb-20"
     >
-      <div className="text-center mb-5">
-        <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground mb-2">
+      {/* Section header — GSAP-style: tight, high-contrast, single green accent */}
+      <div className="text-center mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.5 }}
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/[0.06] text-[10.5px] font-mono uppercase tracking-[0.14em] text-primary mb-4"
+        >
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+          </span>
           <Wrench className="h-3 w-3" />
-          Standalone SEO tools — no crawl required
-        </div>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
-          Quick tools
+          Standalone tools · no crawl required
+        </motion.div>
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          Quick <span className="iridescent-text">tools</span>
         </h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-xl mx-auto">
+        <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto leading-relaxed">
           Test your robots.txt, generate or preview OG &amp; Twitter tags, and build
           hreflang clusters — all without running a full crawl. Your input
-          persists when switching tabs; use <strong>Clear</strong> to reset a tool.
+          persists when switching tabs.
         </p>
       </div>
 
       <div
         ref={sectionRef}
-        // Mark the section dirty on the first real user input so we can
-        // warn before refresh. Stays dirty until the page reloads.
         onInputCapture={() => { if (!dirty) setDirty(true); }}
-        className="rounded-xl border border-border bg-card p-3 sm:p-5 card-elevated"
+        className="relative rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl p-4 sm:p-6 overflow-hidden"
       >
-        <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-          <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="robots" className="text-xs sm:text-sm gap-1.5">
-              <Bot className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Robots.txt Tester</span>
-              <span className="sm:hidden">Robots</span>
-            </TabsTrigger>
-            <TabsTrigger value="social" className="text-xs sm:text-sm gap-1.5">
-              <Share2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">OG &amp; Twitter</span>
-              <span className="sm:hidden">Social</span>
-            </TabsTrigger>
-            <TabsTrigger value="hreflang" className="text-xs sm:text-sm gap-1.5">
-              <Languages className="h-3.5 w-3.5" />
-              Hreflang
-            </TabsTrigger>
-          </TabsList>
+        {/* Soft green ambient glow — matches GSAP hero glow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-30"
+          style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.55), transparent 65%)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full blur-3xl opacity-20"
+          style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.4), transparent 65%)" }}
+        />
 
-          {/* forceMount keeps each tool mounted so its internal state (entered
-              URLs, generated tags, edited rules) is preserved when the user
-              switches tabs. Inactive tabs are hidden via the data-state attr. */}
-
-          <TabsContent
-            value="robots"
-            forceMount
-            className="mt-0 data-[state=inactive]:hidden"
-          >
-            <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
-              <span className="text-[11px] text-muted-foreground">
-                Load a live robots.txt or paste rules manually below.
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearRobots}
-                className="h-7 text-[11px] gap-1"
+        <div className="relative">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+            <TabsList className="grid w-full grid-cols-3 mb-5 h-11 p-1 bg-muted/40 border border-border/50">
+              <TabsTrigger
+                value="robots"
+                className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm font-medium"
               >
-                <Eraser className="h-3 w-3" /> Clear robots tester
-              </Button>
-            </div>
-            <div className="mb-4 rounded-lg border border-border bg-muted/20 p-3">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Domain to fetch robots.txt from
-              </label>
-              <div className="flex gap-2 mt-1.5">
-                <Input
-                  value={robotsDomainInput}
-                  onChange={(e) => setRobotsDomainInput(e.target.value)}
-                  placeholder="example.com"
-                  className="h-9 text-sm"
-                  onKeyDown={(e) => { if (e.key === "Enter") loadRobots(); }}
-                />
-                <Button onClick={loadRobots} size="sm" className="h-9">
-                  Load
+                <Bot className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Robots.txt Tester</span>
+                <span className="sm:hidden">Robots</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="social"
+                className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm font-medium"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">OG &amp; Twitter</span>
+                <span className="sm:hidden">Social</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="hreflang"
+                className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm font-medium"
+              >
+                <Languages className="h-3.5 w-3.5" />
+                Hreflang
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent
+              value="robots"
+              forceMount
+              className="mt-0 data-[state=inactive]:hidden"
+            >
+              <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                  Load a live robots.txt or paste rules below
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearRobots}
+                  className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  <Eraser className="h-3 w-3" /> Clear
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">
-                Optional — you can also paste rules manually below to test any robots.txt.
-              </p>
-            </div>
-            <RobotsTxtPanel key={robotsKey} results={[]} domain={robotsDomain} />
-          </TabsContent>
+              <div className="mb-5 rounded-xl border border-border/60 bg-background/40 p-4">
+                <label className="text-[10.5px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Domain
+                </label>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    value={robotsDomainInput}
+                    onChange={(e) => setRobotsDomainInput(e.target.value)}
+                    placeholder="example.com"
+                    className="h-10 text-sm bg-background/60"
+                    onKeyDown={(e) => { if (e.key === "Enter") loadRobots(); }}
+                  />
+                  <Button
+                    onClick={loadRobots}
+                    size="sm"
+                    className="h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+                  >
+                    Load
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  Optional — paste rules manually below to test any robots.txt.
+                </p>
+              </div>
+              <RobotsTxtPanel key={robotsKey} results={[]} domain={robotsDomain} />
+            </TabsContent>
 
-          <TabsContent
-            value="social"
-            forceMount
-            className="mt-0 data-[state=inactive]:hidden"
-          >
-            <div className="mb-3 flex items-center justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearSocial}
-                className="h-7 text-[11px] gap-1"
-              >
-                <Eraser className="h-3 w-3" /> Clear OG / Twitter generator
-              </Button>
-            </div>
-            <SocialTagGenerator key={socialKey} results={[]} />
-          </TabsContent>
+            <TabsContent
+              value="social"
+              forceMount
+              className="mt-0 data-[state=inactive]:hidden"
+            >
+              <div className="mb-4 flex items-center justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSocial}
+                  className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  <Eraser className="h-3 w-3" /> Clear
+                </Button>
+              </div>
+              <SocialTagGenerator key={socialKey} results={[]} />
+            </TabsContent>
 
-          <TabsContent
-            value="hreflang"
-            forceMount
-            className="mt-0 data-[state=inactive]:hidden"
-          >
-            <div className="mb-3 flex items-center justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearHreflang}
-                className="h-7 text-[11px] gap-1"
-              >
-                <Eraser className="h-3 w-3" /> Clear hreflang generator
-              </Button>
-            </div>
-            <HreflangGenerator key={hreflangKey} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent
+              value="hreflang"
+              forceMount
+              className="mt-0 data-[state=inactive]:hidden"
+            >
+              <div className="mb-4 flex items-center justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearHreflang}
+                  className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  <Eraser className="h-3 w-3" /> Clear
+                </Button>
+              </div>
+              <HreflangGenerator key={hreflangKey} />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </motion.section>
   );

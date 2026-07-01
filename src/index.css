@@ -315,6 +315,66 @@
   animation: doodle-circle 3s ease-in-out infinite;
 }
 
+/* GSAP-style shimmer sweep for skeletons and progress bars */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes progress-glow {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+@layer components {
+  /* Animated skeleton with an ambient shimmer sweep */
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background-color: hsl(var(--muted) / 0.55);
+  }
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--foreground) / 0.06) 45%,
+      hsl(var(--primary) / 0.10) 50%,
+      hsl(var(--foreground) / 0.06) 55%,
+      transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: shimmer-sweep 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  /* GSAP-style press feedback — tiny scale + shadow tuck */
+  .press-tuck {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .press-tuck:hover  { transform: translateY(-1px); }
+  .press-tuck:active { transform: translateY(0) scale(0.985); }
+
+  /* Card lift on hover with a soft primary glow */
+  .card-lift {
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .card-lift:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.35),
+      0 22px 60px -28px hsl(var(--primary) / 0.35);
+  }
+}
+
+
 u, .rich-text u {
   text-underline-offset: 4px;
   text-decoration-thickness: 1px;

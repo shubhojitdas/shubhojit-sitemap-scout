@@ -127,17 +127,17 @@ export function StandaloneTools() {
       <div
         ref={sectionRef}
         onInputCapture={() => { if (!dirty) setDirty(true); }}
-        className="relative rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl p-4 sm:p-6 overflow-hidden"
+        className="relative rounded-2xl border border-border/70 bg-card/60 backdrop-blur-xl p-4 sm:p-6 overflow-hidden card-lift"
       >
         {/* Soft green ambient glow — matches GSAP hero glow */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-30"
+          className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-30 transition-opacity duration-700"
           style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.55), transparent 65%)" }}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full blur-3xl opacity-20"
+          className="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full blur-3xl opacity-20 transition-opacity duration-700"
           style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.4), transparent 65%)" }}
         />
 
@@ -146,15 +146,15 @@ export function StandaloneTools() {
             <TabsList className="grid w-full grid-cols-3 mb-5 h-11 p-1 bg-muted/40 border border-border/50">
               <TabsTrigger
                 value="robots"
-                className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm font-medium"
+                className="press-tuck text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-[0_6px_20px_-10px_hsl(var(--primary)/0.55)] font-medium"
               >
-                <Bot className="h-3.5 w-3.5" />
+                <Bot className="h-3.5 w-3.5 transition-transform duration-300 group-data-[state=active]:scale-110" />
                 <span className="hidden sm:inline">Robots.txt Tester</span>
                 <span className="sm:hidden">Robots</span>
               </TabsTrigger>
               <TabsTrigger
                 value="social"
-                className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm font-medium"
+                className="press-tuck text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-[0_6px_20px_-10px_hsl(var(--primary)/0.55)] font-medium"
               >
                 <Share2 className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">OG &amp; Twitter</span>
@@ -162,7 +162,7 @@ export function StandaloneTools() {
               </TabsTrigger>
               <TabsTrigger
                 value="hreflang"
-                className="text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm font-medium"
+                className="press-tuck text-xs sm:text-sm gap-1.5 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-[0_6px_20px_-10px_hsl(var(--primary)/0.55)] font-medium"
               >
                 <Languages className="h-3.5 w-3.5" />
                 Hreflang
@@ -174,44 +174,51 @@ export function StandaloneTools() {
               forceMount
               className="mt-0 data-[state=inactive]:hidden"
             >
-              <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-                  Load a live robots.txt or paste rules below
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearRobots}
-                  className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
-                >
-                  <Eraser className="h-3 w-3" /> Clear
-                </Button>
-              </div>
-              <div className="mb-5 rounded-xl border border-border/60 bg-background/40 p-4">
-                <label className="text-[10.5px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  Domain
-                </label>
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    value={robotsDomainInput}
-                    onChange={(e) => setRobotsDomainInput(e.target.value)}
-                    placeholder="example.com"
-                    className="h-10 text-sm bg-background/60"
-                    onKeyDown={(e) => { if (e.key === "Enter") loadRobots(); }}
-                  />
+              <motion.div
+                key="tab-robots"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                    Load a live robots.txt or paste rules below
+                  </span>
                   <Button
-                    onClick={loadRobots}
+                    variant="ghost"
                     size="sm"
-                    className="h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+                    onClick={clearRobots}
+                    className="press-tuck h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
                   >
-                    Load
+                    <Eraser className="h-3 w-3" /> Clear
                   </Button>
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-2">
-                  Optional — paste rules manually below to test any robots.txt.
-                </p>
-              </div>
-              <RobotsTxtPanel key={robotsKey} results={[]} domain={robotsDomain} />
+                <div className="mb-5 rounded-xl border border-border/60 bg-background/40 p-4 card-lift">
+                  <label className="text-[10.5px] font-mono font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Domain
+                  </label>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      value={robotsDomainInput}
+                      onChange={(e) => setRobotsDomainInput(e.target.value)}
+                      placeholder="example.com"
+                      className="h-10 text-sm bg-background/60"
+                      onKeyDown={(e) => { if (e.key === "Enter") loadRobots(); }}
+                    />
+                    <Button
+                      onClick={loadRobots}
+                      size="sm"
+                      className="press-tuck h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-[0_6px_20px_-10px_hsl(var(--primary)/0.7)]"
+                    >
+                      Load
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    Optional — paste rules manually below to test any robots.txt.
+                  </p>
+                </div>
+                <RobotsTxtPanel key={robotsKey} results={[]} domain={robotsDomain} />
+              </motion.div>
             </TabsContent>
 
             <TabsContent
@@ -219,17 +226,24 @@ export function StandaloneTools() {
               forceMount
               className="mt-0 data-[state=inactive]:hidden"
             >
-              <div className="mb-4 flex items-center justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearSocial}
-                  className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
-                >
-                  <Eraser className="h-3 w-3" /> Clear
-                </Button>
-              </div>
-              <SocialTagGenerator key={socialKey} results={[]} />
+              <motion.div
+                key="tab-social"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="mb-4 flex items-center justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSocial}
+                    className="press-tuck h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <Eraser className="h-3 w-3" /> Clear
+                  </Button>
+                </div>
+                <SocialTagGenerator key={socialKey} results={[]} />
+              </motion.div>
             </TabsContent>
 
             <TabsContent
@@ -237,17 +251,24 @@ export function StandaloneTools() {
               forceMount
               className="mt-0 data-[state=inactive]:hidden"
             >
-              <div className="mb-4 flex items-center justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearHreflang}
-                  className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
-                >
-                  <Eraser className="h-3 w-3" /> Clear
-                </Button>
-              </div>
-              <HreflangGenerator key={hreflangKey} />
+              <motion.div
+                key="tab-hreflang"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="mb-4 flex items-center justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearHreflang}
+                    className="press-tuck h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <Eraser className="h-3 w-3" /> Clear
+                  </Button>
+                </div>
+                <HreflangGenerator key={hreflangKey} />
+              </motion.div>
             </TabsContent>
           </Tabs>
         </div>

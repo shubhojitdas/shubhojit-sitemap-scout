@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -17,38 +17,59 @@ const CmsDashboard = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const verifyAdmin = async (sess: any) => {
-      if (!sess) {
-        navigate("/cms/login");
-        return;
-      }
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", sess.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (error || !data) {
-        await supabase.auth.signOut();
-        toast.error("Access denied");
-        navigate("/cms/login");
-        return;
-      }
-      setSession(sess);
+  const verifyAdmin = useCallback(async (sess: any) => {
+    if (!sess?.user?.id) {
+      setSession(null);
       setLoading(false);
-    };
+      navigate("/cms/login", { replace: true });
+      return;
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      verifyAdmin(session);
-    });
+    const { data: role, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", sess.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (error) {
+      toast.error("Unable to verify CMS access. Please try again.");
+      setSession(null);
+      setLoading(false);
+      navigate("/cms/login", { replace: true });
+      return;
+    }
+
+    if (!role) {
+      await supabase.auth.signOut();
+      toast.error("Access denied");
+      setSession(null);
+      setLoading(false);
+      navigate("/cms/login", { replace: true });
+      return;
+    }
+
+    setSession(sess);
+    setLoading(false);
+  }, [navigate]);
+
+  useEffect(() => {
+    let mounted = true;
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) verifyAdmin(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted || event === "INITIAL_SESSION") return;
       verifyAdmin(session);
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [verifyAdmin]);
 
 
   const handleLogout = async () => {

@@ -12,6 +12,7 @@ import {
 import {
   useAboutProfile, useAboutSkills, useAboutExperience, useAboutFeaturedPosts,
 } from "@/hooks/use-about-cms";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -89,7 +90,7 @@ const AboutShubhojit = () => {
               </motion.div>
               <motion.div custom={2} variants={fadeUp} className="text-sm leading-relaxed text-muted-foreground space-y-3">
                 {paragraphs.map((p, i) => (
-                  <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
+                  <p key={i} dangerouslySetInnerHTML={{ __html: sanitizeHtml(p) }} />
                 ))}
               </motion.div>
               <motion.div custom={3} variants={fadeUp}>
@@ -147,13 +148,13 @@ const AboutShubhojit = () => {
                         {exp.image_url && (
                           <img src={exp.image_url} alt={`${exp.company} featured`} className="w-full max-h-48 rounded-lg object-cover border border-border" />
                         )}
-                        {exp.description && <p className="text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: exp.description }} />}
+                        {exp.description && <p className="text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(exp.description) }} />}
                         {exp.achievements && exp.achievements.length > 0 && (
                           <ul className="space-y-1.5">
                             {exp.achievements.map((a) => (
                               <li key={a.id} className="text-sm text-muted-foreground flex items-start gap-2">
                                 <Award className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground/60" />
-                                <span dangerouslySetInnerHTML={{ __html: a.text }} />
+                                <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(a.text) }} />
                               </li>
                             ))}
                           </ul>
@@ -189,7 +190,7 @@ const AboutShubhojit = () => {
                         )}
                         <CardContent className="p-5 flex flex-col flex-1">
                           <h3 className="font-semibold text-sm leading-snug">{post.title}</h3>
-                          {post.description && <p className="text-xs text-muted-foreground leading-relaxed mt-2" dangerouslySetInnerHTML={{ __html: post.description }} />}
+                          {post.description && <p className="text-xs text-muted-foreground leading-relaxed mt-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.description) }} />}
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 mt-auto pt-3">
                             <ExternalLink className="h-2.5 w-2.5" />
                             View on {post.source_label || "Web"}

@@ -12,6 +12,7 @@ import {
 import {
   useAboutProfile, useAboutSkills, useAboutExperience, useAboutFeaturedPosts,
 } from "@/hooks/use-about-cms";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },

@@ -94,20 +94,8 @@ async function anthropic(apiKey: string, args: ChatArgs): Promise<string> {
   return (data?.content ?? []).map((c: any) => c?.text).filter(Boolean).join("\n");
 }
 
-async function lovable(args: ChatArgs): Promise<string> {
-  // Route through an edge function that holds LOVABLE_API_KEY server-side.
-  const { data, error } = await supabase.functions.invoke("ai-chat", {
-    body: { model: args.model, messages: args.messages, temperature: args.temperature ?? 0.7 },
-  });
-  if (error) throw new AiError(error.message || "AI request failed");
-  if ((data as any)?.error) throw new AiError((data as any).error);
-  return (data as any)?.content ?? "";
-}
-
 export async function chat(args: ChatArgs): Promise<string> {
   switch (args.providerId) {
-    case "lovable":
-      return lovable(args);
     case "google":
       if (!args.apiKey) throw new AiError("Missing Google AI Studio API key");
       return googleGemini(args.apiKey, args);

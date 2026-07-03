@@ -16,26 +16,6 @@ export interface AiProvider {
 // a `case` in `ai-client.ts` if it needs a custom endpoint.
 export const AI_PROVIDERS: AiProvider[] = [
   {
-    id: "lovable",
-    label: "Lovable AI (built-in, free tier)",
-    keyLabel: "",
-    keyPlaceholder: "",
-    docsUrl: "https://docs.lovable.dev/features/ai",
-    freeTier: true,
-    requiresKey: false,
-    defaultModel: "google/gemini-3-flash-preview",
-    models: [
-      "google/gemini-3-flash-preview",
-      "google/gemini-2.5-flash",
-      "google/gemini-2.5-flash-lite",
-      "google/gemini-2.5-pro",
-      "openai/gpt-5-mini",
-      "openai/gpt-5-nano",
-      "openai/gpt-5",
-    ],
-    note: "No API key required — uses the built-in Lovable AI gateway. Subject to workspace credits.",
-  },
-  {
     id: "google",
     label: "Google AI Studio (Gemini)",
     keyLabel: "Google AI Studio API Key",

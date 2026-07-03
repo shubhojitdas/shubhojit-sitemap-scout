@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+// Unified BYOK AI chat client. All keys stay client-side.
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";

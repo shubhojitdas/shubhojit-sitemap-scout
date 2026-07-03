@@ -18,6 +18,7 @@ import { LinkAttributesPanel } from "@/components/LinkAttributesPanel";
 import { LinkEquityPanel } from "@/components/LinkEquityPanel";
 import { SocialTagGenerator } from "@/components/SocialTagGenerator";
 import { HreflangGenerator } from "@/components/HreflangGenerator";
+import { AiInsightsPanel } from "@/components/AiInsightsPanel";
 import type { CrawlResult } from "@/lib/crawl-api";
 import type { LastCrawlInput } from "@/hooks/use-crawler";
 
@@ -118,6 +119,7 @@ const VIEW_TITLES: Record<ResultsView, string> = {
   "robots-txt": "Robots.txt",
   "og-generator": "OG &amp; Twitter Card Generator",
   "hreflang-generator": "Hreflang Generator",
+  "ai-insights": "AI Insights",
 };
 
 const SECTION_VIS_VIEWS = new Set<ResultsView>([
@@ -132,7 +134,7 @@ const RESULT_VIEWS = new Set<ResultsView>([
   "page-titles", "meta-description", "h1", "h2", "h3", "images",
   "canonicals", "hreflang", "schema", "meta-robots", "social",
   "internal-links", "link-graph", "internal-link-graph", "sitemap",
-  "robots-txt", "og-generator", "hreflang-generator",
+  "robots-txt", "og-generator", "hreflang-generator", "ai-insights",
 ]);
 
 function loadSavedView(): ResultsView {
@@ -259,8 +261,12 @@ export function ResultsShell({
                 <HreflangGenerator />
               )}
 
+              {view === "ai-insights" && (
+                <AiInsightsPanel results={results} />
+              )}
+
               {/* All data views: mini visualization + filtered table */}
-              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && view !== "og-generator" && view !== "hreflang-generator" && (
+              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && view !== "og-generator" && view !== "hreflang-generator" && view !== "ai-insights" && (
                 <>
                   {SECTION_VIS_VIEWS.has(view) && (
                     <>

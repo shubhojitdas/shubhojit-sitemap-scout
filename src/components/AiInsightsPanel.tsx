@@ -209,10 +209,10 @@ function buildCrawlSummary(results: CrawlResult[]): string {
       if (r.description.length > 160) longDesc++;
       if (r.description.length < 70) shortDesc++;
     }
-    const h1s = r.h1 ?? [];
+    const h1s = r.h1s ?? [];
     if (h1s.length === 0) missingH1++;
     if (h1s.length > 1) multipleH1++;
-    if ((r.metaRobots || "").toLowerCase().includes("noindex")) noindex++;
+    if ((r.robots || "").toLowerCase().includes("noindex")) noindex++;
   }
 
   const sample = results.slice(0, 25).map((r) => ({
@@ -220,7 +220,7 @@ function buildCrawlSummary(results: CrawlResult[]): string {
     status: r.statusCode,
     title: r.title?.slice(0, 120),
     description: r.description?.slice(0, 200),
-    h1: (r.h1 ?? [])[0]?.slice(0, 120),
+    h1: (r.h1s ?? [])[0]?.slice(0, 120),
   }));
 
   return JSON.stringify(

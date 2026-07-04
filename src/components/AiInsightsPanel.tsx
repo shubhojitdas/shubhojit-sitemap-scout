@@ -1,6 +1,4 @@
 import { useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -181,9 +179,7 @@ export function AiInsightsPanel({ results }: Props) {
               <Copy className="h-3.5 w-3.5 mr-1" /> Copy
             </Button>
           </div>
-          <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:bg-muted prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:text-foreground prose-a:text-primary prose-table:text-sm">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown>
-          </div>
+          <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans">{answer}</pre>
         </div>
       )}
     </div>

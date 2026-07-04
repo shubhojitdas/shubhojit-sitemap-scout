@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "sitemap-scout-mcp",
+      "version": "0.1.0",
+      "title": "Sitemap Scout MCP"
+    },
+    "tools": [
+      {
+        "name": "fetch_page_seo",
+        "title": "Fetch page SEO",
+        "description": "Fetch a public URL and extract SEO metadata: HTTP status, final URL after redirects, title, meta description, canonical, robots directive, H1s, Open Graph and Twitter tags.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Absolute http(s) URL to fetch."
+            }
+          },
+          "required": [
+            "url"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "fetch_robots_txt",
+        "title": "Fetch robots.txt",
+        "description": "Fetch the robots.txt file for a domain and return its raw content plus discovered sitemap URLs.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Domain or origin, e.g. \"example.com\" or \"https://example.com\"."
+            }
+          },
+          "required": [
+            "domain"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_sitemap_urls",
+        "title": "List sitemap URLs",
+        "description": "Fetch a sitemap XML (or sitemap index) and return the URLs it contains. Recurses one level into sitemap indexes.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sitemapUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "Full URL to a sitemap.xml or sitemap index."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200,
+              "description": "Max URLs to return."
+            }
+          },
+          "required": [
+            "sitemapUrl"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

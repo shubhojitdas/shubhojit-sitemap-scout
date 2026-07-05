@@ -20,6 +20,8 @@ export interface RedirectHop {
   type: RedirectHopType;
   /** Optional human-readable status (e.g. "Max redirects exceeded"). */
   statusText?: string;
+  /** Short snippet from the source (meta tag or JS statement) that triggered detection. */
+  source?: string;
 }
 
 export interface RedirectDetectionResult {

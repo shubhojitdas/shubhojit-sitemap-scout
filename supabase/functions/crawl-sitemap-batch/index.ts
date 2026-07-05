@@ -597,7 +597,7 @@ async function fetchJsRenderedHtml(url: string): Promise<string | null> {
  * Only treats it as a redirect when the delay is 0–5 seconds (matching what
  * search engines treat as a redirect).
  */
-function extractMetaRefresh(html: string, baseUrl: string): { target: string; delay: number } | null {
+function extractMetaRefresh(html: string, baseUrl: string): { target: string; delay: number; source: string } | null {
   const cleaned = html.replace(/<!--[\s\S]*?-->/g, '');
   const headMatch = cleaned.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i);
   const scope = headMatch ? headMatch[1] : cleaned;
@@ -622,7 +622,8 @@ function extractMetaRefresh(html: string, baseUrl: string): { target: string; de
 
     let target = urlMatch[1].trim();
     try { target = new URL(target, baseUrl).href; } catch { /* leave as-is */ }
-    return { target, delay };
+    const source = m[0].slice(0, 300);
+    return { target, delay, source };
   }
   return null;
 }
@@ -630,12 +631,18 @@ function extractMetaRefresh(html: string, baseUrl: string): { target: string; de
 /**
  * Inline JS redirect detection — pattern matches inside <script> blocks for
  * common window.location / document.location assignments. No JS execution.
- * Returns the resolved absolute URL of the first valid match, or null.
+ *
+ * Deferred navigations inside ANY event listener (addEventListener with any
+ * event name, jQuery .on/.one/.bind/.live/.delegate, DOM `onEvent` handlers,
+ * `function(e|ev|evt|event) { … }` handler bodies) are excluded — those fire
+ * on user/form action, not at page load, so they are not crawl-time redirects.
+ *
+ * Returns the resolved absolute URL of the first valid match plus the source
+ * snippet that triggered detection, or null.
  */
-function extractJsRedirect(html: string, baseUrl: string): string | null {
+function extractJsRedirect(html: string, baseUrl: string): { target: string; source: string } | null {
   const noComments = html.replace(/<!--[\s\S]*?-->/g, '');
   const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
-  // Capture the quote char so we can distinguish template literals (`) from plain strings.
   const JS_REDIRECT_REGEX =
     /(?:window\.|document\.|top\.|self\.|parent\.)?location(?:\.href|\.replace|\.assign)?\s*(?:=|\()\s*(['"`])([^'"`]+)\1/gi;
 
@@ -644,7 +651,6 @@ function extractJsRedirect(html: string, baseUrl: string): string | null {
     const body = scriptMatch[1];
     if (!body || !body.trim()) continue;
 
-    // Strip JS comments to skip commented-out redirects (best-effort).
     const cleanedBody = body
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/(^|[^:])\/\/[^\n\r]*/g, '$1');
@@ -657,29 +663,36 @@ function extractJsRedirect(html: string, baseUrl: string): string | null {
       if (!raw || raw === '#' || raw.startsWith('#')) continue;
       if (raw.startsWith('javascript:')) continue;
 
-      // Skip template literals that contain unresolved interpolation — these are
-      // dynamic targets (e.g. `/products/${handle}`), not real page-level redirects.
+      // Skip template literals / templated URLs — dynamic, not real redirects.
       if (quote === '`' && /\$\{/.test(raw)) continue;
-      // Also skip handlebars / mustache / angular-style placeholders.
       if (/\{\{[^}]*\}\}/.test(raw)) continue;
-      // Reject anything that, once resolved, still contains unencoded `${` OR the
-      // URL-encoded form `%24%7B` / a bare `%7B` (`{`) — clear sign of a template.
       if (/\$\{|%24%7B|%7B[^/]*%7D/i.test(raw)) continue;
 
-      // Match the call context — only treat as a real navigation when the assignment
-      // appears at script top-level OR inside an obvious lifecycle hook. If it is
-      // inside an event handler body (onclick, addEventListener('click', …)), skip.
-      const ctxStart = Math.max(0, m.index - 200);
+      // Look back at surrounding code to detect deferred / event-driven navigations.
+      const ctxStart = Math.max(0, m.index - 400);
       const ctx = cleanedBody.slice(ctxStart, m.index);
-      if (/addEventListener\s*\(\s*['"`](?:click|submit|change|input|keydown|keyup|mousedown|mouseup|touchstart|touchend)['"`]/i.test(ctx)) continue;
-      if (/\bon(?:click|submit|change|input|keydown|keyup|mousedown|mouseup|touchstart|touchend)\s*[:=]\s*(?:function|\([^)]*\)\s*=>)/i.test(ctx)) continue;
+      // ANY event name (custom events like `wpcf7mailsent`, `submit`, etc.).
+      if (/addEventListener\s*\(\s*['"`][a-zA-Z0-9:_-]+['"`]\s*,/i.test(ctx)) continue;
+      // jQuery-style delegation: $(x).on('event', …), .one, .bind, .live, .delegate.
+      if (/\.(on|one|bind|live|delegate)\s*\(\s*['"`][a-zA-Z0-9:_\s-]+['"`]\s*,/i.test(ctx)) continue;
+      // Inline DOM handlers: element.onclick = function … / onSomething: () => …
+      if (/\bon[a-z]+\s*[:=]\s*(?:function|\([^)]*\)\s*=>|async\s+function)/i.test(ctx)) continue;
+      // Handler callback bodies whose sole param is an event object (e, ev, evt, event).
+      if (/\b(?:function|async\s+function)\s*\([^)]*\b(?:e|ev|evt|event)\b[^)]*\)\s*\{[^}]*$/i.test(ctx)) continue;
 
       let resolved: string;
       try { resolved = new URL(raw, baseUrl).href; } catch { continue; }
       if (resolved === baseUrl) continue;
-      // Final guard: resolved URL must not contain a literal `${` or encoded brace.
       if (/\$\{|%24%7B|%7B/i.test(resolved)) continue;
-      return resolved;
+
+      // Grab a compact source snippet: the full JS statement (up to the next
+      // semicolon/newline) starting at the location.* assignment.
+      const stmtEnd = cleanedBody.slice(m.index).search(/[;\n]/);
+      const stmt = stmtEnd === -1
+        ? cleanedBody.slice(m.index, m.index + 200)
+        : cleanedBody.slice(m.index, m.index + stmtEnd);
+      const source = stmt.trim().replace(/\s+/g, ' ').slice(0, 240);
+      return { target: resolved, source };
     }
   }
   return null;

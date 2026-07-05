@@ -772,24 +772,32 @@ function MetaTable({
                       <div className="font-medium text-foreground/80 mb-1">Redirect chain ({chain.length} hop{chain.length === 1 ? '' : 's'})</div>
                       <ol className="space-y-1">
                         {chain.map((hop, hi) => (
-                          <li key={hi} className="flex items-start gap-2 font-mono">
-                            <span className="text-muted-foreground shrink-0 w-5 text-right">{hi + 1}.</span>
-                            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                              hop.status === -1 ? 'bg-destructive/15 text-destructive' :
-                              hop.type === 'meta-refresh' ? 'bg-warning/15 text-warning' :
-                              hop.type === 'javascript' ? 'bg-destructive/15 text-destructive' :
-                              hop.status >= 300 && hop.status < 400 ? 'bg-primary/15 text-primary' :
-                              hop.status >= 400 ? 'bg-destructive/15 text-destructive' :
-                              'bg-success/15 text-success'
-                            }`}>
-                              {hop.status === -1 ? '!' : hop.status}
-                            </span>
-                            <span className="shrink-0 text-[10px] text-muted-foreground uppercase tracking-wide">
-                              {hop.type === 'meta-refresh' ? 'meta' : hop.type === 'javascript' ? 'js' : 'http'}
-                            </span>
-                            <span className="break-all text-foreground/90">{hop.url}</span>
-                            {hop.statusText && (
-                              <span className="text-destructive text-[10px] italic ml-1">({hop.statusText})</span>
+                          <li key={hi} className="font-mono">
+                            <div className="flex items-start gap-2">
+                              <span className="text-muted-foreground shrink-0 w-5 text-right">{hi + 1}.</span>
+                              <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                hop.status === -1 ? 'bg-destructive/15 text-destructive' :
+                                hop.type === 'meta-refresh' ? 'bg-warning/15 text-warning' :
+                                hop.type === 'javascript' ? 'bg-destructive/15 text-destructive' :
+                                hop.status >= 300 && hop.status < 400 ? 'bg-primary/15 text-primary' :
+                                hop.status >= 400 ? 'bg-destructive/15 text-destructive' :
+                                'bg-success/15 text-success'
+                              }`}>
+                                {hop.status === -1 ? '!' : hop.status}
+                              </span>
+                              <span className="shrink-0 text-[10px] text-muted-foreground uppercase tracking-wide">
+                                {hop.type === 'meta-refresh' ? 'meta' : hop.type === 'javascript' ? 'js' : 'http'}
+                              </span>
+                              <span className="break-all text-foreground/90">{hop.url}</span>
+                              {hop.statusText && (
+                                <span className="text-destructive text-[10px] italic ml-1">({hop.statusText})</span>
+                              )}
+                            </div>
+                            {hop.source && (hop.type === 'javascript' || hop.type === 'meta-refresh') && (
+                              <div className="mt-1 ml-7 rounded bg-background/60 border border-border/60 px-2 py-1 text-[10px] text-foreground/80 whitespace-pre-wrap break-all">
+                                <span className="text-muted-foreground mr-1">source:</span>
+                                <code>{hop.source}</code>
+                              </div>
                             )}
                           </li>
                         ))}
@@ -801,7 +809,7 @@ function MetaTable({
                       </ol>
                       {chain.some((h) => h.type === 'javascript') && (
                         <p className="text-[10px] text-muted-foreground italic pt-2 border-t border-border/50 mt-2">
-                          JS hops detected via inline script pattern matching. May not catch redirects from external JS files or SPA routing.
+                          JS hops come from inline <code>&lt;script&gt;</code> patterns like <code>window.location.href = "…"</code> that run at page load. Assignments inside event listeners (e.g. <code>addEventListener('submit', …)</code>, <code>wpcf7mailsent</code>, jQuery <code>.on(…)</code>) are ignored because they only fire on user action. The "source" line above shows the exact statement flagged. External JS files and SPA client-side routing are not inspected.
                         </p>
                       )}
                     </div>

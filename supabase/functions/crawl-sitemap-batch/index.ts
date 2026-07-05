@@ -60,6 +60,8 @@ interface RedirectHop {
   status: number;
   type: RedirectHopType;
   statusText?: string;
+  /** Short snippet from the source (meta tag or JS statement) that triggered detection. */
+  source?: string;
 }
 
 interface CrawlResult {

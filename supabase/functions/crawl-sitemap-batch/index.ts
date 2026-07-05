@@ -882,7 +882,7 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
       // 1) Meta-refresh first.
       const meta = extractMetaRefresh(finalHtml, current);
       if (meta && meta.target !== current && !visited.has(meta.target)) {
-        chain.push({ url: current, status: resp.status, type: 'meta-refresh' });
+        chain.push({ url: current, status: resp.status, type: 'meta-refresh', source: meta.source });
         current = meta.target;
         finalHtml = '';
         finalStatus = 0;
@@ -893,10 +893,10 @@ async function detectRedirects(url: string): Promise<DetectionResult> {
       }
 
       // 2) Inline JS redirect (window.location / document.location patterns).
-      const jsTarget = extractJsRedirect(finalHtml, current);
-      if (jsTarget && jsTarget !== current && !visited.has(jsTarget)) {
-        chain.push({ url: current, status: resp.status, type: 'javascript' });
-        current = jsTarget;
+      const js = extractJsRedirect(finalHtml, current);
+      if (js && js.target !== current && !visited.has(js.target)) {
+        chain.push({ url: current, status: resp.status, type: 'javascript', source: js.source });
+        current = js.target;
         finalHtml = '';
         finalStatus = 0;
         if (i === MAX_HOPS - 1) {

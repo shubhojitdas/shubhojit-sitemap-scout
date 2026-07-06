@@ -82,17 +82,7 @@ export function extractMetaRefreshTarget(html: string, baseUrl: string): string 
 
 /**
  * Detect inline JavaScript redirects via pattern matching on `<script>` blocks.
- *
- * Catches common assignments like:
- *   window.location.href = "..."
- *   window.location.replace("...")
- *   document.location = "..."
- *   location.href = "..."
- *
- * Only scans inside <script>…</script> (skipping HTML comments) to keep false
- * positives low. Does not execute JS — pattern match only.
- *
- * Returns the resolved absolute URL of the first valid match, or null.
+ * Only scans inside <script>…</script>. Does not execute JS.
  */
 /**
  * Strip event-handler callback bodies (addEventListener, jQuery .on/.one/.bind/

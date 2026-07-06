@@ -640,6 +640,97 @@ function extractMetaRefresh(html: string, baseUrl: string): { target: string; de
  * Returns the resolved absolute URL of the first valid match plus the source
  * snippet that triggered detection, or null.
  */
+/**
+ * Strip the bodies of event-handler callbacks so any `location.*` assignment
+ * inside them isn't misread as a page-load redirect. Uses brace matching that
+ * respects strings, template literals and regex literals, so it works even
+ * when handlers contain huge inline HTML strings (which broke the previous
+ * fixed-window lookback approach).
+ */
+function stripEventHandlerBodies(src: string): string {
+  const openers: RegExp[] = [
+    /addEventListener\s*\(\s*['"`][^'"`]+['"`]\s*,\s*(?:async\s+)?(?:function\b[^{]*|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)\s*\{/gi,
+    /\.(?:on|one|bind|live|delegate)\s*\(\s*['"`][^'"`]+['"`]\s*,\s*(?:async\s+)?(?:function\b[^{]*|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)\s*\{/gi,
+    /\bon[a-z]+\s*=\s*(?:async\s+)?(?:function\b[^{]*|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)\s*\{/gi,
+  ];
+  const ranges: Array<[number, number]> = [];
+  for (const re of openers) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(src)) !== null) {
+      const openBraceIdx = re.lastIndex - 1;
+      const end = findMatchingBrace(src, openBraceIdx);
+      if (end === -1) continue;
+      ranges.push([openBraceIdx + 1, end]);
+    }
+  }
+  if (ranges.length === 0) return src;
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged: Array<[number, number]> = [];
+  for (const r of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]);
+    else merged.push([r[0], r[1]]);
+  }
+  let out = '';
+  let cursor = 0;
+  for (const [s, e] of merged) { out += src.slice(cursor, s); cursor = e; }
+  out += src.slice(cursor);
+  return out;
+}
+
+function findMatchingBrace(src: string, openIdx: number): number {
+  let depth = 0;
+  let i = openIdx;
+  let inStr: '"' | "'" | '`' | null = null;
+  let inRegex = false;
+  const tplStack: number[] = [];
+  while (i < src.length) {
+    const c = src[i];
+    if (inStr) {
+      if (c === '\\') { i += 2; continue; }
+      if (inStr === '`' && c === '$' && src[i + 1] === '{') {
+        tplStack.push(depth);
+        inStr = null;
+        i += 2;
+        depth++;
+        continue;
+      }
+      if (c === inStr) inStr = null;
+      i++;
+      continue;
+    }
+    if (inRegex) {
+      if (c === '\\') { i += 2; continue; }
+      if (c === '/') inRegex = false;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') { inStr = c as '"' | "'" | '`'; i++; continue; }
+    if (c === '/' && src[i + 1] === '/') { const nl = src.indexOf('\n', i); if (nl === -1) return -1; i = nl + 1; continue; }
+    if (c === '/' && src[i + 1] === '*') { const cl = src.indexOf('*/', i + 2); if (cl === -1) return -1; i = cl + 2; continue; }
+    if (c === '/') {
+      const p = src.slice(Math.max(0, i - 8), i).replace(/\s+$/, '').slice(-1);
+      if (p && /[=(,;:!&|?{}\[\]]/.test(p)) { inRegex = true; i++; continue; }
+    }
+    if (c === '{') { depth++; i++; continue; }
+    if (c === '}') {
+      depth--;
+      if (tplStack.length && depth === tplStack[tplStack.length - 1]) {
+        tplStack.pop();
+        inStr = '`';
+        i++;
+        continue;
+      }
+      if (depth === 0) return i;
+      i++;
+      continue;
+    }
+    i++;
+  }
+  return -1;
+}
+
 function extractJsRedirect(html: string, baseUrl: string): { target: string; source: string } | null {
   const noComments = html.replace(/<!--[\s\S]*?-->/g, '');
   const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
@@ -651,9 +742,12 @@ function extractJsRedirect(html: string, baseUrl: string): { target: string; sou
     const body = scriptMatch[1];
     if (!body || !body.trim()) continue;
 
-    const cleanedBody = body
+    let cleanedBody = body
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/(^|[^:])\/\/[^\n\r]*/g, '$1');
+    // Remove event-handler callback bodies — those fire on user action,
+    // not page load, so any location.* inside them is deferred.
+    cleanedBody = stripEventHandlerBodies(cleanedBody);
 
     JS_REDIRECT_REGEX.lastIndex = 0;
     let m: RegExpExecArray | null;
@@ -662,22 +756,13 @@ function extractJsRedirect(html: string, baseUrl: string): { target: string; sou
       const raw = m[2].trim();
       if (!raw || raw === '#' || raw.startsWith('#')) continue;
       if (raw.startsWith('javascript:')) continue;
-
-      // Skip template literals / templated URLs — dynamic, not real redirects.
       if (quote === '`' && /\$\{/.test(raw)) continue;
       if (/\{\{[^}]*\}\}/.test(raw)) continue;
       if (/\$\{|%24%7B|%7B[^/]*%7D/i.test(raw)) continue;
 
-      // Look back at surrounding code to detect deferred / event-driven navigations.
+      // Fallback lookback in case the stripper missed an unusual handler pattern.
       const ctxStart = Math.max(0, m.index - 400);
       const ctx = cleanedBody.slice(ctxStart, m.index);
-      // ANY event name (custom events like `wpcf7mailsent`, `submit`, etc.).
-      if (/addEventListener\s*\(\s*['"`][a-zA-Z0-9:_-]+['"`]\s*,/i.test(ctx)) continue;
-      // jQuery-style delegation: $(x).on('event', …), .one, .bind, .live, .delegate.
-      if (/\.(on|one|bind|live|delegate)\s*\(\s*['"`][a-zA-Z0-9:_\s-]+['"`]\s*,/i.test(ctx)) continue;
-      // Inline DOM handlers: element.onclick = function … / onSomething: () => …
-      if (/\bon[a-z]+\s*[:=]\s*(?:function|\([^)]*\)\s*=>|async\s+function)/i.test(ctx)) continue;
-      // Handler callback bodies whose sole param is an event object (e, ev, evt, event).
       if (/\b(?:function|async\s+function)\s*\([^)]*\b(?:e|ev|evt|event)\b[^)]*\)\s*\{[^}]*$/i.test(ctx)) continue;
 
       let resolved: string;
@@ -685,8 +770,6 @@ function extractJsRedirect(html: string, baseUrl: string): { target: string; sou
       if (resolved === baseUrl) continue;
       if (/\$\{|%24%7B|%7B/i.test(resolved)) continue;
 
-      // Grab a compact source snippet: the full JS statement (up to the next
-      // semicolon/newline) starting at the location.* assignment.
       const stmtEnd = cleanedBody.slice(m.index).search(/[;\n]/);
       const stmt = stmtEnd === -1
         ? cleanedBody.slice(m.index, m.index + 200)

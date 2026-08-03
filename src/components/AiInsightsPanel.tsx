@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
@@ -13,38 +13,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AI_PROVIDERS, getProvider } from "@/lib/ai-providers";
-import { chat, type ChatMessage } from "@/lib/ai-client";
+import { chat, listModels, type ChatMessage } from "@/lib/ai-client";
 import { useAiSettings } from "@/hooks/use-ai-keys";
+import {
+  loadAiTurns, saveAiTurns, siteScopeFromUrls, type AiTurn as Turn,
+} from "@/lib/ai-history";
 import { toast } from "sonner";
 import {
   ExternalLink, Sparkles, Loader2, Eye, EyeOff, Copy, Trash2,
-  ChevronDown, ChevronRight, Link2, Link2Off,
+  ChevronDown, ChevronRight, Link2, Link2Off, Pencil, RefreshCw, X,
 } from "lucide-react";
 import type { CrawlResult } from "@/lib/crawl-api";
 
 interface Props { results: CrawlResult[]; }
-
-interface Turn {
-  id: string;
-  prompt: string;
-  answer: string;
-  provider: string;
-  model: string;
-  createdAt: number;
-  usedContext: boolean;
-}
-
-const LS_TURNS = "sitemap-scout-ai-turns-v1";
-
-function loadTurns(): Turn[] {
-  try {
-    const raw = JSON.parse(localStorage.getItem(LS_TURNS) || "[]");
-    return Array.isArray(raw) ? raw : [];
-  } catch { return []; }
-}
-function saveTurns(turns: Turn[]) {
-  try { localStorage.setItem(LS_TURNS, JSON.stringify(turns.slice(-50))); } catch { /* ignore */ }
-}
 
 export function AiInsightsPanel({ results }: Props) {
   const { keys, settings, setKey, clearKey, setProvider, setModel } = useAiSettings();
@@ -52,73 +33,132 @@ export function AiInsightsPanel({ results }: Props) {
   const model = settings.modelByProvider[provider.id] ?? provider.defaultModel;
   const apiKey = keys[provider.id] ?? "";
 
+  // Conversations are scoped to the crawled site so audits never bleed into each other.
+  const scope = useMemo(() => siteScopeFromUrls(results.map((r) => r.url)), [results]);
+
   const [showKey, setShowKey] = useState(false);
   const [prompt, setPrompt] = useState(
     "Analyse this SEO crawl. Highlight the top 5 issues with the biggest potential impact and provide concrete, prioritised recommendations.",
   );
   const [loading, setLoading] = useState(false);
   const [useContext, setUseContext] = useState(true);
-  const [turns, setTurns] = useState<Turn[]>(() => loadTurns());
+  const [turns, setTurns] = useState<Turn[]>(() => loadAiTurns(scope));
   const [openTurns, setOpenTurns] = useState<Record<string, boolean>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [discovered, setDiscovered] = useState<Record<string, string[]>>({});
+  const [loadingModels, setLoadingModels] = useState(false);
   const answerEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { saveTurns(turns); }, [turns]);
+  // Re-hydrate whenever the audited site changes.
+  useEffect(() => {
+    setTurns(loadAiTurns(scope));
+    setOpenTurns({});
+    setEditingId(null);
+  }, [scope]);
+
+  useEffect(() => { saveAiTurns(scope, turns); }, [scope, turns]);
 
   const summary = useMemo(() => buildCrawlSummary(results), [results]);
 
-  const run = async () => {
-    if (!prompt.trim()) { toast.error("Enter a prompt first."); return; }
+  const modelOptions = useMemo(() => {
+    const live = discovered[provider.id] ?? [];
+    return Array.from(new Set([...live, ...provider.models, model].filter(Boolean)));
+  }, [discovered, provider, model]);
+
+  const refreshModels = useCallback(async () => {
+    if (!apiKey) { toast.error("Add your API key first."); return; }
+    setLoadingModels(true);
+    try {
+      const list = await listModels(provider.id, apiKey);
+      if (list.length === 0) { toast.error("No usable models returned for this key."); return; }
+      setDiscovered((d) => ({ ...d, [provider.id]: list }));
+      if (!list.includes(model)) setModel(provider.id, list[0]);
+      toast.success(`${list.length} models available for your key`);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not load models");
+    } finally {
+      setLoadingModels(false);
+    }
+  }, [apiKey, provider.id, model, setModel]);
+
+  const buildMessages = (question: string, history: Turn[]): ChatMessage[] => {
+    const messages: ChatMessage[] = [
+      {
+        role: "system",
+        content:
+          "You are a senior technical SEO consultant. Be concise, prioritise by impact, and give action-ready recommendations. Use rich markdown: headings, bullet lists, numbered steps, **bold** for key terms, `code` for URLs/tags, and tables when comparing items.",
+      },
+      { role: "user", content: `Crawl summary (JSON):\n\n${summary}` },
+    ];
+    if (useContext) {
+      for (const t of history) {
+        messages.push({ role: "user", content: t.prompt });
+        messages.push({ role: "assistant", content: t.answer });
+      }
+    }
+    messages.push({ role: "user", content: question });
+    return messages;
+  };
+
+  const ask = async (question: string, history: Turn[]): Promise<Turn | null> => {
+    if (!question.trim()) { toast.error("Enter a prompt first."); return null; }
     if (provider.requiresKey && !apiKey) {
       toast.error(`Add your ${provider.label} API key first.`);
-      return;
+      return null;
     }
     setLoading(true);
     try {
-      const messages: ChatMessage[] = [
-        {
-          role: "system",
-          content:
-            "You are a senior technical SEO consultant. Be concise, prioritise by impact, and give action-ready recommendations. Use rich markdown: headings, bullet lists, numbered steps, **bold** for key terms, `code` for URLs/tags, and tables when comparing items.",
-        },
-        {
-          role: "user",
-          content: `Crawl summary (JSON):\n\n${summary}`,
-        },
-      ];
-      // Include prior turns as conversation memory when user opts in.
-      if (useContext && turns.length > 0) {
-        for (const t of turns) {
-          messages.push({ role: "user", content: t.prompt });
-          messages.push({ role: "assistant", content: t.answer });
-        }
-      }
-      messages.push({ role: "user", content: prompt });
-
-      const out = await chat({ providerId: provider.id, apiKey, model, messages, temperature: 0.4 });
-      const turn: Turn = {
+      const out = await chat({
+        providerId: provider.id, apiKey, model,
+        messages: buildMessages(question, history), temperature: 0.4,
+      });
+      return {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        prompt,
+        prompt: question,
         answer: out || "(no response)",
         provider: provider.label,
         model,
         createdAt: Date.now(),
-        usedContext: useContext && turns.length > 0,
+        usedContext: useContext && history.length > 0,
       };
-      setTurns((prev) => [...prev, turn]);
-      setOpenTurns((s) => ({ ...s, [turn.id]: true }));
-      setPrompt(""); // ready for a follow-up
-      // scroll to newest
-      setTimeout(() => answerEndRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
     } catch (e: any) {
       toast.error(e?.message || "AI request failed");
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
+  const run = async () => {
+    const turn = await ask(prompt, turns);
+    if (!turn) return;
+    setTurns((prev) => [...prev, turn]);
+    setOpenTurns((s) => ({ ...s, [turn.id]: true }));
+    setPrompt("");
+    setTimeout(() => answerEndRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  };
+
+  // Edit + re-run a previous prompt: the edited turn replaces the old one and
+  // everything after it is dropped, keeping the thread clean and coherent.
+  const rerunEdited = async (id: string) => {
+    const idx = turns.findIndex((t) => t.id === id);
+    if (idx === -1) return;
+    const history = turns.slice(0, idx);
+    const turn = await ask(editingText, history);
+    if (!turn) return;
+    setTurns([...history, turn]);
+    setOpenTurns((s) => ({ ...s, [turn.id]: true }));
+    setEditingId(null);
+    setEditingText("");
+  };
+
+  const startEdit = (t: Turn) => { setEditingId(t.id); setEditingText(t.prompt); };
+
   const clearAll = () => {
     setTurns([]);
     setOpenTurns({});
+    setEditingId(null);
     toast.success("AI history cleared");
   };
 

@@ -21,13 +21,34 @@ class AiError extends Error {
 
 async function readErr(res: Response): Promise<string> {
   const text = await res.text().catch(() => "");
+  let raw = text || `HTTP ${res.status}`;
   try {
     const j = JSON.parse(text);
-    return j?.error?.message || j?.error || j?.message || text || `HTTP ${res.status}`;
-  } catch { return text || `HTTP ${res.status}`; }
+    raw = j?.error?.message || j?.error?.metadata?.raw || j?.error || j?.message || raw;
+    if (typeof raw !== "string") raw = JSON.stringify(raw);
+  } catch { /* keep text */ }
+  return friendlyError(raw, res.status);
 }
 
-// OpenAI-compatible chat completions (used by OpenAI, Groq, OpenRouter, Mistral).
+// Turn opaque provider errors into guidance the user can act on.
+function friendlyError(msg: string, status?: number): string {
+  const m = msg.toLowerCase();
+  if (m.includes("no longer available") || m.includes("is not found") || m.includes("not found for api version")) {
+    return `${msg}\n\nTip: click “Refresh models” to load the models your key can actually use, or pick one of the *-latest aliases.`;
+  }
+  if (status === 429 && (m.includes("quota") || m.includes("insufficient_quota") || m.includes("billing"))) {
+    return `${msg}\n\nTip: this provider has no usable free credit on your key. OpenAI/Anthropic API access is billed separately from ChatGPT/Claude subscriptions — add credit, or switch to a free-tier provider (Groq, Google AI Studio, Cerebras, or an OpenRouter “:free” model).`;
+  }
+  if (status === 429) {
+    return `${msg}\n\nTip: rate limit hit — wait a moment and retry, or switch to a smaller/faster model.`;
+  }
+  if (status === 401 || status === 403) {
+    return `${msg}\n\nTip: the API key was rejected. Re-copy it from the provider console and make sure it belongs to the selected provider.`;
+  }
+  return msg;
+}
+
+// OpenAI-compatible chat completions (OpenAI, Groq, OpenRouter, Mistral, Cerebras).
 async function openaiCompat(
   baseUrl: string, apiKey: string, args: ChatArgs, extraHeaders: Record<string, string> = {},
 ): Promise<string> {
@@ -57,7 +78,8 @@ async function googleGemini(apiKey: string, args: ChatArgs): Promise<string> {
     .map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
   const body: any = { contents, generationConfig: { temperature: args.temperature ?? 0.7 } };
   if (systemMsgs) body.systemInstruction = { parts: [{ text: systemMsgs }] };
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(args.model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const model = args.model.replace(/^models\//, "");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const res = await fetch(url, {
     method: "POST", signal: args.signal,
     headers: { "Content-Type": "application/json" },
@@ -108,6 +130,9 @@ export async function chat(args: ChatArgs): Promise<string> {
     case "groq":
       if (!args.apiKey) throw new AiError("Missing Groq API key");
       return openaiCompat("https://api.groq.com/openai/v1", args.apiKey, args);
+    case "cerebras":
+      if (!args.apiKey) throw new AiError("Missing Cerebras API key");
+      return openaiCompat("https://api.cerebras.ai/v1", args.apiKey, args);
     case "openrouter":
       if (!args.apiKey) throw new AiError("Missing OpenRouter API key");
       return openaiCompat("https://openrouter.ai/api/v1", args.apiKey, args, {
@@ -119,5 +144,70 @@ export async function chat(args: ChatArgs): Promise<string> {
       return openaiCompat("https://api.mistral.ai/v1", args.apiKey, args);
     default:
       throw new AiError(`Unknown provider: ${args.providerId}`);
+  }
+}
+
+// ---- Live model discovery, so a key only ever sees models it can actually call ----
+
+async function listOpenaiCompat(
+  baseUrl: string, apiKey: string, extraHeaders: Record<string, string> = {},
+): Promise<string[]> {
+  const res = await fetch(`${baseUrl}/models`, {
+    headers: { "Authorization": `Bearer ${apiKey}`, ...extraHeaders },
+  });
+  if (!res.ok) throw new AiError(await readErr(res), res.status);
+  const data = await res.json();
+  return (data?.data ?? []).map((m: any) => m?.id).filter(Boolean);
+}
+
+export async function listModels(providerId: string, apiKey: string): Promise<string[]> {
+  if (!apiKey) throw new AiError("Add your API key first");
+  switch (providerId) {
+    case "google": {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${encodeURIComponent(apiKey)}`,
+      );
+      if (!res.ok) throw new AiError(await readErr(res), res.status);
+      const data = await res.json();
+      return (data?.models ?? [])
+        .filter((m: any) => (m?.supportedGenerationMethods ?? []).includes("generateContent"))
+        .map((m: any) => String(m?.name ?? "").replace(/^models\//, ""))
+        .filter((id: string) => id && !id.includes("embedding") && !id.includes("aqa"))
+        .sort();
+    }
+    case "openai":
+      return (await listOpenaiCompat("https://api.openai.com/v1", apiKey))
+        .filter((id) => /^(gpt|o\d)/.test(id) && !/(audio|realtime|image|tts|whisper|embedding|moderation)/.test(id))
+        .sort();
+    case "groq":
+      return (await listOpenaiCompat("https://api.groq.com/openai/v1", apiKey))
+        .filter((id) => !/(whisper|tts|guard)/i.test(id))
+        .sort();
+    case "cerebras":
+      return (await listOpenaiCompat("https://api.cerebras.ai/v1", apiKey)).sort();
+    case "mistral":
+      return (await listOpenaiCompat("https://api.mistral.ai/v1", apiKey))
+        .filter((id) => !/(embed|ocr|moderation)/i.test(id))
+        .sort();
+    case "openrouter": {
+      const ids = await listOpenaiCompat("https://openrouter.ai/api/v1", apiKey);
+      const free = ids.filter((id) => id.endsWith(":free")).sort();
+      const paid = ids.filter((id) => !id.endsWith(":free")).sort();
+      return [...free, ...paid];
+    }
+    case "anthropic": {
+      const res = await fetch("https://api.anthropic.com/v1/models?limit=100", {
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+      });
+      if (!res.ok) throw new AiError(await readErr(res), res.status);
+      const data = await res.json();
+      return (data?.data ?? []).map((m: any) => m?.id).filter(Boolean);
+    }
+    default:
+      throw new AiError("Model discovery is not supported for this provider");
   }
 }

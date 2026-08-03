@@ -384,7 +384,13 @@ export function AiInsightsPanel({ results }: Props) {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="px-4 pb-4 border-t border-border">
-                <div className="flex items-center justify-end pt-2">
+                <div className="flex items-center justify-end gap-1 pt-2">
+                  <Button
+                    variant="ghost" size="sm" className="h-7 text-xs"
+                    onClick={(e) => { e.stopPropagation(); startEdit(t); }}
+                  >
+                    <Pencil className="h-3.5 w-3.5 mr-1" /> Edit &amp; re-run
+                  </Button>
                   <Button
                     variant="ghost" size="sm" className="h-7 text-xs"
                     onClick={(e) => {
@@ -396,6 +402,37 @@ export function AiInsightsPanel({ results }: Props) {
                     <Copy className="h-3.5 w-3.5 mr-1" /> Copy
                   </Button>
                 </div>
+
+                {editingId === t.id && (
+                  <div className="mb-3 rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+                    <Label className="text-xs">Edit this prompt and re-run</Label>
+                    <Textarea
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      rows={3}
+                      className="text-sm"
+                      onKeyDown={(e) => {
+                        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); rerunEdited(t.id); }
+                      }}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Re-running replaces this answer and removes any later answers in this thread.
+                    </p>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost" size="sm" className="h-7 text-xs"
+                        onClick={() => { setEditingId(null); setEditingText(""); }}
+                      >
+                        <X className="h-3.5 w-3.5 mr-1" /> Cancel
+                      </Button>
+                      <Button size="sm" className="h-7 text-xs" disabled={loading} onClick={() => rerunEdited(t.id)}>
+                        {loading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+                        Re-run
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <MarkdownAnswer content={t.answer} />
               </div>
             </CollapsibleContent>

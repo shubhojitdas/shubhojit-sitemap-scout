@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { CrawlResult, parseSitemapUrls, spiderSiteUrls, fetchMetaBatch } from "@/lib/crawl-api";
+import { clearAllAiTurns } from "@/lib/ai-history";
 
 export interface LastCrawlInput {
   source: "sitemap" | "site" | "urls";
@@ -697,6 +698,7 @@ export function useCrawler() {
       localStorage.removeItem("sitemap-scout-ui-results-view");
       localStorage.removeItem("sitemap-scout-ui-table-state");
     } catch {}
+    clearAllAiTurns();
     clearPersistedStateFromDb();
     setState(INITIAL_STATE);
   }, []);
@@ -715,6 +717,7 @@ export function useCrawler() {
       localStorage.removeItem("sitemap-scout-ui-results-view");
       localStorage.removeItem("sitemap-scout-ui-table-state");
     } catch {}
+    clearAllAiTurns();
     clearPersistedStateFromDb();
     setState(INITIAL_STATE);
   }, []);

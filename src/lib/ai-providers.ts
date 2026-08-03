@@ -8,6 +8,8 @@ export interface AiProvider {
   requiresKey: boolean;
   defaultModel: string;
   models: string[];
+  /** Provider exposes a live model list we can fetch with the user's key. */
+  discoverModels?: boolean;
   note?: string;
 }
 
@@ -23,47 +25,18 @@ export const AI_PROVIDERS: AiProvider[] = [
     docsUrl: "https://aistudio.google.com/apikey",
     freeTier: true,
     requiresKey: true,
-    defaultModel: "gemini-2.5-flash",
+    // Floating aliases always resolve to a model that is still open to new keys.
+    defaultModel: "gemini-flash-latest",
     models: [
-      "gemini-2.5-flash",
-      "gemini-2.5-flash-lite",
-      "gemini-2.5-pro",
+      "gemini-flash-latest",
+      "gemini-flash-lite-latest",
+      "gemini-pro-latest",
       "gemini-2.0-flash",
       "gemini-2.0-flash-lite",
-      "gemini-1.5-flash",
-      "gemini-1.5-pro",
     ],
-    note: "Free tier available at aistudio.google.com/apikey.",
-  },
-  {
-    id: "anthropic",
-    label: "Anthropic (Claude)",
-    keyLabel: "Anthropic API Key",
-    keyPlaceholder: "sk-ant-...",
-    docsUrl: "https://console.anthropic.com/settings/keys",
-    freeTier: false,
-    requiresKey: true,
-    defaultModel: "claude-3-5-haiku-latest",
-    models: [
-      "claude-sonnet-4-5-20250929",
-      "claude-opus-4-1-20250805",
-      "claude-3-5-sonnet-latest",
-      "claude-3-5-haiku-latest",
-      "claude-3-haiku-20240307",
-    ],
-    note: "Paid — get a key at console.anthropic.com.",
-  },
-  {
-    id: "openai",
-    label: "OpenAI",
-    keyLabel: "OpenAI API Key",
-    keyPlaceholder: "sk-...",
-    docsUrl: "https://platform.openai.com/api-keys",
-    freeTier: false,
-    requiresKey: true,
-    defaultModel: "gpt-4o-mini",
-    models: ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1", "o4-mini"],
-    note: "Paid — get a key at platform.openai.com/api-keys.",
+    discoverModels: true,
+    note:
+      "Free tier at aistudio.google.com/apikey. Older pinned models (e.g. gemini-2.5-flash) are closed to new keys — use the *-latest aliases or click Refresh models to load exactly what your key can access.",
   },
   {
     id: "groq",
@@ -77,10 +50,12 @@ export const AI_PROVIDERS: AiProvider[] = [
     models: [
       "llama-3.3-70b-versatile",
       "llama-3.1-8b-instant",
-      "mixtral-8x7b-32768",
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
       "gemma2-9b-it",
     ],
-    note: "Generous free tier at console.groq.com.",
+    discoverModels: true,
+    note: "Generous free tier at console.groq.com — no billing details required.",
   },
   {
     id: "openrouter",
@@ -100,7 +75,21 @@ export const AI_PROVIDERS: AiProvider[] = [
       "anthropic/claude-3.5-sonnet",
       "openai/gpt-4o-mini",
     ],
-    note: "Models tagged :free are usable with an OpenRouter key at no cost.",
+    discoverModels: true,
+    note: "Models tagged :free are usable with an OpenRouter key at no cost. Refresh models to list every free model live.",
+  },
+  {
+    id: "cerebras",
+    label: "Cerebras (free tier, fastest inference)",
+    keyLabel: "Cerebras API Key",
+    keyPlaceholder: "csk-...",
+    docsUrl: "https://cloud.cerebras.ai/",
+    freeTier: true,
+    requiresKey: true,
+    defaultModel: "llama-3.3-70b",
+    models: ["llama-3.3-70b", "llama3.1-8b", "qwen-3-32b", "gpt-oss-120b"],
+    discoverModels: true,
+    note: "Free developer tier at cloud.cerebras.ai — no card needed.",
   },
   {
     id: "mistral",
@@ -112,7 +101,41 @@ export const AI_PROVIDERS: AiProvider[] = [
     requiresKey: true,
     defaultModel: "mistral-small-latest",
     models: ["mistral-small-latest", "mistral-large-latest", "open-mistral-nemo", "codestral-latest"],
-    note: "Free tier at console.mistral.ai.",
+    discoverModels: true,
+    note: "Free tier at console.mistral.ai (activate the free 'Experiment' plan first).",
+  },
+  {
+    id: "anthropic",
+    label: "Anthropic (Claude)",
+    keyLabel: "Anthropic API Key",
+    keyPlaceholder: "sk-ant-...",
+    docsUrl: "https://console.anthropic.com/settings/keys",
+    freeTier: false,
+    requiresKey: true,
+    defaultModel: "claude-3-5-haiku-latest",
+    models: [
+      "claude-sonnet-4-5-20250929",
+      "claude-opus-4-1-20250805",
+      "claude-3-5-sonnet-latest",
+      "claude-3-5-haiku-latest",
+      "claude-3-haiku-20240307",
+    ],
+    discoverModels: true,
+    note: "Paid only — Anthropic has no free tier, the key needs purchased credits in console.anthropic.com → Billing.",
+  },
+  {
+    id: "openai",
+    label: "OpenAI",
+    keyLabel: "OpenAI API Key",
+    keyPlaceholder: "sk-...",
+    docsUrl: "https://platform.openai.com/api-keys",
+    freeTier: false,
+    requiresKey: true,
+    defaultModel: "gpt-4o-mini",
+    models: ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1", "gpt-4o", "o4-mini"],
+    discoverModels: true,
+    note:
+      "Paid only — API usage is billed separately from ChatGPT Plus. A brand-new key returns 'exceeded your current quota' until you add credit in platform.openai.com → Billing. For a free option use Groq, Google AI Studio, Cerebras or OpenRouter :free models.",
   },
 ];
 

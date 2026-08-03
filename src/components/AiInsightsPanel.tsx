@@ -199,11 +199,26 @@ export function AiInsightsPanel({ results }: Props) {
           </div>
 
           <div>
-            <Label className="text-xs">Model</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Model</Label>
+              {provider.discoverModels && (
+                <button
+                  type="button"
+                  onClick={refreshModels}
+                  disabled={loadingModels || !apiKey}
+                  className="text-[11px] text-primary inline-flex items-center gap-1 hover:underline disabled:opacity-50"
+                >
+                  {loadingModels
+                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                    : <RefreshCw className="h-3 w-3" />}
+                  Refresh models
+                </button>
+              )}
+            </div>
             <Select value={model} onValueChange={(m) => setModel(provider.id, m)}>
               <SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {provider.models.map((m) => (
+              <SelectContent className="max-h-72">
+                {modelOptions.map((m) => (
                   <SelectItem key={m} value={m}>{m}</SelectItem>
                 ))}
               </SelectContent>

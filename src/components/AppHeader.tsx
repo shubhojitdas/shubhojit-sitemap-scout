@@ -93,6 +93,16 @@ export function AppHeader() {
               <Linkedin className="h-3.5 w-3.5" />
             </Button>
           </a>
+          {pathname !== "/app" && (
+            <Button
+              asChild
+              size="sm"
+              className="h-8 rounded-lg px-3 text-xs font-semibold press-tuck"
+            >
+              <Link to="/app">Start crawling</Link>
+            </Button>
+          )}
+
         </div>
       </div>
     </header>

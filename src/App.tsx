@@ -24,7 +24,9 @@ const App = () => (
         <AppHeader />
         <div className="pt-14">
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/app" element={<Index />} />
+
             <Route path="/shubhojit-das" element={<AboutShubhojit />} />
             <Route path="/link-graph-view" element={<LinkGraphView />} />
             <Route path="/internal-link-graph-view" element={<InternalLinkGraphView />} />

@@ -13,9 +13,9 @@ export function AppHeader() {
     p === "/" ? pathname === "/" : pathname.startsWith(p);
 
   const navItem = (to: string, label: string) => {
-    // About page (and any non-root nav target) opens in a new tab so the
-    // crawler state in the current tab is never reset.
-    const openInNewTab = to !== "/";
+    // Only the About page opens in a new tab so crawler state in the current
+    // tab is never reset.
+    const openInNewTab = to === "/shubhojit-das";
     const baseClass = `relative text-xs font-medium px-2 py-1 rounded-md transition-colors ${
       isActive(to)
         ? "text-foreground"
@@ -50,6 +50,9 @@ export function AppHeader() {
       <div className="container max-w-7xl mx-auto h-full flex items-center justify-between px-4">
         {/* Left: wordmark */}
         <Link to="/" className="flex items-center gap-2">
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] border border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary">
+            S
+          </span>
           <span className="font-semibold text-sm tracking-tight text-foreground">
             SEO Sitemap Scout
           </span>
@@ -57,9 +60,11 @@ export function AppHeader() {
 
         {/* Center: nav */}
         <nav className="hidden sm:flex items-center gap-1">
-          {navItem("/", "Crawler")}
+          {navItem("/", "Product")}
+          {navItem("/app", "Crawler")}
           {navItem("/shubhojit-das", "About")}
         </nav>
+
 
         {/* Right: by Shubhojit + utilities */}
         <div className="flex items-center gap-2">
@@ -88,6 +93,16 @@ export function AppHeader() {
               <Linkedin className="h-3.5 w-3.5" />
             </Button>
           </a>
+          {pathname !== "/app" && (
+            <Button
+              asChild
+              size="sm"
+              className="h-8 rounded-lg px-3 text-xs font-semibold press-tuck"
+            >
+              <Link to="/app">Start crawling</Link>
+            </Button>
+          )}
+
         </div>
       </div>
     </header>

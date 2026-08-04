@@ -116,10 +116,8 @@ const Index = () => {
     <div className="min-h-[calc(100vh-3.5rem)] bg-background">
       {/* ── Hero (only when no results yet) ── */}
       {!hasResults && (
-        <section
-          className="relative flex flex-col justify-center overflow-hidden"
-          style={{ minHeight: "calc(100vh - 7rem)" }}
-        >
+        <section className="relative flex flex-col justify-center overflow-hidden py-14 sm:py-20">
+
           <div className="absolute inset-0 grid-bg fade-mask pointer-events-none" />
 
           <div className="relative container max-w-2xl mx-auto px-4 flex flex-col items-center">

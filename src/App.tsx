@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import LinkGraphView from "./pages/LinkGraphView";
 import InternalLinkGraphView from "./pages/InternalLinkGraphView";
@@ -23,7 +24,9 @@ const App = () => (
         <AppHeader />
         <div className="pt-14">
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/app" element={<Index />} />
+
             <Route path="/shubhojit-das" element={<AboutShubhojit />} />
             <Route path="/link-graph-view" element={<LinkGraphView />} />
             <Route path="/internal-link-graph-view" element={<InternalLinkGraphView />} />

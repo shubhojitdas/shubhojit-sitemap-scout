@@ -12,6 +12,7 @@ import { CrawlBar } from "@/components/CrawlBar";
 import { SectionVisualization, type SectionKey } from "@/components/SectionVisualization";
 import { SectionIssues } from "@/components/SectionIssues";
 import { SeoIssuesView } from "@/components/SeoIssuesView";
+import { AuditReport } from "@/components/AuditReport";
 import { DuplicatesPanel } from "@/components/DuplicatesPanel";
 
 import { LinkAttributesPanel } from "@/components/LinkAttributesPanel";
@@ -100,6 +101,7 @@ const VIEW_TITLES: Record<ResultsView, string> = {
   internal: "Internal — All URLs",
   "response-codes": "Response Codes",
   "seo-issues": "SEO Issues",
+  "audit-report": "Audit Report",
   combined: "Combined Meta Data",
   "page-titles": "Page Titles",
   "meta-description": "Meta Descriptions",
@@ -130,7 +132,7 @@ const SECTION_VIS_VIEWS = new Set<ResultsView>([
 
 const RESULTS_VIEW_STORAGE_KEY = "sitemap-scout-ui-results-view";
 const RESULT_VIEWS = new Set<ResultsView>([
-  "overview", "internal", "response-codes", "seo-issues", "combined",
+  "overview", "internal", "response-codes", "seo-issues", "audit-report", "combined",
   "page-titles", "meta-description", "h1", "h2", "h3", "images",
   "canonicals", "hreflang", "schema", "meta-robots", "social",
   "internal-links", "link-graph", "internal-link-graph", "sitemap",
@@ -253,6 +255,16 @@ export function ResultsShell({
                 <SeoIssuesView results={results} flags={flags} />
               )}
 
+              {view === "audit-report" && (
+                <AuditReport
+                  results={results}
+                  domain={domain}
+                  flags={flags}
+                  crawlCompletedAt={crawlCompletedAt}
+                  lastCrawledAt={lastCrawledAt}
+                />
+              )}
+
               {view === "og-generator" && (
                 <SocialTagGenerator results={results} />
               )}
@@ -266,7 +278,7 @@ export function ResultsShell({
               )}
 
               {/* All data views: mini visualization + filtered table */}
-              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && view !== "og-generator" && view !== "hreflang-generator" && view !== "ai-insights" && (
+              {view !== "overview" && view !== "link-graph" && view !== "internal-link-graph" && view !== "sitemap" && view !== "robots-txt" && view !== "seo-issues" && view !== "audit-report" && view !== "og-generator" && view !== "hreflang-generator" && view !== "ai-insights" && (
                 <>
                   {SECTION_VIS_VIEWS.has(view) && (
                     <>

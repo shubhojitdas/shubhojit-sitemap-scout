@@ -434,3 +434,52 @@ u, .rich-text u {
 .recharts-legend-item-text {
   color: hsl(var(--muted-foreground)) !important;
 }
+
+/* ── Printable audit report ──────────────────────────────────────────────
+ * When `body.print-report` is set, only the [data-print-root] subtree is
+ * printed, rendered on a light paper-friendly palette via token overrides.
+ */
+@media print {
+  body.print-report {
+    background: #fff !important;
+  }
+  body.print-report * {
+    visibility: hidden !important;
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+  }
+  body.print-report [data-print-root],
+  body.print-report [data-print-root] * {
+    visibility: visible !important;
+  }
+  body.print-report [data-print-root] {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    padding: 0;
+    /* Paper palette (light) so the dark UI doesn't waste ink */
+    --background: 0 0% 100%;
+    --foreground: 150 12% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 12% 10%;
+    --muted: 80 8% 93%;
+    --muted-foreground: 150 8% 35%;
+    --border: 80 6% 80%;
+    --primary: 78 90% 32%;
+    --success: 140 60% 32%;
+    --warning: 32 90% 40%;
+    --destructive: 0 72% 45%;
+    color: hsl(var(--foreground));
+  }
+  body.print-report [data-print-root] section,
+  body.print-report [data-print-root] > div {
+    break-inside: avoid;
+  }
+  .no-print {
+    display: none !important;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

@@ -18,7 +18,7 @@ Goal: add the presentation/guidance layer Sitebulb wins on, reusing the audit da
 | Audit health score (overall + per category) | Build — pure derivation from existing issues |
 | Prioritized hints ("fix this first") | Build — score existing issues by severity x affected-page share |
 | Client-ready PDF report | Build — print-optimised report route, browser "Save as PDF" (no new heavy deps) |
-| Crawl comparison (two snapshots side by side) | Build — snapshot the score/issue summary only, not full page rows |
+| Crawl comparison (two snapshots side by side) | Skip — no crawl-history storage exists to compare against |
 | Page screenshots during crawl | Skip — needs headless rendering per URL; heavy cost, out of scope |
 | Cloud crawling / multi-user workspaces | Skip — separate infrastructure project |
 
@@ -36,19 +36,13 @@ New sidebar entry "Audit Report" under Overview, rendered in `ResultsShell`:
 - Category score bars.
 - "Fix these first" — top 10 prioritised hints, each with impact, affected count, why, and fix (reusing existing copy).
 - Compact summary tables: response codes, indexability, top duplicate clusters.
-- Comparison strip when a previous snapshot exists (see 4).
-- Buttons: "Download PDF" and "Save snapshot".
+- Buttons: "Download PDF".
 
 ### 3. PDF export
 A print stylesheet plus a dedicated `/app/report` print route that renders the same `AuditReport` in a light, paginated, logo-headed layout and calls `window.print()`. Optional "Prepared for [client name]" field for white-labelling. No new PDF library.
 
-### 4. Audit comparison (`src/lib/audit-snapshots.ts`, new)
-- "Save snapshot" writes a small record (domain, timestamp, URL count, scores, per-issue counts) to a new IndexedDB store in the existing database — full page rows are not duplicated.
-- Report shows delta vs. the latest snapshot for the same domain: score change, issues resolved, issues introduced.
-- Snapshot list with delete; capped (e.g. last 10 per domain).
-
 ## Technical notes
 
-- All new code is additive: three new files plus one sidebar item, one `ResultsShell` case, one route. `seo-issues.ts`, `use-crawler.ts` crawl logic, and every existing panel stay unchanged (a new IndexedDB object store is added via a version bump that preserves the existing session store).
+- All new code is additive: two new files plus one sidebar item, one `ResultsShell` case, one route. `seo-issues.ts`, `use-crawler.ts`, IndexedDB storage, and every existing panel stay unchanged.
 - Scoring is deterministic and derived — no extra network calls, no AI dependency, no crawl slowdown.
 - Styling uses existing semantic tokens; the print layout is the only place with a light-on-white variant, scoped to `@media print`.

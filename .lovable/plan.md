@@ -18,7 +18,7 @@ Goal: add the presentation/guidance layer Sitebulb wins on, reusing the audit da
 | Audit health score (overall + per category) | Build — pure derivation from existing issues |
 | Prioritized hints ("fix this first") | Build — score existing issues by severity x affected-page share |
 | Client-ready PDF report | Build — print-optimised report route, browser "Save as PDF" (no new heavy deps) |
-| Crawl comparison (two snapshots side by side) | Build — snapshot the score/issue summary only, not full page rows |
+| Crawl comparison (two snapshots side by side) | Skip — no crawl-history storage exists to compare against |
 | Page screenshots during crawl | Skip — needs headless rendering per URL; heavy cost, out of scope |
 | Cloud crawling / multi-user workspaces | Skip — separate infrastructure project |
 

@@ -5,7 +5,7 @@ import {
 import {
   LayoutDashboard, FileText, AlignLeft, Heading1, Heading2, Heading3,
   Image as ImageIcon, Code, Bot, Link2, Languages, LinkIcon, Share2,
-  FileCode2, Network, ServerCrash, ListTree, Lightbulb, Wand2, Sparkles,
+  FileCode2, Network, ServerCrash, ListTree, Lightbulb, Wand2, Sparkles, ClipboardCheck,
 } from "lucide-react";
 import type { CrawlResult } from "@/lib/crawl-api";
 
@@ -14,6 +14,7 @@ export type ResultsView =
   | "internal"
   | "response-codes"
   | "seo-issues"
+  | "audit-report"
   | "combined"
   | "page-titles"
   | "meta-description"
@@ -81,6 +82,7 @@ export function ResultsSidebar({ view, setView, results, flags, crawlSource }: P
     { view: "internal", label: "Internal", icon: ListTree, count: total },
     { view: "response-codes", label: "Response Codes", icon: ServerCrash, count: errors + c3xx + c4xx + c5xx },
     { view: "seo-issues", label: "SEO Issues", icon: Lightbulb, visible: results.length > 0 },
+    { view: "audit-report", label: "Audit Report", icon: ClipboardCheck, visible: results.length > 0 },
     { view: "ai-insights", label: "AI Insights", icon: Sparkles, visible: results.length > 0 },
   ];
 

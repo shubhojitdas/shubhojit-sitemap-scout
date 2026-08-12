@@ -335,13 +335,19 @@ export function AuditReport({ results, domain, flags, crawlCompletedAt, lastCraw
                         </td>
                         <td className="py-1.5 tabular-nums">{d.count.toLocaleString()}</td>
                         <td className="py-1.5">
-                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${d.depth > 3 ? "bg-warning" : "bg-primary"}`}
-                              style={{ width: `${(d.count / Math.max(1, results.length)) * 100}%` }}
-                            />
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden print:hidden">
+                              <div
+                                className={`h-full rounded-full ${d.depth > 3 ? "bg-warning" : "bg-primary"}`}
+                                style={{ width: `${(d.count / Math.max(1, results.length)) * 100}%` }}
+                              />
+                            </div>
+                            <span className="tabular-nums text-muted-foreground">
+                              {Math.round((d.count / Math.max(1, results.length)) * 100)}%
+                            </span>
                           </div>
                         </td>
+
                       </tr>
                     ))}
                   </tbody>

@@ -438,26 +438,48 @@ u, .rich-text u {
 /* ── Printable audit report ──────────────────────────────────────────────
  * When `body.print-report` is set, only the [data-print-root] subtree is
  * printed, rendered on a light paper-friendly palette via token overrides.
+ * Everything outside is removed from flow (display:none) rather than merely
+ * hidden, so it can't reserve space and produce blank pages.
  */
 @media print {
   body.print-report {
     background: #fff !important;
   }
-  body.print-report * {
-    visibility: hidden !important;
+
+  /* Remove every element that neither contains nor belongs to the report. */
+  body.print-report
+    *:not(:has([data-print-root])):not([data-print-root]):not([data-print-root] *) {
+    display: none !important;
+  }
+
+  /* Ancestors: keep them in flow but strip all chrome and offsets. */
+  body.print-report *:has([data-print-root]) {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    transform: none !important;
+  }
+
+  body.print-report [data-print-root] * {
     animation: none !important;
     transition: none !important;
     box-shadow: none !important;
   }
-  body.print-report [data-print-root],
-  body.print-report [data-print-root] * {
-    visibility: visible !important;
-  }
+
   body.print-report [data-print-root] {
-    position: absolute;
-    inset: 0 auto auto 0;
     width: 100%;
     padding: 0;
+    font-size: 10.5px;
+    line-height: 1.35;
     /* Paper palette (light) so the dark UI doesn't waste ink */
     --background: 0 0% 100%;
     --foreground: 150 12% 10%;
@@ -472,14 +494,54 @@ u, .rich-text u {
     --destructive: 0 72% 45%;
     color: hsl(var(--foreground));
   }
+
+  /* Dense print layout: sections flow across pages instead of jumping one. */
   body.print-report [data-print-root] section,
   body.print-report [data-print-root] > div {
+    break-inside: auto;
+    border-radius: 0 !important;
+    padding: 6px 0 !important;
+    margin: 0 !important;
+    border-width: 0 0 1px 0 !important;
+  }
+  body.print-report [data-print-root] > * + * {
+    margin-top: 6px !important;
+  }
+
+  /* Only small atomic blocks are protected from splitting. */
+  body.print-report [data-print-root] [data-atomic],
+  body.print-report [data-print-root] tr,
+  body.print-report [data-print-root] li {
     break-inside: avoid;
   }
+
+  /* Headings stay with the content that follows them. */
+  body.print-report [data-print-root] h2,
+  body.print-report [data-print-root] h3,
+  body.print-report [data-print-root] h4,
+  body.print-report [data-print-root] [data-keep-with-next] {
+    break-after: avoid;
+  }
+
+  /* Repeat table headers on continued pages. */
+  body.print-report [data-print-root] thead {
+    display: table-header-group;
+  }
+
+  /* Cards/rows: flatten borders and padding to save vertical space. */
+  body.print-report [data-print-root] [data-atomic] {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+  body.print-report [data-print-root] .grid {
+    gap: 6px !important;
+  }
+
   .no-print {
     display: none !important;
   }
   @page {
-    margin: 14mm;
+    margin: 12mm;
   }
 }
+

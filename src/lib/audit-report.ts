@@ -1,5 +1,6 @@
 import type { CrawlResult } from "./crawl-api";
 import { analyzeSeoIssues, type FieldFlags, type SeoIssue, type IssueSeverity } from "./seo-issues";
+import { buildInsightIssues } from "./audit-insights";
 
 /**
  * Derives an audit health score, per-category scores and a prioritised
@@ -113,7 +114,10 @@ function scoreFromPenalty(penalty: number): number {
 
 export function buildAuditReport(results: CrawlResult[], flags: FieldFlags): AuditReportData {
   const totalPages = Math.max(1, results.length);
-  const raw = analyzeSeoIssues(results, flags);
+  const raw = [
+    ...analyzeSeoIssues(results, flags),
+    ...buildInsightIssues(results, flags.includeInternalLinks),
+  ];
 
   const issues: PrioritisedIssue[] = raw.map((i) => {
     const share = Math.min(1, i.count / totalPages);

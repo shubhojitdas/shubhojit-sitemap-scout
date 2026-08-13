@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Work+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -435,13 +435,242 @@ u, .rich-text u {
   color: hsl(var(--muted-foreground)) !important;
 }
 
-/* ── Printable audit report ──────────────────────────────────────────────
- * When `body.print-report` is set, only the [data-print-root] subtree is
- * printed, rendered on a light paper-friendly palette via token overrides.
- * Everything outside is removed from flow (display:none) rather than merely
- * hidden, so it can't reserve space and produce blank pages.
+/* ── Audit report: editorial "paper" document ────────────────────────────
+ * The report renders on its own scoped palette (warm paper, forest ink,
+ * brand lime) so the on-screen view is a true WYSIWYG preview of the PDF.
+ * Print output is laid out on A4 with a readable A4 type scale.
  */
+[data-report-root] {
+  --rpt-paper: 45 30% 95%;
+  --rpt-raised: 0 0% 100%;
+  --rpt-ink: 162 20% 10%;
+  --rpt-ink-soft: 160 8% 33%;
+  --rpt-line: 45 16% 82%;
+  --rpt-line-soft: 45 16% 88%;
+  --rpt-lime: 78 100% 30%;
+  --rpt-lime-soft: 78 45% 88%;
+  --rpt-crit: 8 52% 36%;
+  --rpt-crit-bg: 14 46% 93%;
+  --rpt-warn: 36 66% 36%;
+  --rpt-warn-bg: 40 58% 92%;
+  --rpt-info: 196 28% 34%;
+  --rpt-info-bg: 190 24% 92%;
+  --rpt-good: 96 42% 28%;
+  --rpt-good-bg: 96 30% 92%;
+
+  background-color: hsl(var(--rpt-paper));
+  color: hsl(var(--rpt-ink));
+  font-family: 'Work Sans', 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  border: 1px solid hsl(var(--rpt-line));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rpt-page { padding: 0 20px; }
+@media (min-width: 640px)  { .rpt-page { padding: 0 32px; } }
+@media (min-width: 1024px) { .rpt-page { padding: 0 44px; } }
+
+.rpt-mono {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.rpt-serif {
+  font-family: 'Instrument Serif', 'Newsreader', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.rpt-soft { color: hsl(var(--rpt-ink-soft)); }
+
+/* masthead */
+.rpt-masthead {
+  position: relative;
+  overflow: hidden;
+  color: hsl(var(--rpt-raised));
+  padding: 32px 0 28px;
+  background:
+    radial-gradient(ellipse 700px 380px at 12% -30%, hsl(var(--rpt-lime) / 0.30), transparent 62%),
+    linear-gradient(180deg, hsl(162 26% 8%), hsl(162 22% 13%));
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.rpt-masthead::after {
+  content: "";
+  position: absolute; right: -110px; top: -130px;
+  width: 380px; height: 380px; border-radius: 50%;
+  border: 1px solid hsl(78 60% 70% / 0.16);
+}
+.rpt-eyebrow {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: hsl(78 60% 76%);
+  margin-bottom: 14px;
+}
+.rpt-eyebrow::before { content: "◆"; font-size: 8px; color: hsl(var(--rpt-lime) / 0.95); }
+.rpt-title { font-size: clamp(28px, 6vw, 44px); line-height: 1.06; }
+.rpt-title em { font-style: italic; color: hsl(78 55% 80%); }
+.rpt-meta {
+  display: grid; gap: 16px 36px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 24px; padding-top: 20px;
+  border-top: 1px solid hsl(0 0% 100% / 0.16);
+}
+@media (min-width: 768px) { .rpt-meta { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.rpt-meta .k {
+  font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: hsl(0 0% 100% / 0.6); margin-bottom: 4px;
+}
+.rpt-meta .v { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+
+/* grade band */
+.rpt-band {
+  background: hsl(var(--rpt-raised));
+  border-bottom: 1px solid hsl(var(--rpt-line));
+}
+.rpt-band-inner {
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  padding: 22px 0;
+}
+.rpt-sevs { display: flex; gap: 22px; flex-wrap: wrap; }
+.rpt-sev .n { font-size: 28px; line-height: 1; }
+.rpt-sev .l {
+  font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: hsl(var(--rpt-ink-soft));
+}
+.rpt-sev.crit .n { color: hsl(var(--rpt-crit)); }
+.rpt-sev.warn .n { color: hsl(var(--rpt-warn)); }
+.rpt-sev.info .n { color: hsl(var(--rpt-info)); }
+
+/* sections */
+.rpt-section { padding: 30px 0; border-bottom: 1px solid hsl(var(--rpt-line)); }
+.rpt-section:last-of-type { border-bottom: none; }
+.rpt-shead { display: flex; align-items: baseline; gap: 12px; }
+.rpt-num { font-size: 12px; letter-spacing: 0.05em; color: hsl(var(--rpt-lime)); }
+.rpt-stitle { font-size: clamp(20px, 3.4vw, 26px); }
+.rpt-sub { color: hsl(var(--rpt-ink-soft)); font-size: 14px; margin-top: 6px; max-width: 62ch; }
+
+/* hairline grids & cards */
+.rpt-hair {
+  display: grid; gap: 1px;
+  background: hsl(var(--rpt-line));
+  border: 1px solid hsl(var(--rpt-line));
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+@media (min-width: 560px)  { .rpt-hair { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 900px)  { .rpt-hair { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.rpt-hair.cols3 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+@media (min-width: 560px) { .rpt-hair.cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.rpt-cell { background: hsl(var(--rpt-raised)); padding: 18px 16px; }
+
+.rpt-cat { font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase; color: hsl(var(--rpt-ink-soft)); }
+.rpt-score { font-size: 34px; line-height: 1; }
+.rpt-score-max { font-size: 12px; color: hsl(var(--rpt-ink-soft)); }
+.rpt-meter {
+  height: 5px; border-radius: 3px; overflow: hidden;
+  background: hsl(var(--rpt-line));
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.rpt-meter > i { display: block; height: 100%; border-radius: 3px; }
+.t-good  { color: hsl(var(--rpt-good)); }
+.t-warn  { color: hsl(var(--rpt-warn)); }
+.t-crit  { color: hsl(var(--rpt-crit)); }
+.t-info  { color: hsl(var(--rpt-info)); }
+.t-lime  { color: hsl(var(--rpt-lime)); }
+.f-good  { background: hsl(var(--rpt-good)); }
+.f-warn  { background: hsl(var(--rpt-warn)); }
+.f-crit  { background: hsl(var(--rpt-crit)); }
+.f-lime  { background: hsl(var(--rpt-lime)); }
+.f-mute  { background: hsl(var(--rpt-ink-soft) / 0.35); }
+
+/* tags */
+.rpt-tag {
+  display: inline-block;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 9.5px; letter-spacing: 0.07em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 2px;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.rpt-tag.crit { background: hsl(var(--rpt-crit-bg)); color: hsl(var(--rpt-crit)); }
+.rpt-tag.warn { background: hsl(var(--rpt-warn-bg)); color: hsl(var(--rpt-warn)); }
+.rpt-tag.info { background: hsl(var(--rpt-info-bg)); color: hsl(var(--rpt-info)); }
+.rpt-tag.good { background: hsl(var(--rpt-good-bg)); color: hsl(var(--rpt-good)); }
+.rpt-tag.cat  { background: hsl(var(--rpt-paper)); color: hsl(var(--rpt-ink-soft)); border: 1px solid hsl(var(--rpt-line)); }
+
+/* priority fixes */
+.rpt-fix {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px;
+  padding: 22px 0; border-bottom: 1px solid hsl(var(--rpt-line-soft));
+}
+.rpt-fix:last-child { border-bottom: none; }
+.rpt-rank { font-size: 30px; line-height: 1; color: hsl(var(--rpt-line)); }
+.rpt-fix-title { font-size: clamp(17px, 2.6vw, 20px); line-height: 1.25; }
+.rpt-fix-scope { font-size: 12px; color: hsl(var(--rpt-ink-soft)); }
+.rpt-fix-body { display: grid; gap: 16px; margin-top: 12px; }
+@media (min-width: 700px) { .rpt-fix-body { grid-template-columns: 1fr 1fr; gap: 24px; } }
+.rpt-h {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase;
+  color: hsl(var(--rpt-lime)); margin-bottom: 4px;
+}
+.rpt-fix-body p { font-size: 13.5px; color: hsl(var(--rpt-ink-soft)); }
+
+/* tables */
+.rpt-table { width: 100%; border-collapse: collapse; }
+.rpt-table th {
+  text-align: left;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: hsl(var(--rpt-ink-soft));
+  padding: 0 10px 8px 0; border-bottom: 1px solid hsl(var(--rpt-ink));
+  white-space: nowrap;
+}
+.rpt-table td {
+  padding: 9px 10px 9px 0;
+  border-bottom: 1px solid hsl(var(--rpt-line-soft));
+  font-size: 13.5px;
+}
+.rpt-table tr:last-child td { border-bottom: none; }
+.rpt-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.rpt-scroll { overflow-x: auto; }
+
+.rpt-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; }
+
+/* url lists */
+.rpt-urls { list-style: none; margin: 0; padding: 0; }
+.rpt-urls li {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11.5px; padding: 6px 0;
+  border-bottom: 1px solid hsl(var(--rpt-line-soft));
+  color: hsl(var(--rpt-ink-soft));
+  overflow-wrap: anywhere;
+}
+.rpt-urls li:last-child { border-bottom: none; }
+.rpt-note-inline { font-size: 12px; font-style: italic; color: hsl(var(--rpt-ink-soft)); margin-top: 8px; }
+
+/* dark closing panel */
+.rpt-panel {
+  background: hsl(162 26% 9%);
+  color: hsl(var(--rpt-raised));
+  padding: 26px 20px;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.rpt-panel p { color: hsl(0 0% 100% / 0.75); font-size: 13.5px; max-width: 68ch; }
+
+.rpt-footer {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 18px 0 26px;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11px; color: hsl(var(--rpt-ink-soft));
+}
+
+/* ── Print: A4 ───────────────────────────────────────────────────────── */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm;
+  }
+
   body.print-report {
     background: #fff !important;
   }
@@ -475,50 +704,78 @@ u, .rich-text u {
     box-shadow: none !important;
   }
 
+  /* A4 content box + A4-readable type scale. */
   body.print-report [data-print-root] {
     width: 100%;
-    padding: 0;
-    font-size: 10.5px;
-    line-height: 1.35;
-    /* Paper palette (light) so the dark UI doesn't waste ink */
-    --background: 0 0% 100%;
-    --foreground: 150 12% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 150 12% 10%;
-    --muted: 80 8% 93%;
-    --muted-foreground: 150 8% 35%;
-    --border: 80 6% 80%;
-    --primary: 78 90% 32%;
-    --success: 140 60% 32%;
-    --warning: 32 90% 40%;
-    --destructive: 0 72% 45%;
-    color: hsl(var(--foreground));
+    border: 0;
+    border-radius: 0;
+    font-size: 10pt;
+    line-height: 1.45;
+    orphans: 3;
+    widows: 3;
   }
 
-  /* Dense print layout: sections flow across pages instead of jumping one. */
-  body.print-report [data-print-root] section,
-  body.print-report [data-print-root] > div {
-    break-inside: auto;
-    border-radius: 0 !important;
-    padding: 6px 0 !important;
-    margin: 0 !important;
-    border-width: 0 0 1px 0 !important;
-  }
-  body.print-report [data-print-root] > * + * {
-    margin-top: 6px !important;
-  }
+  body.print-report [data-print-root] { overflow: visible !important; }
+  body.print-report [data-print-root] .rpt-page { padding: 0 !important; }
+  body.print-report [data-print-root] .rpt-masthead { padding: 18pt 12pt 14pt; margin: 0; }
+  body.print-report [data-print-root] .rpt-masthead .rpt-page,
+  body.print-report [data-print-root] .rpt-panel .rpt-page { padding: 0 !important; }
+  body.print-report [data-print-root] .rpt-band { margin: 0; }
+  body.print-report [data-print-root] .rpt-panel { margin: 0; padding: 14pt 12pt; }
+  body.print-report [data-print-root] .rpt-masthead::after { display: none; }
 
-  /* Only small atomic blocks are protected from splitting. */
-  body.print-report [data-print-root] [data-atomic],
+  /* A4 is wide enough for the full grids regardless of viewport media queries. */
+  body.print-report [data-print-root] .rpt-hair { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  body.print-report [data-print-root] .rpt-hair.cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  body.print-report [data-print-root] .rpt-fix-body { grid-template-columns: 1fr 1fr !important; gap: 14pt !important; }
+  body.print-report [data-print-root] .rpt-two {
+    display: grid !important;
+    grid-template-columns: 1.25fr 1fr !important;
+    gap: 14pt !important;
+  }
+  body.print-report [data-print-root] .rpt-app-title { font-size: 9.5pt !important; }
+
+  body.print-report [data-print-root] .rpt-title { font-size: 26pt; }
+  body.print-report [data-print-root] .rpt-stitle { font-size: 15pt; }
+  body.print-report [data-print-root] .rpt-fix-title { font-size: 12pt; }
+  body.print-report [data-print-root] .rpt-score { font-size: 22pt; }
+  body.print-report [data-print-root] .rpt-sev .n { font-size: 18pt; }
+  body.print-report [data-print-root] .rpt-rank { font-size: 18pt; }
+  body.print-report [data-print-root] .rpt-sub,
+  body.print-report [data-print-root] .rpt-fix-body p,
+  body.print-report [data-print-root] .rpt-table td { font-size: 9pt; }
+  body.print-report [data-print-root] .rpt-urls li { font-size: 8pt; padding: 2.5pt 0; }
+  body.print-report [data-print-root] .rpt-meta .v { font-size: 10pt; }
+
+  body.print-report [data-print-root] .rpt-section { padding: 14pt 0; }
+  body.print-report [data-print-root] .rpt-fix { padding: 10pt 0; }
+  body.print-report [data-print-root] .rpt-cell { padding: 9pt 8pt; }
+  body.print-report [data-print-root] .rpt-scroll { overflow: visible !important; }
+
+  /* Sections flow; only small atomic blocks are protected from splitting. */
+  body.print-report [data-print-root] section { break-inside: auto; }
   body.print-report [data-print-root] tr,
+  body.print-report [data-print-root] .rpt-cell,
+  body.print-report [data-print-root] .rpt-fix-body > div,
   body.print-report [data-print-root] li {
     break-inside: avoid;
+  }
+  /* Long blocks may flow across pages so we never leave half-empty sheets. */
+  body.print-report [data-print-root] .rpt-fix,
+  body.print-report [data-print-root] .rpt-section [data-atomic] {
+    break-inside: auto;
+  }
+  body.print-report [data-print-root] .rpt-masthead,
+  body.print-report [data-print-root] .rpt-band {
+    break-inside: avoid;
+    break-after: avoid;
   }
 
   /* Headings stay with the content that follows them. */
   body.print-report [data-print-root] h2,
   body.print-report [data-print-root] h3,
   body.print-report [data-print-root] h4,
+  body.print-report [data-print-root] .rpt-shead,
   body.print-report [data-print-root] [data-keep-with-next] {
     break-after: avoid;
   }
@@ -528,20 +785,8 @@ u, .rich-text u {
     display: table-header-group;
   }
 
-  /* Cards/rows: flatten borders and padding to save vertical space. */
-  body.print-report [data-print-root] [data-atomic] {
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
-  }
-  body.print-report [data-print-root] .grid {
-    gap: 6px !important;
-  }
-
   .no-print {
     display: none !important;
-  }
-  @page {
-    margin: 12mm;
   }
 }
 

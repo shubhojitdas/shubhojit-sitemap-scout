@@ -239,7 +239,7 @@ export function AuditReport({ results, domain, flags, crawlCompletedAt, lastCraw
           {/* Executive summary */}
           {show.summary && (
             <Section num={num()} title="Executive Summary">
-              <div className="grid gap-6 mt-5 lg:grid-cols-[1.25fr_1fr]">
+              <div className="rpt-two grid gap-6 mt-5 lg:grid-cols-[1.25fr_1fr]">
                 <div>
                   <p className="text-[15px] sm:text-base leading-relaxed">
                     Across{" "}
@@ -581,7 +581,7 @@ export function AuditReport({ results, domain, flags, crawlCompletedAt, lastCraw
                     <div className="flex items-center gap-2 flex-wrap" data-keep-with-next>
                       <span className={`rpt-tag ${SEV_TAG[issue.severity]}`}>{issue.severity}</span>
                       <span className="rpt-tag cat">{issue.category}</span>
-                      <span className="text-sm font-medium">{issue.title}</span>
+                      <span className="rpt-app-title text-sm font-medium">{issue.title}</span>
                       <span className="rpt-mono text-[11px] rpt-soft ml-auto">
                         {issue.urls.length.toLocaleString()} URLs
                       </span>

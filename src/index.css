@@ -728,6 +728,12 @@ u, .rich-text u {
   body.print-report [data-print-root] .rpt-hair { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
   body.print-report [data-print-root] .rpt-hair.cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
   body.print-report [data-print-root] .rpt-fix-body { grid-template-columns: 1fr 1fr !important; gap: 14pt !important; }
+  body.print-report [data-print-root] .rpt-two {
+    display: grid !important;
+    grid-template-columns: 1.25fr 1fr !important;
+    gap: 14pt !important;
+  }
+  body.print-report [data-print-root] .rpt-app-title { font-size: 9.5pt !important; }
 
   body.print-report [data-print-root] .rpt-title { font-size: 26pt; }
   body.print-report [data-print-root] .rpt-stitle { font-size: 15pt; }

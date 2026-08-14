@@ -786,38 +786,88 @@ u, .rich-text u {
 
   body.print-report [data-print-root] .rpt-scroll { overflow: visible !important; }
 
-  /* Sections flow; only small atomic blocks are protected from splitting. */
-  body.print-report [data-print-root] section { break-inside: auto; }
+  /* ── Pagination rules ────────────────────────────────────────────────
+   * Long containers may flow across pages; single rows, cards and short
+   * blocks are atomic so nothing is ever sliced in half.
+   */
+  body.print-report [data-print-root] section,
+  body.print-report [data-print-root] .rpt-urls,
+  body.print-report [data-print-root] .rpt-url-table,
+  body.print-report [data-print-root] .rpt-url-table tbody,
+  body.print-report [data-print-root] .rpt-table,
+  body.print-report [data-print-root] .rpt-table tbody {
+    break-inside: auto;
+  }
+
   body.print-report [data-print-root] tr,
+  body.print-report [data-print-root] td,
+  body.print-report [data-print-root] li,
   body.print-report [data-print-root] .rpt-cell,
   body.print-report [data-print-root] .rpt-fix-body > div,
-  body.print-report [data-print-root] li {
+  body.print-report [data-print-root] .rpt-fix-scope,
+  body.print-report [data-print-root] .rpt-shead,
+  body.print-report [data-print-root] .rpt-sev,
+  body.print-report [data-print-root] .rpt-meta > div,
+  body.print-report [data-print-root] .rpt-footer {
     break-inside: avoid;
   }
-  /* Long blocks may flow across pages so we never leave half-empty sheets. */
+
+  /* Long blocks may flow so we never leave half-empty sheets. */
   body.print-report [data-print-root] .rpt-fix,
   body.print-report [data-print-root] .rpt-section [data-atomic] {
     break-inside: auto;
   }
+
+  body.print-report [data-print-root] .rpt-masthead,
+  body.print-report [data-print-root] .rpt-band,
+  body.print-report [data-print-root] .rpt-panel {
+    break-inside: avoid;
+  }
   body.print-report [data-print-root] .rpt-masthead,
   body.print-report [data-print-root] .rpt-band {
-    break-inside: avoid;
     break-after: avoid;
   }
+  /* The dark closing panel is a genuine section end, never a break marker. */
+  body.print-report [data-print-root] .rpt-panel { break-before: auto; }
 
-  /* Headings stay with the content that follows them. */
+  /* Headings never sit alone at the foot of a page. */
   body.print-report [data-print-root] h2,
   body.print-report [data-print-root] h3,
   body.print-report [data-print-root] h4,
   body.print-report [data-print-root] .rpt-shead,
+  body.print-report [data-print-root] .rpt-stitle,
+  body.print-report [data-print-root] .rpt-h,
+  body.print-report [data-print-root] .rpt-cat,
+  body.print-report [data-print-root] .rpt-fix-title,
+  body.print-report [data-print-root] .rpt-sub,
+  body.print-report [data-print-root] .rpt-table th,
   body.print-report [data-print-root] [data-keep-with-next] {
     break-after: avoid;
+    break-inside: avoid;
   }
 
-  /* Repeat table headers on continued pages. */
+  /* No stranded lines of body copy. */
+  body.print-report [data-print-root] p,
+  body.print-report [data-print-root] li,
+  body.print-report [data-print-root] td {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Repeat table headers (incl. the URL-list headings) on continued pages,
+     with the same top gutter the section had on its first page. */
   body.print-report [data-print-root] thead {
     display: table-header-group;
   }
+  body.print-report [data-print-root] .rpt-url-table { margin-top: 4mm; }
+  body.print-report [data-print-root] .rpt-url-table th {
+    padding: 3mm 0 1.5mm;
+  }
+  body.print-report [data-print-root] .rpt-url-table td {
+    font-size: 8pt;
+    padding: 2.5pt 0;
+  }
+
 
   .no-print {
     display: none !important;

@@ -658,6 +658,18 @@ u, .rich-text u {
 .rpt-urls li:last-child { border-bottom: none; }
 .rpt-note-inline { font-size: 12px; font-style: italic; color: hsl(var(--rpt-ink-soft)); margin-top: 8px; }
 
+/* print-only URL table: heading repeats per page, rows stay atomic */
+.rpt-url-table { width: 100%; border-collapse: collapse; }
+.rpt-url-table th { text-align: left; }
+.rpt-url-table td {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11.5px; padding: 5px 0;
+  border-bottom: 1px solid hsl(var(--rpt-line-soft));
+  color: hsl(var(--rpt-ink-soft));
+  overflow-wrap: anywhere;
+}
+
+
 /* dark closing panel */
 .rpt-panel {
   background: hsl(162 26% 9%);

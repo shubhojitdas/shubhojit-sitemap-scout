@@ -690,10 +690,12 @@ u, .rich-text u {
 @media print {
   @page {
     size: A4 portrait;
-    /* Zero page margin = no browser-injected date/title header, and lets the
-       paper colour + masthead run edge to edge like the on-screen document. */
-    margin: 0;
+    /* Fixed vertical page margin (20mm) for breathing room; horizontal margin
+       stays 0 so the masthead / bands bleed like the on-screen document, with
+       the 15mm side gutter applied by .rpt-page instead. */
+    margin: 20mm 0;
   }
+
 
   html, body.print-report {
     background: hsl(var(--rpt-paper, 45 30% 95%)) !important;

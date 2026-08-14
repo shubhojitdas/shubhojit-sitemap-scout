@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import ReportPrintTest from "./pages/ReportPrintTest";
 import LinkGraphView from "./pages/LinkGraphView";
 import InternalLinkGraphView from "./pages/InternalLinkGraphView";
 import AboutShubhojit from "./pages/AboutShubhojit";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/cms/login" element={<CmsLogin />} />
             <Route path="/cms" element={<CmsDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/__report-print-test" element={<ReportPrintTest />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

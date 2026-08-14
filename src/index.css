@@ -658,6 +658,18 @@ u, .rich-text u {
 .rpt-urls li:last-child { border-bottom: none; }
 .rpt-note-inline { font-size: 12px; font-style: italic; color: hsl(var(--rpt-ink-soft)); margin-top: 8px; }
 
+/* print-only URL table: heading repeats per page, rows stay atomic */
+.rpt-url-table { width: 100%; border-collapse: collapse; }
+.rpt-url-table th { text-align: left; }
+.rpt-url-table td {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 11.5px; padding: 5px 0;
+  border-bottom: 1px solid hsl(var(--rpt-line-soft));
+  color: hsl(var(--rpt-ink-soft));
+  overflow-wrap: anywhere;
+}
+
+
 /* dark closing panel */
 .rpt-panel {
   background: hsl(162 26% 9%);
@@ -678,10 +690,12 @@ u, .rich-text u {
 @media print {
   @page {
     size: A4 portrait;
-    /* Zero page margin = no browser-injected date/title header, and lets the
-       paper colour + masthead run edge to edge like the on-screen document. */
-    margin: 0;
+    /* Fixed vertical page margin (20mm) for breathing room; horizontal margin
+       stays 0 so the masthead / bands bleed like the on-screen document, with
+       the 15mm side gutter applied by .rpt-page instead. */
+    margin: 20mm 0;
   }
+
 
   html, body.print-report {
     background: hsl(var(--rpt-paper, 45 30% 95%)) !important;
@@ -734,7 +748,7 @@ u, .rich-text u {
 
   body.print-report [data-print-root] { overflow: visible !important; }
   /* Single consistent gutter for every band, exactly like the tool view. */
-  body.print-report [data-print-root] .rpt-page { padding: 0 13mm !important; }
+  body.print-report [data-print-root] .rpt-page { padding: 0 15mm !important; }
   body.print-report [data-print-root] .rpt-masthead { padding: 16mm 0 12mm; margin: 0; }
   body.print-report [data-print-root] .rpt-band { margin: 0; }
   body.print-report [data-print-root] .rpt-panel { margin: 0; padding: 12mm 0; }
@@ -772,38 +786,106 @@ u, .rich-text u {
 
   body.print-report [data-print-root] .rpt-scroll { overflow: visible !important; }
 
-  /* Sections flow; only small atomic blocks are protected from splitting. */
-  body.print-report [data-print-root] section { break-inside: auto; }
+  /* ── Pagination rules ────────────────────────────────────────────────
+   * Long containers may flow across pages; single rows, cards and short
+   * blocks are atomic so nothing is ever sliced in half.
+   */
+  body.print-report [data-print-root] section,
+  body.print-report [data-print-root] .rpt-urls,
+  body.print-report [data-print-root] .rpt-url-table,
+  body.print-report [data-print-root] .rpt-url-table tbody,
+  body.print-report [data-print-root] .rpt-table,
+  body.print-report [data-print-root] .rpt-table tbody {
+    break-inside: auto;
+  }
+
   body.print-report [data-print-root] tr,
+  body.print-report [data-print-root] td,
+  body.print-report [data-print-root] li,
   body.print-report [data-print-root] .rpt-cell,
   body.print-report [data-print-root] .rpt-fix-body > div,
-  body.print-report [data-print-root] li {
+  body.print-report [data-print-root] .rpt-fix-scope,
+  body.print-report [data-print-root] .rpt-fix-head,
+  body.print-report [data-print-root] .rpt-fix-body,
+  body.print-report [data-print-root] .rpt-shead,
+  body.print-report [data-print-root] .rpt-sev,
+  body.print-report [data-print-root] .rpt-meta > div,
+  body.print-report [data-print-root] .rpt-footer {
     break-inside: avoid;
   }
-  /* Long blocks may flow across pages so we never leave half-empty sheets. */
+
+  /* Long blocks may flow so we never leave half-empty sheets. */
   body.print-report [data-print-root] .rpt-fix,
   body.print-report [data-print-root] .rpt-section [data-atomic] {
     break-inside: auto;
   }
+
+  body.print-report [data-print-root] .rpt-masthead,
+  body.print-report [data-print-root] .rpt-band,
+  body.print-report [data-print-root] .rpt-panel {
+    break-inside: avoid;
+  }
   body.print-report [data-print-root] .rpt-masthead,
   body.print-report [data-print-root] .rpt-band {
-    break-inside: avoid;
     break-after: avoid;
   }
+  /* The dark closing panel is a genuine section end, never a break marker. */
+  body.print-report [data-print-root] .rpt-panel { break-before: auto; }
 
-  /* Headings stay with the content that follows them. */
+  /* Headings never sit alone at the foot of a page. */
   body.print-report [data-print-root] h2,
   body.print-report [data-print-root] h3,
   body.print-report [data-print-root] h4,
   body.print-report [data-print-root] .rpt-shead,
+  body.print-report [data-print-root] .rpt-stitle,
+  body.print-report [data-print-root] .rpt-h,
+  body.print-report [data-print-root] .rpt-cat,
+  body.print-report [data-print-root] .rpt-fix-title,
+  body.print-report [data-print-root] .rpt-sub,
+  body.print-report [data-print-root] .rpt-table th,
   body.print-report [data-print-root] [data-keep-with-next] {
     break-after: avoid;
+    break-inside: avoid;
   }
 
-  /* Repeat table headers on continued pages. */
+  /* Chromium ignores `break-after: avoid` in paged layout, so headings claim
+     space below themselves: if that space doesn't fit, the whole heading moves
+     to the next page together with the content that follows it. */
+  body.print-report [data-print-root] .rpt-shead,
+  body.print-report [data-print-root] .rpt-fix-keep {
+    break-inside: avoid;
+  }
+  body.print-report [data-print-root] .rpt-shead {
+    padding-bottom: 26mm;
+    margin-bottom: -26mm;
+  }
+  body.print-report [data-print-root] .rpt-url-table th {
+    padding-bottom: 12mm;
+    margin-bottom: -12mm;
+  }
+
+  /* No stranded lines of body copy. */
+  body.print-report [data-print-root] p,
+  body.print-report [data-print-root] li,
+  body.print-report [data-print-root] td {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Repeat table headers (incl. the URL-list headings) on continued pages,
+     with the same top gutter the section had on its first page. */
   body.print-report [data-print-root] thead {
     display: table-header-group;
   }
+  body.print-report [data-print-root] .rpt-url-table { margin-top: 4mm; }
+  body.print-report [data-print-root] .rpt-url-table th {
+    padding: 3mm 0 1.5mm;
+  }
+  body.print-report [data-print-root] .rpt-url-table td {
+    font-size: 8pt;
+    padding: 2.5pt 0;
+  }
+
 
   .no-print {
     display: none !important;

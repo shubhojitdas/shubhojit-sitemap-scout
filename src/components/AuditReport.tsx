@@ -302,7 +302,7 @@ export function AuditReport({ results, domain, flags, crawlCompletedAt, lastCraw
                         </span>
                         {!c.notAudited && <span className="rpt-score-max">/100</span>}
                       </div>
-                      <div className="rpt-meter">
+                      <div className="rpt-meter print:hidden">
                         <i
                           className={c.notAudited ? "f-mute" : `f-${tone}`}
                           style={{ width: `${c.notAudited ? 0 : c.score}%` }}
@@ -319,7 +319,7 @@ export function AuditReport({ results, domain, flags, crawlCompletedAt, lastCraw
                   );
                 })}
                 <div
-                  className="rpt-cell flex items-center justify-center"
+                  className="rpt-cell flex items-center justify-center no-print"
                   style={{ background: "hsl(var(--rpt-paper))" }}
                 >
                   <p className="text-xs rpt-soft text-center">
@@ -586,11 +586,12 @@ export function AuditReport({ results, domain, flags, crawlCompletedAt, lastCraw
                         {issue.urls.length.toLocaleString()} URLs
                       </span>
                     </div>
-                    <ul className="rpt-urls mt-2">
+                    <ul className="rpt-urls mt-2 print:hidden">
                       {issue.urls.slice(0, cap).map((u) => (
                         <li key={u}>{u}</li>
                       ))}
                     </ul>
+                    <PrintUrlTable label={`Affected URLs — ${issue.title}`} urls={issue.urls.slice(0, cap)} />
                     {issue.urls.length > cap && (
                       <p className="rpt-note-inline">
                         +{(issue.urls.length - cap).toLocaleString()} more URLs in the Issues CSV export.
@@ -718,19 +719,15 @@ function UrlList({ label, urls, cap }: { label: string; urls: string[]; cap: num
   const extra = urls.length - cap;
   return (
     <div className="mt-5" data-atomic>
-      <div className="rpt-h" data-keep-with-next>{label}</div>
+      <div className="rpt-h print:hidden" data-keep-with-next>{label}</div>
       {/* Screen: expandable */}
       <ul className="rpt-urls print:hidden">
         {(open ? urls : urls.slice(0, cap)).map((u) => (
           <li key={u}>{u}</li>
         ))}
       </ul>
-      {/* Print: always capped */}
-      <ul className="rpt-urls hidden print:block">
-        {urls.slice(0, cap).map((u) => (
-          <li key={u}>{u}</li>
-        ))}
-      </ul>
+      {/* Print: capped, header repeats on every continuation page */}
+      <PrintUrlTable label={label} urls={urls.slice(0, cap)} />
       {extra > 0 && (
         <>
           <button
@@ -745,6 +742,28 @@ function UrlList({ label, urls, cap }: { label: string; urls: string[]; cap: num
         </>
       )}
     </div>
+  );
+}
+
+/** Print-only URL list rendered as a table so its heading repeats on every
+ *  continuation page and individual URL rows never split across pages. */
+function PrintUrlTable({ label, urls }: { label: string; urls: string[] }) {
+  if (urls.length === 0) return null;
+  return (
+    <table className="rpt-url-table hidden print:table">
+      <thead>
+        <tr>
+          <th className="rpt-h">{label}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {urls.map((u) => (
+          <tr key={u}>
+            <td>{u}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -782,41 +801,44 @@ function FixItem({ rank, issue, cap }: { rank: number; issue: PrioritisedIssue; 
     <div className="rpt-fix" data-atomic>
       <div className="rpt-rank rpt-serif">{String(rank).padStart(2, "0")}</div>
       <div className="min-w-0">
-        <div className="flex items-center gap-2 flex-wrap mb-2">
-          <span className={`rpt-tag ${SEV_TAG[issue.severity]}`}>{issue.severity}</span>
-          <span className="rpt-tag cat">{issue.category}</span>
-        </div>
-        <h4 className="rpt-fix-title rpt-serif">{issue.title}</h4>
-        <div className="rpt-fix-scope rpt-mono mt-1.5">
-          {issue.count.toLocaleString()} page{issue.count === 1 ? "" : "s"} ·{" "}
-          {Math.round(issue.share * 100)}% of the site · impact {issue.priority}/100
-        </div>
-        <div className="rpt-meter mt-2" style={{ maxWidth: 180 }}>
-          <i className="f-lime" style={{ width: `${issue.priority}%` }} />
-        </div>
-        <div className="rpt-fix-body">
-          <div>
-            <div className="rpt-h">Why it matters</div>
-            <p>{issue.why}</p>
+        {/* Head + guidance stay on one page so a title never ends a page alone. */}
+        <div className="rpt-fix-keep">
+          <div className="rpt-fix-head" data-keep-with-next>
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <span className={`rpt-tag ${SEV_TAG[issue.severity]}`}>{issue.severity}</span>
+              <span className="rpt-tag cat">{issue.category}</span>
+            </div>
+            <h4 className="rpt-fix-title rpt-serif">{issue.title}</h4>
+            <div className="rpt-fix-scope rpt-mono mt-1.5">
+              {issue.count.toLocaleString()} page{issue.count === 1 ? "" : "s"} ·{" "}
+              {Math.round(issue.share * 100)}% of the site · impact {issue.priority}/100
+            </div>
+            <div className="rpt-meter mt-2 print:hidden" style={{ maxWidth: 180 }}>
+              <i className="f-lime" style={{ width: `${issue.priority}%` }} />
+            </div>
           </div>
-          <div>
-            <div className="rpt-h">Recommended action</div>
-            <p>{issue.fix}</p>
+
+          <div className="rpt-fix-body">
+            <div>
+              <div className="rpt-h">Why it matters</div>
+              <p>{issue.why}</p>
+            </div>
+            <div>
+              <div className="rpt-h">Recommended action</div>
+              <p>{issue.fix}</p>
+            </div>
           </div>
         </div>
+
         {issue.urls.length > 0 && (
           <div className="mt-4">
-            <div className="rpt-h">Affected URLs</div>
+            <div className="rpt-h print:hidden">Affected URLs</div>
             <ul className="rpt-urls print:hidden">
               {(urlsOpen ? issue.urls : issue.urls.slice(0, cap)).map((u) => (
                 <li key={u}>{u}</li>
               ))}
             </ul>
-            <ul className="rpt-urls hidden print:block">
-              {issue.urls.slice(0, cap).map((u) => (
-                <li key={u}>{u}</li>
-              ))}
-            </ul>
+            <PrintUrlTable label="Affected URLs" urls={issue.urls.slice(0, cap)} />
             {issue.urls.length > cap && (
               <>
                 <button

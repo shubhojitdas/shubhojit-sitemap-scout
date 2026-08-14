@@ -548,9 +548,16 @@ u, .rich-text u {
 /* sections */
 .rpt-section { padding: 30px 0; border-bottom: 1px solid hsl(var(--rpt-line)); }
 .rpt-section:last-of-type { border-bottom: none; }
-.rpt-shead { display: flex; align-items: baseline; gap: 12px; }
-.rpt-num { font-size: 12px; letter-spacing: 0.05em; color: hsl(var(--rpt-lime)); }
-.rpt-stitle { font-size: clamp(20px, 3.4vw, 26px); }
+.rpt-shead { display: flex; align-items: center; gap: 10px; }
+.rpt-num {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  color: hsl(var(--rpt-lime));
+  padding: 3px 7px; border-radius: 3px;
+  background: hsl(var(--rpt-lime) / 0.12);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.rpt-stitle { font-size: clamp(19px, 3vw, 23px); font-weight: 600; letter-spacing: -0.02em; }
 .rpt-sub { color: hsl(var(--rpt-ink-soft)); font-size: 14px; margin-top: 6px; max-width: 62ch; }
 
 /* hairline grids & cards */

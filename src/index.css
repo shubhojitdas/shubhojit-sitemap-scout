@@ -678,11 +678,15 @@ u, .rich-text u {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 14mm 12mm;
+    /* Zero page margin = no browser-injected date/title header, and lets the
+       paper colour + masthead run edge to edge like the on-screen document. */
+    margin: 0;
   }
 
-  body.print-report {
-    background: #fff !important;
+  html, body.print-report {
+    background: hsl(var(--rpt-paper, 45 30% 95%)) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* Remove every element that neither contains nor belongs to the report. */
@@ -719,20 +723,24 @@ u, .rich-text u {
     width: 100%;
     border: 0;
     border-radius: 0;
-    font-size: 10pt;
-    line-height: 1.45;
+    font-size: 10.5pt;
+    line-height: 1.5;
     orphans: 3;
     widows: 3;
+    background: hsl(var(--rpt-paper)) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   body.print-report [data-print-root] { overflow: visible !important; }
-  body.print-report [data-print-root] .rpt-page { padding: 0 !important; }
-  body.print-report [data-print-root] .rpt-masthead { padding: 18pt 12pt 14pt; margin: 0; }
-  body.print-report [data-print-root] .rpt-masthead .rpt-page,
-  body.print-report [data-print-root] .rpt-panel .rpt-page { padding: 0 !important; }
+  /* Single consistent gutter for every band, exactly like the tool view. */
+  body.print-report [data-print-root] .rpt-page { padding: 0 13mm !important; }
+  body.print-report [data-print-root] .rpt-masthead { padding: 16mm 0 12mm; margin: 0; }
   body.print-report [data-print-root] .rpt-band { margin: 0; }
-  body.print-report [data-print-root] .rpt-panel { margin: 0; padding: 14pt 12pt; }
+  body.print-report [data-print-root] .rpt-panel { margin: 0; padding: 12mm 0; }
+  body.print-report [data-print-root] .rpt-footer { padding: 8mm 0 10mm; }
   body.print-report [data-print-root] .rpt-masthead::after { display: none; }
+
 
   /* A4 is wide enough for the full grids regardless of viewport media queries. */
   body.print-report [data-print-root] .rpt-hair { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }

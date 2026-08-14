@@ -748,7 +748,7 @@ u, .rich-text u {
 
   body.print-report [data-print-root] { overflow: visible !important; }
   /* Single consistent gutter for every band, exactly like the tool view. */
-  body.print-report [data-print-root] .rpt-page { padding: 0 13mm !important; }
+  body.print-report [data-print-root] .rpt-page { padding: 0 15mm !important; }
   body.print-report [data-print-root] .rpt-masthead { padding: 16mm 0 12mm; margin: 0; }
   body.print-report [data-print-root] .rpt-band { margin: 0; }
   body.print-report [data-print-root] .rpt-panel { margin: 0; padding: 12mm 0; }

@@ -805,6 +805,8 @@ u, .rich-text u {
   body.print-report [data-print-root] .rpt-cell,
   body.print-report [data-print-root] .rpt-fix-body > div,
   body.print-report [data-print-root] .rpt-fix-scope,
+  body.print-report [data-print-root] .rpt-fix-head,
+  body.print-report [data-print-root] .rpt-fix-body,
   body.print-report [data-print-root] .rpt-shead,
   body.print-report [data-print-root] .rpt-sev,
   body.print-report [data-print-root] .rpt-meta > div,

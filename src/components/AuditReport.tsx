@@ -801,18 +801,21 @@ function FixItem({ rank, issue, cap }: { rank: number; issue: PrioritisedIssue; 
     <div className="rpt-fix" data-atomic>
       <div className="rpt-rank rpt-serif">{String(rank).padStart(2, "0")}</div>
       <div className="min-w-0">
-        <div className="flex items-center gap-2 flex-wrap mb-2">
-          <span className={`rpt-tag ${SEV_TAG[issue.severity]}`}>{issue.severity}</span>
-          <span className="rpt-tag cat">{issue.category}</span>
+        <div className="rpt-fix-head" data-keep-with-next>
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <span className={`rpt-tag ${SEV_TAG[issue.severity]}`}>{issue.severity}</span>
+            <span className="rpt-tag cat">{issue.category}</span>
+          </div>
+          <h4 className="rpt-fix-title rpt-serif">{issue.title}</h4>
+          <div className="rpt-fix-scope rpt-mono mt-1.5">
+            {issue.count.toLocaleString()} page{issue.count === 1 ? "" : "s"} ·{" "}
+            {Math.round(issue.share * 100)}% of the site · impact {issue.priority}/100
+          </div>
+          <div className="rpt-meter mt-2 print:hidden" style={{ maxWidth: 180 }}>
+            <i className="f-lime" style={{ width: `${issue.priority}%` }} />
+          </div>
         </div>
-        <h4 className="rpt-fix-title rpt-serif">{issue.title}</h4>
-        <div className="rpt-fix-scope rpt-mono mt-1.5">
-          {issue.count.toLocaleString()} page{issue.count === 1 ? "" : "s"} ·{" "}
-          {Math.round(issue.share * 100)}% of the site · impact {issue.priority}/100
-        </div>
-        <div className="rpt-meter mt-2 print:hidden" style={{ maxWidth: 180 }}>
-          <i className="f-lime" style={{ width: `${issue.priority}%` }} />
-        </div>
+
         <div className="rpt-fix-body">
           <div>
             <div className="rpt-h">Why it matters</div>

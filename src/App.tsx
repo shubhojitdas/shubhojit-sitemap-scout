@@ -45,7 +45,7 @@ const App = () => (
             <Route path="/cms/login" element={<CmsLogin />} />
             <Route path="/cms" element={<CmsDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="/__report-print-test" element={<ReportPrintTest />} />
+            <Route path="/report-print-test" element={<ReportPrintTest />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

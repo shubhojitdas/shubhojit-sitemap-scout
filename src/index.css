@@ -848,6 +848,22 @@ u, .rich-text u {
     break-inside: avoid;
   }
 
+  /* Chromium ignores `break-after: avoid` in paged layout, so headings claim
+     space below themselves: if that space doesn't fit, the whole heading moves
+     to the next page together with the content that follows it. */
+  body.print-report [data-print-root] .rpt-shead,
+  body.print-report [data-print-root] .rpt-fix-keep {
+    break-inside: avoid;
+  }
+  body.print-report [data-print-root] .rpt-shead {
+    padding-bottom: 26mm;
+    margin-bottom: -26mm;
+  }
+  body.print-report [data-print-root] .rpt-url-table th {
+    padding-bottom: 12mm;
+    margin-bottom: -12mm;
+  }
+
   /* No stranded lines of body copy. */
   body.print-report [data-print-root] p,
   body.print-report [data-print-root] li,

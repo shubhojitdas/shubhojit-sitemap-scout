@@ -753,21 +753,23 @@ u, .rich-text u {
   }
   body.print-report [data-print-root] .rpt-app-title { font-size: 9.5pt !important; }
 
-  body.print-report [data-print-root] .rpt-title { font-size: 26pt; }
-  body.print-report [data-print-root] .rpt-stitle { font-size: 15pt; }
+  /* Type scale mirrors the on-screen document so print feels identical. */
+  body.print-report [data-print-root] .rpt-title { font-size: 24pt; }
+  body.print-report [data-print-root] .rpt-stitle { font-size: 14.5pt; }
   body.print-report [data-print-root] .rpt-fix-title { font-size: 12pt; }
   body.print-report [data-print-root] .rpt-score { font-size: 22pt; }
   body.print-report [data-print-root] .rpt-sev .n { font-size: 18pt; }
   body.print-report [data-print-root] .rpt-rank { font-size: 18pt; }
   body.print-report [data-print-root] .rpt-sub,
   body.print-report [data-print-root] .rpt-fix-body p,
-  body.print-report [data-print-root] .rpt-table td { font-size: 9pt; }
+  body.print-report [data-print-root] .rpt-table td { font-size: 9.5pt; }
   body.print-report [data-print-root] .rpt-urls li { font-size: 8pt; padding: 2.5pt 0; }
   body.print-report [data-print-root] .rpt-meta .v { font-size: 10pt; }
 
-  body.print-report [data-print-root] .rpt-section { padding: 14pt 0; }
-  body.print-report [data-print-root] .rpt-fix { padding: 10pt 0; }
-  body.print-report [data-print-root] .rpt-cell { padding: 9pt 8pt; }
+  body.print-report [data-print-root] .rpt-section { padding: 8mm 0; }
+  body.print-report [data-print-root] .rpt-fix { padding: 5mm 0; }
+  body.print-report [data-print-root] .rpt-cell { padding: 4mm 3.5mm; }
+
   body.print-report [data-print-root] .rpt-scroll { overflow: visible !important; }
 
   /* Sections flow; only small atomic blocks are protected from splitting. */

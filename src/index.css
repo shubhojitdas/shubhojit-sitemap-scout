@@ -511,8 +511,8 @@ u, .rich-text u {
   margin-bottom: 14px;
 }
 .rpt-eyebrow::before { content: "◆"; font-size: 8px; color: hsl(var(--rpt-lime) / 0.95); }
-.rpt-title { font-size: clamp(28px, 6vw, 44px); line-height: 1.06; }
-.rpt-title em { font-style: italic; color: hsl(78 55% 80%); }
+.rpt-title { font-size: clamp(26px, 5vw, 38px); line-height: 1.08; font-weight: 600; letter-spacing: -0.03em; }
+.rpt-title em { font-style: normal; font-weight: 500; color: hsl(78 55% 80%); }
 .rpt-meta {
   display: grid; gap: 16px 36px;
   grid-template-columns: repeat(2, minmax(0, 1fr));

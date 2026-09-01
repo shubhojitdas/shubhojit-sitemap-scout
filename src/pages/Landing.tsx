@@ -1,488 +1,247 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
-  Network,
-  FileSearch,
-  Copy,
-  Repeat,
-  Download,
-  Sparkles,
-  ShieldCheck,
-  Gauge,
-  Globe,
-  Layers,
-  Clock,
   Check,
+  ChevronRight,
+  CircleDot,
+  Copy,
+  Download,
+  FileSearch,
+  Gauge,
+  Globe2,
+  Layers3,
+  Network,
+  Radar,
+  Repeat2,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-const rise = {
-  hidden: { opacity: 0, y: 18 },
-  show: (i = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, delay: 0.05 * i, ease },
-  }),
-};
+const problems = [
+  { n: "01", title: "Fragmented evidence", body: "Titles in one export, redirects in another, crawl structure somewhere else. The audit gets lost in assembly." },
+  { n: "02", title: "Invisible architecture", body: "A spreadsheet cannot show where authority stalls, which pages are isolated, or how deep important content sits." },
+  { n: "03", title: "False confidence", body: "Bot walls, JavaScript hops, and incomplete sitemaps can make a clean report look complete when it is not." },
+];
 
-function Reveal({
-  children,
-  i = 0,
-  className,
-}: {
-  children: React.ReactNode;
-  i?: number;
-  className?: string;
-}) {
+const capabilities = [
+  { key: "signals", icon: FileSearch, title: "One pass. Every signal.", body: "Titles, descriptions, H1–H3, image alt text, canonicals, hreflang, robots, schema, and social tags—resolved per URL.", metric: "14+", label: "signal groups" },
+  { key: "graph", icon: Network, title: "See the structure", body: "Readable sitemap and internal-link graphs that open in a dedicated view and export to PNG or interactive HTML." },
+  { key: "duplicate", icon: Copy, title: "Find content collisions", body: "Group exact matches and 85%+ near-duplicate titles, descriptions, and H1s before they compete." },
+  { key: "equity", icon: Gauge, title: "Trace link equity", body: "Rank pages by inbound and outbound relationships to expose weak paths and stranded authority." },
+  { key: "redirect", icon: Repeat2, title: "Follow every redirect", body: "Inspect full HTTP, meta-refresh, and JavaScript chains with the source instruction behind every detected hop." },
+  { key: "ai", icon: Sparkles, title: "Ask the crawl", body: "Bring your preferred AI provider and interrogate the current audit without mixing histories between websites." },
+  { key: "export", icon: Download, title: "Hand off cleanly", body: "Export filtered CSV and Excel data, sitemap and hreflang XML, social tags, maps, and client-ready audit reports." },
+];
+
+const workflow = [
+  { n: "01", title: "Choose the source", body: "Sitemap, domain spider, pasted URLs, CSV, or Excel." },
+  { n: "02", title: "Shape the crawl", body: "Select fields and crawler identity, then pause or resume when needed." },
+  { n: "03", title: "Act on evidence", body: "Prioritize issues, visualize paths, ask questions, and export the handoff." },
+];
+
+const formats = ["XML sitemap", "Domain spider", "URL list", "CSV", "Excel", "Robots.txt"];
+
+function Reveal({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const reduceMotion = useReducedMotion();
   return (
     <motion.div
       className={className}
-      variants={rise}
-      custom={i}
-      initial="hidden"
-      whileInView="show"
+      initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.7, delay, ease }}
     >
       {children}
     </motion.div>
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionIntro({ number, label, title, copy }: { number: string; label: string; title: string; copy?: string }) {
   return (
-    <span className="inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.18em] text-primary">
-      <span className="h-1 w-1 rounded-full bg-primary" />
-      {children}
-    </span>
+    <Reveal className="landing-section-intro">
+      <div className="landing-section-index"><span>{number}</span><span>{label}</span></div>
+      <h2>{title}</h2>
+      {copy && <p>{copy}</p>}
+    </Reveal>
   );
 }
 
-const problems = [
-  {
-    icon: Clock,
-    title: "Desktop crawlers are heavy",
-    body: "Installs, licences, RAM spikes and a laptop you can't use while it works.",
-  },
-  {
-    icon: Layers,
-    title: "Exports live in spreadsheets",
-    body: "Titles here, canonicals there, headings in a third tab. Stitching is the job.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Bot walls break audits",
-    body: "Cloudflare and WAFs silently drop requests, so your crawl lies to you.",
-  },
-  {
-    icon: Repeat,
-    title: "Redirect chains stay invisible",
-    body: "JS hops and meta refreshes hide behind a single 200 in most reports.",
-  },
-];
+function CrawlMap() {
+  const nodes = [
+    [50, 14, "root"], [28, 31, "ok"], [72, 31, "ok"], [16, 53, "warn"], [38, 55, "ok"],
+    [61, 55, "error"], [83, 53, "ok"], [29, 78, "orphan"], [52, 79, "ok"], [74, 78, "warn"],
+  ] as const;
+  const lines = [[50,14,28,31],[50,14,72,31],[28,31,16,53],[28,31,38,55],[72,31,61,55],[72,31,83,53],[38,55,29,78],[38,55,52,79],[61,55,74,78]];
+  return (
+    <div className="crawl-map" aria-label="Example site architecture visualization">
+      <div className="crawl-map-orbit crawl-map-orbit-one" />
+      <div className="crawl-map-orbit crawl-map-orbit-two" />
+      <svg className="crawl-map-lines" viewBox="0 0 100 100" aria-hidden="true">
+        {lines.map((line, index) => <line key={index} x1={line[0]} y1={line[1]} x2={line[2]} y2={line[3]} />)}
+      </svg>
+      {nodes.map(([x, y, status], index) => (
+        <motion.span
+          key={`${x}-${y}`}
+          className={`crawl-node crawl-node-${status}`}
+          style={{ left: `${x}%`, top: `${y}%` }}
+          initial={{ scale: 0, opacity: 0 }}
+          whileInView={{ scale: 1, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: index * 0.05, duration: 0.45, ease }}
+        >
+          {index === 0 && <Globe2 />}
+        </motion.span>
+      ))}
+      <div className="crawl-map-key"><span><i className="is-healthy" /> Healthy</span><span><i className="is-warning" /> Review</span><span><i className="is-critical" /> Critical</span></div>
+    </div>
+  );
+}
 
-const bento = [
-  {
-    span: "lg:col-span-2 lg:row-span-2",
-    icon: FileSearch,
-    title: "Every on-page signal in one pass",
-    body: "Meta titles and descriptions, H1–H3, image alt text, canonicals, hreflang, meta robots, schema markup and social tags — extracted per URL, in one crawl, with nothing to configure twice.",
-    bullets: [
-      "Sitemap index, single sitemap, spider or pasted URL list",
-      "CSV & Excel upload for existing URL sets",
-      "Pick exactly which fields to extract",
-    ],
-  },
-  {
-    span: "lg:col-span-2",
-    icon: Network,
-    title: "Internal link graphs you can actually read",
-    body: "Force-directed maps of your sitemap and internal links, opened in their own tab and exportable as PNG or interactive HTML.",
-  },
-  {
-    span: "",
-    icon: Copy,
-    title: "Duplicate detection",
-    body: "Exact and 85%+ near-duplicate titles, descriptions and H1s grouped for you.",
-  },
-  {
-    span: "",
-    icon: Gauge,
-    title: "Link equity scoring",
-    body: "Inbound and outbound counts turned into a ranked internal link juice view.",
-  },
-  {
-    span: "lg:col-span-2",
-    icon: Repeat,
-    title: "Honest redirect chains",
-    body: "Full hop-by-hop chains, including JS and meta-refresh redirects, with the exact source line that caused each hop.",
-  },
-  {
-    span: "",
-    icon: Sparkles,
-    title: "AI insights, your key",
-    body: "Bring your own Gemini, Claude, OpenAI or Groq key and ask questions about your crawl.",
-  },
-  {
-    span: "",
-    icon: Download,
-    title: "Export in seconds",
-    body: "Filtered CSV and Excel exports, sitemap XML, hreflang XML and social tag blocks.",
-  },
-];
-
-const steps = [
-  {
-    n: "01",
-    title: "Point it at your site",
-    body: "Drop in a sitemap URL, spider a domain, paste a URL list or upload a CSV. Choose the crawler identity if the site is behind a bot wall.",
-  },
-  {
-    n: "02",
-    title: "Pick what to extract",
-    body: "Select only the fields this audit needs. Crawl runs in your browser with progress, pause and resume — and survives a refresh.",
-  },
-  {
-    n: "03",
-    title: "Audit, visualise, export",
-    body: "Filter with AND/OR and regex, jump to issues, open the link graph, ask AI, then export clean deliverables for the client.",
-  },
-];
-
-const benefits = [
-  "Cut audit prep from hours to a single crawl",
-  "Catch title, description and H1 cannibalisation before the client does",
-  "Prove internal link fixes with a before/after graph",
-  "Ship redirect and hreflang recommendations with evidence attached",
-  "No seats, no installs, no data leaving your browser session",
-  "Free and open — no login required",
-];
+function ProductStage() {
+  return (
+    <motion.div
+      className="product-stage"
+      initial={{ opacity: 0, y: 32, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.9, delay: 0.25, ease }}
+    >
+      <div className="product-stage-bar">
+        <div className="product-stage-brand"><span className="stage-mark">S</span><span>example.com</span></div>
+        <div className="stage-status"><span /> Crawl complete</div>
+      </div>
+      <div className="product-stage-body">
+        <aside className="stage-sidebar" aria-label="Example report navigation">
+          {['Overview','Response codes','SEO issues','Page titles','Internal links'].map((item, i) => <span key={item} className={i === 0 ? "is-active" : ""}>{item}</span>)}
+        </aside>
+        <div className="stage-dashboard">
+          <div className="stage-heading"><div><small>CRAWL OVERVIEW</small><strong>Technical health</strong></div><span>12,480 URLs</span></div>
+          <div className="stage-metrics">
+            <div><small>HEALTH SCORE</small><strong>91</strong><span className="stage-trend">+4.2%</span></div>
+            <div><small>CRITICAL</small><strong>12</strong><span>needs action</span></div>
+            <div><small>WARNINGS</small><strong>86</strong><span>review</span></div>
+          </div>
+          <div className="stage-lower">
+            <div className="stage-chart"><span>Issue distribution</span><div className="stage-bars">{[36,62,46,81,57,74,42,68,88,53,71,61].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div></div>
+            <div className="stage-priorities"><span>Fix these first</span><div><b>01</b><p>Missing page titles<small>18 affected URLs</small></p></div><div><b>02</b><p>Redirect chains<small>14 affected URLs</small></p></div><div><b>03</b><p>Orphan pages<small>9 affected URLs</small></p></div></div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function Landing() {
   return (
-    <main className="relative overflow-hidden">
-      {/* ───────────────────────── Hero ───────────────────────── */}
-      <section className="relative">
-        <div className="absolute inset-0 grid-bg fade-mask pointer-events-none" />
-        <div className="relative container max-w-6xl mx-auto px-4 pt-16 pb-20 sm:pt-24 sm:pb-28">
-          <div className="max-w-3xl">
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease }}
-            >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-[11px] font-medium text-foreground">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                Free &amp; open — no login required
-              </div>
+    <main className="landing-shell">
+      <section className="landing-hero">
+        <div className="landing-rule landing-rule-left" />
+        <div className="landing-rule landing-rule-right" />
+        <div className="landing-container landing-hero-grid">
+          <div className="landing-hero-copy">
+            <motion.div className="landing-kicker" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+              <Radar /> Technical SEO intelligence <span>Browser-native</span>
             </motion.div>
-
-            <motion.h1
-              className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05]"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.05, ease }}
-            >
-              <span className="gradient-text">The technical SEO crawler</span>
-              <br />
-              <span className="iridescent-text">that runs in your browser</span>
+            <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
+              See the architecture.<br/><em>Fix what search sees.</em>
             </motion.h1>
-
-            <motion.p
-              className="mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl leading-relaxed"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.12, ease }}
-            >
-              SEO Sitemap Scout crawls a sitemap, a domain or a pasted URL list and returns
-              every on-page signal you audit against — titles, descriptions, headings, alt
-              text, canonicals, hreflang, schema, redirects and internal links — ready to
-              filter, visualise and export.
+            <motion.p initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease }}>
+              Crawl every technical signal, expose structural blind spots, and turn raw URLs into a prioritized audit your team can act on.
             </motion.p>
-
-            <motion.div
-              className="mt-8 flex flex-wrap items-center gap-3"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.18, ease }}
-            >
-              <Button asChild size="lg" className="press-tuck rounded-lg font-semibold">
-                <Link to="/app">
-                  Start crawling free
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
-                </Link>
+            <motion.div className="landing-hero-actions" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.16, ease }}>
+              <Button asChild size="lg" className="landing-primary-cta">
+                <Link to="/app"><span>Start crawling free</span><span className="cta-arrow"><ArrowRight /></span></Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="press-tuck rounded-lg font-semibold"
-              >
-                <a href="#capabilities">See what it extracts</a>
-              </Button>
-              <span className="text-[11px] text-muted-foreground/70">
-                Sitemap · Spider · URL list · CSV upload
-              </span>
+              <a href="#capabilities" className="landing-text-link">Explore the system <ChevronRight /></a>
+            </motion.div>
+            <motion.div className="landing-proof" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
+              <span><Check /> No login</span><span><Check /> Up to 50k URLs</span><span><Check /> Data stays local</span>
             </motion.div>
           </div>
+          <div className="landing-hero-note" aria-hidden="true"><span>01</span><p>CRAWL<br/>UNDERSTAND<br/>IMPROVE</p></div>
+        </div>
+        <div className="landing-container"><ProductStage /></div>
+      </section>
 
-          {/* Hero product frame */}
-          <motion.div
-            className="mt-14 lg:mt-16"
-            initial={{ opacity: 0, y: 26 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.25, ease }}
-          >
-            <div className="rounded-2xl border border-border glass-strong overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-border/70">
-                <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                <span className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-                <span className="h-2 w-2 rounded-full bg-primary/70" />
-                <span className="ml-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                  crawl · example.com/sitemap.xml
-                </span>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-border/70">
-                {[
-                  { k: "URLs crawled", v: "12,480" },
-                  { k: "Duplicate titles", v: "37" },
-                  { k: "Redirect hops", v: "214" },
-                  { k: "Orphan pages", v: "9" },
-                ].map((s) => (
-                  <div key={s.k} className="p-5">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                      {s.k}
-                    </p>
-                    <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
-                      {s.v}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="px-5 pb-5 pt-1">
-                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full animate-pulse-glow"
-                    style={{ width: "72%", background: "var(--gradient-iridescent)" }}
-                  />
-                </div>
-                <p className="mt-2 font-mono text-[10px] text-muted-foreground">
-                  extracting meta · headings · canonical · hreflang · schema
-                </p>
-              </div>
-            </div>
-          </motion.div>
+      <section className="landing-section landing-problem-section">
+        <div className="landing-container">
+          <SectionIntro number="01" label="The blind spot" title="Your crawler should reveal the site—not create more work." copy="Technical SEOs do not need another wall of cells. They need the relationship between an issue, its impact, and the pages that cause it." />
+          <div className="problem-editorial-grid">
+            {problems.map((problem, i) => (
+              <Reveal key={problem.title} delay={i * 0.06} className={`problem-story problem-story-${i + 1}`}>
+                <span>{problem.n}</span><div><h3>{problem.title}</h3><p>{problem.body}</p></div>
+              </Reveal>
+            ))}
+            <Reveal className="problem-quote" delay={0.16}><p>“The useful answer is not <em>what failed</em>. It is <em>where, why, and what to fix first</em>.”</p><span>THE SCOUT PRINCIPLE</span></Reveal>
+          </div>
         </div>
       </section>
 
-      {/* ───────────────────────── Problem ───────────────────────── */}
-      <section className="relative border-t border-border/70">
-        <div className="container max-w-6xl mx-auto px-4 py-20 sm:py-24">
-          <Reveal>
-            <SectionLabel>The problem</SectionLabel>
-            <h2 className="mt-4 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight max-w-2xl">
-              Technical audits stall on tooling, not on insight.
-            </h2>
-            <p className="mt-4 text-muted-foreground max-w-2xl leading-relaxed">
-              Most SEOs already know what to check. The time goes into wrestling crawlers,
-              merging exports and re-running jobs that quietly failed.
-            </p>
+      <section className="landing-section landing-map-section">
+        <div className="landing-container landing-map-layout">
+          <Reveal className="landing-map-copy">
+            <div className="landing-section-index"><span>02</span><span>Architecture, made visible</span></div>
+            <h2>Turn a list of URLs into a map of decisions.</h2>
+            <p>Spot isolated pages, deep content, redirect paths, and authority gaps in a structure you can inspect, share, and export.</p>
+            <div className="map-stat-row"><div><strong>09</strong><span>Orphan pages</span></div><div><strong>3.8</strong><span>Avg. click depth</span></div><div><strong>214</strong><span>Redirect hops</span></div></div>
           </Reveal>
+          <Reveal className="landing-map-visual" delay={0.1}><CrawlMap /></Reveal>
+        </div>
+      </section>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {problems.map((p, i) => (
-              <Reveal key={p.title} i={i}>
-                <div className="h-full rounded-xl border border-border bg-card/60 p-5 card-lift">
-                  <p.icon className="h-4 w-4 text-primary" />
-                  <h3 className="mt-4 text-sm font-semibold text-foreground">{p.title}</h3>
-                  <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">
-                    {p.body}
-                  </p>
-                </div>
+      <section id="capabilities" className="landing-section landing-capabilities">
+        <div className="landing-container">
+          <SectionIntro number="03" label="The system" title="One crawl becomes a complete working view." copy="Every module is designed to move from discovery to evidence to handoff without rebuilding the audit somewhere else." />
+          <div className="capability-masonry">
+            {capabilities.map((item, i) => (
+              <Reveal key={item.key} delay={(i % 4) * 0.05} className={`capability-card capability-${item.key}`}>
+                <div className="capability-top"><span className="capability-icon"><item.icon /></span><span className="capability-count">0{i + 1}</span></div>
+                {item.key === "graph" && <div className="mini-network" aria-hidden="true"><i/><i/><i/><i/><i/></div>}
+                {item.key === "redirect" && <div className="mini-chain" aria-hidden="true"><span>301</span><b/><span>302</span><b/><span>200</span></div>}
+                {item.key === "equity" && <div className="mini-equity" aria-hidden="true">{[74,52,86,39,65].map((w, x)=><i key={x} style={{width:`${w}%`}}/>)}</div>}
+                <div className="capability-copy"><h3>{item.title}</h3><p>{item.body}</p>{item.metric && <div className="capability-metric"><strong>{item.metric}</strong><span>{item.label}</span></div>}</div>
               </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ───────────────────────── Bento capabilities ───────────────────────── */}
-      <section id="capabilities" className="relative border-t border-border/70">
-        <div className="container max-w-6xl mx-auto px-4 py-20 sm:py-24">
-          <Reveal>
-            <SectionLabel>Why SEOs use it</SectionLabel>
-            <h2 className="mt-4 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight max-w-2xl">
-              One crawl. Every signal you audit against.
-            </h2>
-          </Reveal>
-
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(0,1fr)]">
-            {bento.map((b, i) => (
-              <Reveal key={b.title} i={i} className={b.span}>
-                <div className="h-full rounded-xl border border-border bg-card/60 p-6 card-lift flex flex-col">
-                  <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-primary/25 bg-primary/10">
-                    <b.icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <h3 className="mt-5 text-base font-semibold tracking-tight text-foreground">
-                    {b.title}
-                  </h3>
-                  <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">
-                    {b.body}
-                  </p>
-                  {b.bullets && (
-                    <ul className="mt-5 space-y-2 border-t border-border/70 pt-4">
-                      {b.bullets.map((x) => (
-                        <li
-                          key={x}
-                          className="flex items-start gap-2 text-[13px] text-muted-foreground"
-                        >
-                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                          {x}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </Reveal>
-            ))}
+      <section className="landing-section landing-workflow">
+        <div className="landing-container">
+          <SectionIntro number="04" label="From crawl to action" title="Three movements. No busywork between them." />
+          <div className="workflow-line">
+            {workflow.map((step, i) => <Reveal className="workflow-step" key={step.n} delay={i * 0.08}><span>{step.n}</span><CircleDot/><h3>{step.title}</h3><p>{step.body}</p></Reveal>)}
           </div>
-        </div>
-      </section>
-
-      {/* ───────────────────────── How it works ───────────────────────── */}
-      <section className="relative border-t border-border/70">
-        <div className="container max-w-6xl mx-auto px-4 py-20 sm:py-24">
-          <Reveal>
-            <SectionLabel>How it works</SectionLabel>
-            <h2 className="mt-4 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight max-w-2xl">
-              From URL to client-ready deliverable in three steps.
-            </h2>
-          </Reveal>
-
-          <div className="mt-12 grid gap-4 lg:grid-cols-3">
-            {steps.map((s, i) => (
-              <Reveal key={s.n} i={i}>
-                <div className="h-full rounded-xl border border-border bg-card/60 p-6 card-lift">
-                  <span className="font-mono text-[11px] tracking-[0.2em] text-primary">
-                    {s.n}
-                  </span>
-                  <h3 className="mt-4 text-base font-semibold tracking-tight text-foreground">
-                    {s.title}
-                  </h3>
-                  <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">
-                    {s.body}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ───────────────────────── Benefits ───────────────────────── */}
-      <section className="relative border-t border-border/70">
-        <div className="container max-w-6xl mx-auto px-4 py-20 sm:py-24">
-          <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 items-start">
-            <Reveal>
-              <SectionLabel>The payoff</SectionLabel>
-              <h2 className="mt-4 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
-                What you get back is time — and a stronger case.
-              </h2>
-              <p className="mt-4 text-muted-foreground leading-relaxed">
-                Scout is built around the way audits are actually delivered: find the issue,
-                show the evidence, hand over something the dev team can action.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button asChild size="lg" className="press-tuck rounded-lg font-semibold">
-                  <Link to="/app">
-                    Open the crawler
-                    <ArrowRight className="ml-1.5 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            </Reveal>
-
-            <Reveal i={1}>
-              <ul className="grid gap-3">
-                {benefits.map((b) => (
-                  <li
-                    key={b}
-                    className="flex items-start gap-3 rounded-lg border border-border bg-card/50 px-4 py-3 text-[13px] text-foreground"
-                  >
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    {b}
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* ───────────────────────── Final CTA ───────────────────────── */}
-      <section className="relative border-t border-border/70">
-        <div className="container max-w-6xl mx-auto px-4 py-20 sm:py-24">
-          <Reveal>
-            <div className="relative overflow-hidden rounded-2xl border border-border glass-strong iridescent-ring p-8 sm:p-12 text-center">
-              <div className="absolute inset-0 grid-bg fade-mask pointer-events-none opacity-60" />
-              <div className="relative">
-                <Globe className="mx-auto h-5 w-5 text-primary" />
-                <h2 className="mt-5 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
-                  Paste a sitemap. Get an audit.
-                </h2>
-                <p className="mt-4 text-muted-foreground max-w-xl mx-auto leading-relaxed">
-                  No account, no install, no seat pricing. Bring a URL and start crawling in
-                  the next ten seconds.
-                </p>
-                <div className="mt-8 flex flex-wrap justify-center gap-3">
-                  <Button asChild size="lg" className="press-tuck rounded-lg font-semibold">
-                    <Link to="/app">
-                      Start crawling free
-                      <ArrowRight className="ml-1.5 h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="press-tuck rounded-lg font-semibold"
-                  >
-                    <Link to="/shubhojit-das">About the maker</Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
+          <Reveal className="format-strip">
+            <span className="format-label">START WITH</span>
+            <div>{formats.map((format, i) => <span key={format} style={{ zIndex: formats.length - i }}>{format}</span>)}</div>
+            <span className="format-end">One normalized crawl <ArrowRight /></span>
           </Reveal>
         </div>
       </section>
 
-      {/* ───────────────────────── Footer ───────────────────────── */}
-      <footer className="border-t border-border/70">
-        <div className="container max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[12px] text-muted-foreground">
-            SEO Sitemap Scout — built by{" "}
-            <Link to="/shubhojit-das" className="text-foreground font-medium story-link">
-              Shubhojit Das
-            </Link>
-          </p>
-          <div className="flex items-center gap-5 text-[12px] text-muted-foreground">
-            <Link to="/app" className="hover:text-foreground transition-colors">
-              Crawler
-            </Link>
-            <a href="#capabilities" className="hover:text-foreground transition-colors">
-              Capabilities
-            </a>
-            <a
-              href="https://www.linkedin.com/in/shubhojitdas/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
-            >
-              LinkedIn
-            </a>
-          </div>
+      <section className="landing-section landing-outcome">
+        <div className="landing-container landing-outcome-grid">
+          <Reveal className="outcome-copy"><div className="landing-section-index"><span>05</span><span>The outcome</span></div><h2>Clarity your team can ship.</h2><p>Prioritized findings, visible site structure, and evidence that survives the handoff from SEO to engineering.</p></Reveal>
+          <Reveal className="finding-stack" delay={0.1}>
+            <div className="finding-card finding-card-back"><span>EXPORT READY</span></div>
+            <div className="finding-card finding-card-mid"><span>14 affected URLs</span></div>
+            <div className="finding-card finding-card-front"><div><span className="severity-dot"/>HIGH PRIORITY <small>TECHNICAL</small></div><h3>Redirect chain dilutes authority across key category pages.</h3><p>Replace intermediate destinations with the final canonical URL.</p><span className="finding-action">View evidence <ArrowRight /></span></div>
+          </Reveal>
         </div>
+      </section>
+
+      <section className="landing-final">
+        <div className="landing-container landing-final-inner">
+          <Reveal><ShieldCheck/><span className="landing-final-label">FREE · NO LOGIN · NO INSTALL</span><h2>Stop auditing the spreadsheet.<br/><em>Start auditing the site.</em></h2><p>Bring a sitemap, a domain, or a URL list. Your first technical picture is seconds away.</p><Button asChild size="lg" className="landing-primary-cta"><Link to="/app"><span>Open the crawler</span><span className="cta-arrow"><ArrowRight /></span></Link></Button></Reveal>
+        </div>
+      </section>
+
+      <footer className="landing-footer">
+        <div className="landing-container"><div><span className="stage-mark">S</span><p><strong>SEO Sitemap Scout</strong><small>Built by <Link to="/shubhojit-das">Shubhojit Das</Link></small></p></div><nav><Link to="/app">Crawler</Link><a href="#capabilities">Capabilities</a><a href="https://www.linkedin.com/in/shubhojitdas/" target="_blank" rel="noopener noreferrer">LinkedIn</a></nav></div>
       </footer>
     </main>
   );

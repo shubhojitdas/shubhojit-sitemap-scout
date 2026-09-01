@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
  */
 export function AppHeader() {
   const { pathname } = useLocation();
+  const isLanding = pathname === "/";
   const isActive = (p: string) =>
     p === "/" ? pathname === "/" : pathname.startsWith(p);
 
@@ -46,14 +47,14 @@ export function AppHeader() {
   };
 
   return (
-    <header className="fixed top-0 inset-x-0 h-14 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="container max-w-7xl mx-auto h-full flex items-center justify-between px-4">
+    <header className={`fixed top-0 inset-x-0 h-14 z-50 border-b border-border bg-background/80 backdrop-blur-xl ${isLanding ? "landing-header" : ""}`}>
+      <div className={`container mx-auto h-full flex items-center justify-between px-4 ${isLanding ? "max-w-6xl" : "max-w-7xl"}`}>
         {/* Left: wordmark */}
         <Link to="/" className="flex items-center gap-2">
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-[5px] border border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary">
+          <span className={`inline-flex h-5 w-5 items-center justify-center rounded-[5px] border border-primary/30 bg-primary/10 font-mono text-[10px] font-bold text-primary ${isLanding ? "landing-brand-mark" : ""}`}>
             S
           </span>
-          <span className="font-semibold text-sm tracking-tight text-foreground">
+          <span className={`font-semibold text-sm tracking-tight text-foreground ${isLanding ? "landing-brand-name" : ""}`}>
             SEO Sitemap Scout
           </span>
         </Link>
@@ -68,7 +69,7 @@ export function AppHeader() {
 
         {/* Right: by Shubhojit + utilities */}
         <div className="flex items-center gap-2">
-          <span className="hidden sm:inline text-[11px] text-muted-foreground">
+          <span className={`hidden sm:inline text-[11px] text-muted-foreground ${isLanding ? "landing-byline" : ""}`}>
             by{" "}
             <a
               href="/shubhojit-das"
@@ -97,7 +98,7 @@ export function AppHeader() {
             <Button
               asChild
               size="sm"
-              className="h-8 rounded-lg px-3 text-xs font-semibold press-tuck"
+              className={`h-8 rounded-lg px-3 text-xs font-semibold press-tuck ${isLanding ? "landing-header-cta" : ""}`}
             >
               <Link to="/app">Start crawling</Link>
             </Button>

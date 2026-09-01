@@ -14,7 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
+        sans: ["DM Sans", "Inter", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
+        display: ["Space Grotesk", "DM Sans", "sans-serif"],
         mono: ["Geist Mono", "JetBrains Mono", "monospace"],
       },
       colors: {

@@ -1150,8 +1150,18 @@ u, .rich-text u {
 .capability-metric { display: flex; align-items: baseline; gap: 0.5rem; margin-top: 1rem; }
 .capability-metric strong { font-size: 1.5rem; color: hsl(var(--primary)); }
 .capability-metric span { font-size: 0.72rem; color: hsl(var(--muted-foreground)); }
-.mini-network { display: flex; align-items: center; gap: 0.5rem; }
-.mini-network i { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: hsl(var(--primary) / 0.6); }
+.mini-network { position: relative; display: flex; align-items: center; gap: 0.85rem; }
+.mini-network::before {
+  content: ""; position: absolute; left: 0.25rem; right: 0.25rem; top: 50%;
+  height: 1px; background: hsl(var(--border));
+}
+.mini-network i {
+  position: relative; width: 0.55rem; height: 0.55rem; border-radius: 999px;
+  background: hsl(var(--primary) / 0.6); box-shadow: 0 0 0 3px hsl(var(--card));
+}
+.mini-network i:nth-child(1) { width: 0.85rem; height: 0.85rem; background: hsl(var(--primary)); }
+.mini-network i:nth-child(4) { background: hsl(var(--warning)); }
+
 .mini-chain { display: flex; align-items: center; gap: 0.4rem; font-family: ui-monospace, monospace; font-size: 0.7rem; color: hsl(var(--muted-foreground)); }
 .mini-chain b { width: 1.1rem; height: 1px; background: hsl(var(--border)); }
 .mini-equity { display: grid; gap: 0.3rem; }

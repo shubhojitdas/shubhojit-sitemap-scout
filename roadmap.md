@@ -2,9 +2,10 @@
 
 ## Landing page polish (component by component, tokens only)
 - [x] Landing styles restored (scoped to `.landing-shell`)
-- [ ] Step 1: Hero + product stage refinement (generate-button CTA, editorial nav feel)
-- [ ] Step 2: Capabilities masonry proportions + mini-visuals (staggered-grid reference)
-- [ ] Step 3: Crawl map (circular-gallery) + outcome stack (verse-cards) motion tuning
+- [x] Step 1: Hero + product stage refinement (generate-button CTA, ambient grid, stage chrome)
+- [x] Step 2: Capabilities masonry proportions + mini-visuals (staggered-grid reference)
+- [x] Step 3: Crawl map (circular-gallery) + outcome stack (verse-cards) motion tuning
+
 - [ ] Step 4: Format strip (stacked-logos) refinement
 - [ ] Step 5: Mobile pass at 390px + full-page QA
 

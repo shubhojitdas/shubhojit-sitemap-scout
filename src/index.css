@@ -1315,13 +1315,25 @@ u, .rich-text u {
 }
 
 
+/* Tablet: collapse the 6-col masonry to a balanced 2-up */
+@media (max-width: 1100px) {
+  .capability-masonry { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .capability-card { grid-column: auto !important; }
+  .capability-signals { grid-column: span 2 !important; }
+}
+
 @media (max-width: 900px) {
   .landing-hero-grid, .landing-map-layout, .landing-outcome-grid,
   .problem-editorial-grid, .capability-masonry, .workflow-line,
   .product-stage-body, .stage-lower { grid-template-columns: minmax(0, 1fr); }
   .landing-hero-note { display: none; }
-  .capability-signals, .capability-export { grid-column: auto; }
+  .capability-card, .capability-signals { grid-column: auto !important; }
+  .capability-signals { padding: 1.5rem; }
+  .capability-signals .capability-copy h3 { font-size: 1.15rem; }
   .stage-sidebar { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid hsl(var(--border) / 0.8); }
   .crawl-map-key { position: static; transform: none; margin-top: 3rem; justify-content: center; flex-wrap: wrap; }
   .landing-section { padding: 4rem 0; }
+  .landing-rule { display: none; }
+  .map-stat-row { gap: 1.25rem; }
 }
+

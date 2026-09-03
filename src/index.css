@@ -1156,6 +1156,28 @@ u, .rich-text u {
 .mini-chain b { width: 1.1rem; height: 1px; background: hsl(var(--border)); }
 .mini-equity { display: grid; gap: 0.3rem; }
 .mini-equity i { height: 0.3rem; border-radius: 999px; background: hsl(var(--primary) / 0.45); }
+.mini-dupe { display: grid; gap: 0.35rem; }
+.mini-dupe i {
+  height: 0.55rem; border-radius: 3px; background: hsl(var(--muted) / 0.7);
+  border: 1px solid hsl(var(--border));
+}
+.mini-dupe i:nth-child(1) { width: 78%; }
+.mini-dupe i:nth-child(2) { width: 74%; background: hsl(var(--primary) / 0.2); border-color: hsl(var(--primary) / 0.35); }
+.mini-dupe i:nth-child(3) { width: 76%; background: hsl(var(--primary) / 0.2); border-color: hsl(var(--primary) / 0.35); }
+.mini-prompt {
+  padding: 0.5rem 0.75rem; border-radius: 0.6rem;
+  border: 1px dashed hsl(var(--primary) / 0.35); background: hsl(var(--primary) / 0.06);
+  font-size: 0.78rem; color: hsl(var(--muted-foreground));
+}
+.mini-formats, .mini-signals { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.mini-formats span, .mini-signals span {
+  padding: 0.2rem 0.5rem; border-radius: 999px;
+  border: 1px solid hsl(var(--border)); background: hsl(var(--muted) / 0.35);
+  font-family: ui-monospace, monospace; font-size: 0.66rem; letter-spacing: 0.06em;
+  color: hsl(var(--muted-foreground));
+}
+.capability-signals .mini-signals span { background: hsl(var(--primary) / 0.08); border-color: hsl(var(--primary) / 0.25); color: hsl(var(--primary)); }
+
 
 /* Workflow */
 .workflow-line { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; }

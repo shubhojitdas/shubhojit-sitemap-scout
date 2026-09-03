@@ -202,6 +202,11 @@ export default function Landing() {
                 {item.key === "graph" && <div className="mini-network" aria-hidden="true"><i/><i/><i/><i/><i/></div>}
                 {item.key === "redirect" && <div className="mini-chain" aria-hidden="true"><span>301</span><b/><span>302</span><b/><span>200</span></div>}
                 {item.key === "equity" && <div className="mini-equity" aria-hidden="true">{[74,52,86,39,65].map((w, x)=><i key={x} style={{width:`${w}%`}}/>)}</div>}
+                {item.key === "duplicate" && <div className="mini-dupe" aria-hidden="true"><i/><i/><i/></div>}
+                {item.key === "ai" && <div className="mini-prompt" aria-hidden="true"><span>Which templates lose authority?</span></div>}
+                {item.key === "export" && <div className="mini-formats" aria-hidden="true"><span>CSV</span><span>XLSX</span><span>XML</span><span>PNG</span><span>PDF</span></div>}
+                {item.key === "signals" && <div className="mini-signals" aria-hidden="true">{["title","meta","h1","canonical","hreflang","robots","schema","og"].map(t=><span key={t}>{t}</span>)}</div>}
+
                 <div className="capability-copy"><h3>{item.title}</h3><p>{item.body}</p>{item.metric && <div className="capability-metric"><strong>{item.metric}</strong><span>{item.label}</span></div>}</div>
               </Reveal>
             ))}

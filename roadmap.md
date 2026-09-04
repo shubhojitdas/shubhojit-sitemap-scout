@@ -1,8 +1,8 @@
 # Roadmap
 
 ## Landing page redesign — reference-led light SaaS system
-- [ ] Lock one accent palette, display/body typography, and asymmetric layout direction
-- [ ] Generate and select one of three reference-grounded compositions
+- [x] Lock one accent palette, display/body typography, and asymmetric layout direction
+- [x] Generate and select one of three reference-grounded compositions
 - [ ] Rebuild the landing page with one consistent soft-shadow depth language
 - [ ] Frame the real product UI in browser chrome with concrete crawl data
 - [ ] Add restrained, credible trust/integration signals without invented endorsements

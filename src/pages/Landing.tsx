@@ -103,34 +103,43 @@ function CrawlMap() {
 
 function ProductStage() {
   return (
-    <motion.div
-      className="product-stage"
-      initial={{ opacity: 0, y: 32, scale: 0.985 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.9, delay: 0.25, ease }}
-    >
-      <div className="product-stage-bar">
-        <div className="product-stage-brand"><span className="stage-mark">S</span><span>example.com</span></div>
-        <div className="stage-status"><span /> Crawl complete</div>
-      </div>
-      <div className="product-stage-body">
-        <aside className="stage-sidebar" aria-label="Example report navigation">
-          {['Overview','Response codes','SEO issues','Page titles','Internal links'].map((item, i) => <span key={item} className={i === 0 ? "is-active" : ""}>{item}</span>)}
-        </aside>
-        <div className="stage-dashboard">
-          <div className="stage-heading"><div><small>CRAWL OVERVIEW</small><strong>Technical health</strong></div><span>12,480 URLs</span></div>
-          <div className="stage-metrics">
-            <div><small>HEALTH SCORE</small><strong>91</strong><span className="stage-trend">+4.2%</span></div>
-            <div><small>CRITICAL</small><strong>12</strong><span>needs action</span></div>
-            <div><small>WARNINGS</small><strong>86</strong><span>review</span></div>
-          </div>
-          <div className="stage-lower">
-            <div className="stage-chart"><span>Issue distribution</span><div className="stage-bars">{[36,62,46,81,57,74,42,68,88,53,71,61].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div></div>
-            <div className="stage-priorities"><span>Fix these first</span><div><b>01</b><p>Missing page titles<small>18 affected URLs</small></p></div><div><b>02</b><p>Redirect chains<small>14 affected URLs</small></p></div><div><b>03</b><p>Orphan pages<small>9 affected URLs</small></p></div></div>
+    <div className="product-stage-wrap">
+      <motion.div className="stage-float stage-float-health" initial={{ opacity: 0, x: -18 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.65, delay: 0.65, ease }}>
+        <span className="stage-float-dot"/><div><small>Site health</small><strong>91<span>/100</span></strong></div>
+      </motion.div>
+      <motion.div className="stage-float stage-float-crawl" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.65, delay: 0.75, ease }}>
+        <div><small>Last crawl</small><strong>Today<span> · 08:24</span></strong></div><i/>
+      </motion.div>
+      <motion.div
+        className="product-stage"
+        initial={{ opacity: 0, y: 32, rotateX: 2 }}
+        animate={{ opacity: 1, y: 0, rotateX: 0 }}
+        transition={{ duration: 0.9, delay: 0.25, ease }}
+      >
+        <div className="browser-chrome" aria-hidden="true"><span/><span/><span/><div>scout.local/audit/example.com</div></div>
+        <div className="product-stage-bar">
+          <div className="product-stage-brand"><span className="stage-mark">S</span><span>example.com</span></div>
+          <div className="stage-status"><span /> Crawl complete</div>
+        </div>
+        <div className="product-stage-body">
+          <aside className="stage-sidebar" aria-label="Example report navigation">
+            {['Overview','Response codes','SEO issues','Page titles','Internal links'].map((item, i) => <span key={item} className={i === 0 ? "is-active" : ""}>{item}</span>)}
+          </aside>
+          <div className="stage-dashboard">
+            <div className="stage-heading"><div><small>CRAWL OVERVIEW</small><strong>Technical health</strong></div><span>Updated 2 minutes ago</span></div>
+            <div className="stage-metrics">
+              <div className="stage-metric-highlight"><small>HEALTH SCORE</small><strong>91<span>.0</span></strong><em>+4.2%</em></div>
+              <div><small>CRITICAL</small><strong>12</strong><span>needs action</span></div>
+              <div><small>WARNINGS</small><strong>86</strong><span>review</span></div>
+            </div>
+            <div className="stage-lower">
+              <div className="stage-chart"><span>12,480 URLs crawled</span><div className="stage-bars">{[36,62,46,81,57,74,42,68,88,53,71,61].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div></div>
+              <div className="stage-priorities"><span>Fix these first</span><div><b>01</b><p>Missing page titles<small>18 affected URLs</small></p></div><div><b>02</b><p>Redirect chains<small>14 affected URLs</small></p></div><div><b>03</b><p>Orphan pages<small>9 affected URLs</small></p></div></div>
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -143,10 +152,10 @@ export default function Landing() {
         <div className="landing-container landing-hero-grid">
           <div className="landing-hero-copy">
             <motion.div className="landing-kicker" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-              <Radar /> Technical SEO intelligence <span>Browser-native</span>
+              <Radar /> Technical SEO intelligence <span>50,000 URL capacity</span>
             </motion.div>
             <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
-              See the architecture.<br/><em>Fix what search sees.</em>
+              SEO Sitemap Scout.<br/><em>See what search sees.</em>
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.08, ease }}>
               Crawl every technical signal, expose structural blind spots, and turn raw URLs into a prioritized audit your team can act on.
